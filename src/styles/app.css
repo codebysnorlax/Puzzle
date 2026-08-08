@@ -256,7 +256,7 @@
   color: var(--text-main);
 }
 
-/* Image Selection Gallery */
+/* Image Selection Gallery — Mystery Blur Feature */
 .image-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
@@ -279,16 +279,33 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform var(--transition-normal);
+  filter: blur(12px) brightness(0.85); /* Home Page Mystery Blur: Player must play to reveal clear image! */
+  transition: filter var(--transition-normal), transform var(--transition-normal);
 }
 
 .image-card:hover img {
+  filter: blur(9px) brightness(0.95);
   transform: scale(1.04);
 }
 
 .image-card.selected {
   border: 2px solid var(--primary);
-  box-shadow: 0 0 10px rgba(174, 32, 22, 0.2);
+  box-shadow: 0 0 12px rgba(174, 32, 22, 0.25);
+}
+
+.image-card-mystery-badge {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: rgba(15, 23, 42, 0.35);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  pointer-events: none;
 }
 
 .image-card-delete {
@@ -472,7 +489,7 @@
     padding: 0 var(--space-2);
     gap: 4px;
     overflow-x: auto;
-    scrollbar-width: none; /* Hide scrollbar */
+    scrollbar-width: none;
   }
 
   .game-hud::-webkit-scrollbar {

@@ -2,7 +2,7 @@ import { SettingsStore } from '../storage/SettingsStore.js';
 import { ImageStore } from '../storage/ImageStore.js';
 
 /**
- * HomeView — Clean editorial menu with IndexedDB image persistence & manual deletion
+ * HomeView — Clean editorial menu with Mystery Image Blur & IndexedDB image persistence
  */
 export class HomeView {
   constructor(container, onStartGame) {
@@ -100,7 +100,7 @@ export class HomeView {
         <section class="flat-section">
           <h2 class="home-section-title">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-            Choose Image
+            Choose Mystery Puzzle
           </h2>
           <div class="image-grid" id="image-grid">
             <!-- Grid cards populated dynamically in updateGalleryGrid -->
@@ -156,6 +156,10 @@ export class HomeView {
       ${allImages.map(img => `
         <div class="image-card ${this.selectedImage === img.url || this.selectedImage === img.blob ? 'selected' : ''}" data-url="${img.url}" data-id="${img.id}">
           <img src="${img.url}" alt="${img.name}" />
+          <div class="image-card-mystery-badge">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            Mystery
+          </div>
           ${img.isCustom ? `
             <button class="image-card-delete" data-delete-id="${img.id}" title="Delete Custom Image">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
