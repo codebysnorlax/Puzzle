@@ -84,7 +84,6 @@ export class GameView {
   }
 
   bindEvents() {
-    // Theme toggle
     const toggleBtns = this.element.querySelectorAll('.theme-toggle-btn');
     toggleBtns.forEach(btn => {
       btn.addEventListener('click', (e) => {
@@ -118,20 +117,33 @@ export class GameView {
   }
 
   updateHUD({ mode, difficulty, timeStr, moves, distance, imageUrl }) {
+    if (!this.element) return;
+
     if (mode && difficulty) {
-      this.element.querySelector('#hud-mode-badge').textContent = `${mode} (${difficulty})`;
+      const badge = this.element.querySelector('#hud-mode-badge');
+      if (badge) badge.textContent = `${mode} (${difficulty})`;
     }
     if (timeStr !== undefined) {
-      this.element.querySelector('#hud-timer').textContent = timeStr;
+      const timer = this.element.querySelector('#hud-timer');
+      if (timer) timer.textContent = timeStr;
     }
     if (moves !== undefined) {
-      this.element.querySelector('#hud-moves').textContent = `${moves} moves`;
+      const movesEl = this.element.querySelector('#hud-moves');
+      if (movesEl) movesEl.textContent = `${moves} moves`;
     }
     if (distance !== undefined) {
-      this.element.querySelector('#hud-dist').textContent = `${distance} px`;
+      const distEl = this.element.querySelector('#hud-dist');
+      if (distEl) distEl.textContent = `${distance} px`;
     }
     if (imageUrl) {
-      this.element.querySelector('#ref-img-element').src = imageUrl;
+      const refImg = this.element.querySelector('#ref-img-element');
+      if (refImg) {
+        if (typeof imageUrl === 'string') {
+          refImg.src = imageUrl;
+        } else if (imageUrl instanceof File || imageUrl instanceof Blob) {
+          refImg.src = URL.createObjectURL(imageUrl);
+        }
+      }
     }
   }
 

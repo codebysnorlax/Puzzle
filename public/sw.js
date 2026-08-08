@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pixelcraft-pwa-v1';
+const CACHE_NAME = 'pixelcraft-pwa-v2';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -33,14 +33,15 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
+  const url = new URL(event.request.url);
+  if (!url.protocol.startsWith('http')) return;
 
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
-        // Return cached asset and update in background (Stale-While-Revalidate)
         fetch(event.request)
           .then((networkResponse) => {
-            if (networkResponse && networkResponse.status === 200) {
+            if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
               caches.open(CACHE_NAME).then((cache) => cache.put(event.request, networkResponse));
             }
           })
@@ -49,10 +50,13 @@ self.addEventListener('fetch', (event) => {
       }
 
       return fetch(event.request).then((networkResponse) => {
-        return caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, networkResponse.clone());
-          return networkResponse;
-        });
+        if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseToCache));
+        }
+        return networkResponse;
+      }).catch(() => {
+        return caches.match('./index.html');
       });
     })
   );
