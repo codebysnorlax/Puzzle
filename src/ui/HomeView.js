@@ -2,7 +2,7 @@ import { SettingsStore } from '../storage/SettingsStore.js';
 import { ImageStore } from '../storage/ImageStore.js';
 
 /**
- * HomeView — Clean editorial menu with Mystery Image Blur & IndexedDB image persistence
+ * HomeView — Clean editorial menu with B&W Small Blur & Dark Noise Overlay
  */
 export class HomeView {
   constructor(container, onStartGame) {
@@ -156,6 +156,7 @@ export class HomeView {
       ${allImages.map(img => `
         <div class="image-card ${this.selectedImage === img.url || this.selectedImage === img.blob ? 'selected' : ''}" data-url="${img.url}" data-id="${img.id}">
           <img src="${img.url}" alt="${img.name}" />
+          <div class="image-card-noise-overlay"></div>
           <div class="image-card-mystery-badge">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
             Mystery
