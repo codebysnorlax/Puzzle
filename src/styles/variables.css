@@ -1,55 +1,82 @@
-/* Default Dark Slate Theme */
-:root, [data-theme="dark"] {
-  --bg-base: #0f141c;       /* Deep slate background */
-  --bg-surface: #18202c;    /* Card & panel surface */
-  --bg-elevated: #222c3c;   /* Modals & dropdowns */
-  --bg-hover: #263346;      /* Subtle hover state */
+/* Exact HSL Editorial Warm Sand & Deep Forest Palette */
+:root, [data-theme="light"] {
+  /* Backgrounds */
+  --bg-dark:    hsl(40, 18%, 89%);
+  --bg:         hsl(40, 20%, 94%);
+  --bg-light:   hsl(42, 33%, 98%);
 
-  --text-main: #f1f5f9;     /* Off-white primary text */
-  --text-muted: #94a3b8;    /* Muted secondary text */
-  --text-dim: #64748b;      /* Dim caption text */
+  /* Text */
+  --text:       hsl(30, 18%, 10%);
+  --text-muted: hsl(30, 9%, 40%);
+  --text-dim:   hsl(30, 9%, 55%);
 
-  --border-subtle: #263346; /* Hairline card border */
-  --border-strong: #3b4d68; /* Hover/Focus border */
-  --border-active: #38bdf8; /* Active selection border */
+  /* Surfaces */
+  --highlight:  hsl(42, 33%, 99%);
 
-  --primary: #38bdf8;       /* Electric Cyan / Sky Blue */
-  --primary-hover: #0284c7;
-  --secondary: #818cf8;     /* Indigo accent */
-  --accent-amber: #f59e0b;  /* Warm Amber */
+  /* Borders */
+  --border:       hsl(35, 10%, 78%);
+  --border-muted: hsl(35, 12%, 86%);
+  --border-active: hsl(174, 32%, 22%);
 
-  --success: #10b981;
-  --warning: #f59e0b;
-  --danger: #ef4444;
+  /* Brand */
+  --primary:    hsl(174, 32%, 22%);
+  --primary-hover: hsl(174, 32%, 16%);
+  --secondary:  hsl(345, 25%, 34%);
 
-  --pixi-bg: 0x0f141c;
+  /* Semantic */
+  --danger:     hsl(8, 38%, 38%);
+  --warning:    hsl(38, 42%, 36%);
+  --success:    hsl(150, 27%, 32%);
+  --info:       hsl(210, 30%, 38%);
+
+  /* Semantic System Mapping */
+  --bg-base: var(--bg);
+  --bg-surface: var(--bg-light);
+  --bg-elevated: var(--highlight);
+  --bg-hover: var(--bg-dark);
+
+  --text-main: var(--text);
+  --border-subtle: var(--border-muted);
+  --border-strong: var(--border);
+
+  --pixi-bg: 0xf0eeea;
 }
 
-/* Light Theme Overrides */
-[data-theme="light"] {
-  --bg-base: #f8fafc;       /* Crisp off-white background */
-  --bg-surface: #ffffff;    /* Pure white surface */
-  --bg-elevated: #f1f5f9;   /* Slate light surface */
-  --bg-hover: #e2e8f0;      /* Subtle light hover state */
+/* Dark Theme Overrides */
+[data-theme="dark"] {
+  --bg-dark:    hsl(220, 24%, 8%);
+  --bg:         hsl(220, 24%, 12%);
+  --bg-light:   hsl(220, 20%, 16%);
 
-  --text-main: #0f172a;     /* Deep slate primary text */
-  --text-muted: #475569;    /* Muted secondary text */
-  --text-dim: #94a3b8;      /* Dim caption text */
+  --text:       hsl(210, 20%, 96%);
+  --text-muted: hsl(215, 14%, 65%);
+  --text-dim:   hsl(215, 12%, 48%);
 
-  --border-subtle: #e2e8f0; /* Hairline border */
-  --border-strong: #cbd5e1; /* Hover/Focus border */
-  --border-active: #0284c7; /* Active selection border */
+  --highlight:  hsl(220, 20%, 20%);
 
-  --primary: #0284c7;       /* Sky Blue primary */
-  --primary-hover: #0369a1;
-  --secondary: #4f46e5;     /* Indigo accent */
-  --accent-amber: #d97706;  /* Amber accent */
+  --border:       hsl(215, 16%, 28%);
+  --border-muted: hsl(215, 16%, 22%);
+  --border-active: hsl(174, 60%, 45%);
 
-  --success: #059669;
-  --warning: #d97706;
-  --danger: #dc2626;
+  --primary:    hsl(174, 60%, 45%);
+  --primary-hover: hsl(174, 60%, 35%);
+  --secondary:  hsl(345, 50%, 55%);
 
-  --pixi-bg: 0xf8fafc;
+  --danger:     hsl(8, 60%, 55%);
+  --warning:    hsl(38, 60%, 50%);
+  --success:    hsl(150, 50%, 45%);
+  --info:       hsl(210, 50%, 55%);
+
+  --bg-base: var(--bg);
+  --bg-surface: var(--bg-light);
+  --bg-elevated: var(--highlight);
+  --bg-hover: var(--bg-dark);
+
+  --text-main: var(--text);
+  --border-subtle: var(--border-muted);
+  --border-strong: var(--border);
+
+  --pixi-bg: 0x18202c;
 }
 
 :root {

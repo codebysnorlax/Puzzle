@@ -20,26 +20,31 @@
 
 ```css
 :root {
-  /* Quiet Semantic Color Palette */
-  --bg-dark: hsl(0, 0%, 90%);
-  --bg: hsl(300, 0%, 95%);
-  --bg-light: hsl(300, 50%, 100%);
+  /* Backgrounds */
+  --bg-dark:    hsl(40 18% 89%);
+  --bg:         hsl(40 20% 94%);
+  --bg-light:   hsl(42 33% 98%);
 
-  --text: hsl(300, 0%, 4%);
-  --text-muted: hsl(0, 0%, 28%);
+  /* Text */
+  --text:       hsl(30 18% 10%);
+  --text-muted: hsl(30 9% 40%);
 
-  --highlight: hsl(300, 50%, 100%);
+  /* Surfaces */
+  --highlight:  hsl(42 33% 99%);
 
-  --border: hsl(0, 0%, 50%);
-  --border-muted: hsl(340, 0%, 62%);
+  /* Borders */
+  --border:       hsl(35 10% 78%);
+  --border-muted: hsl(35 12% 86%);
 
-  --primary: hsl(178, 100%, 8%);
-  --secondary: hsl(347, 44%, 31%);
+  /* Brand */
+  --primary:    hsl(174 32% 22%);
+  --secondary:  hsl(345 25% 34%);
 
-  --danger: hsl(9, 21%, 41%);
-  --warning: hsl(52, 23%, 34%);
-  --success: hsl(147, 19%, 36%);
-  --info: hsl(217, 22%, 41%);
+  /* Semantic */
+  --danger:     hsl(8 38% 38%);
+  --warning:    hsl(38 42% 36%);
+  --success:    hsl(150 27% 32%);
+  --info:       hsl(210 30% 38%);
 
   /* Spacing System */
   --space-1: 4px;
