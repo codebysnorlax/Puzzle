@@ -8,7 +8,7 @@ export class PieceRenderer {
   /**
    * Create Pixi Container containing texture sprite & border outline
    */
-  static createPieceSprite(piece, baseTexture, mode = 'normal') {
+  static createPieceSprite(piece, baseTexture, mode = 'normal', gridCols = 4, gridRows = 4) {
     const container = new Container();
     container.eventMode = 'static';
     container.cursor = 'grab';
@@ -17,8 +17,8 @@ export class PieceRenderer {
     container.x = piece.x;
     container.y = piece.y;
 
-    const cols = piece.gridCols || 4;
-    const rows = piece.gridRows || 4;
+    const cols = piece.gridCols || gridCols || 4;
+    const rows = piece.gridRows || gridRows || 4;
 
     const frameW = baseTexture.width / cols;
     const frameH = baseTexture.height / rows;

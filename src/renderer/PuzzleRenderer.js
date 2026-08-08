@@ -49,7 +49,13 @@ export class PuzzleRenderer {
     const baseTexture = Texture.from(imageCanvas);
 
     puzzle.pieces.forEach(piece => {
-      const spriteContainer = PieceRenderer.createPieceSprite(piece, baseTexture, mode);
+      const spriteContainer = PieceRenderer.createPieceSprite(
+        piece,
+        baseTexture,
+        mode,
+        puzzle.cols,
+        puzzle.rows
+      );
       this.piecesContainer.addChild(spriteContainer);
       this.pieceSpritesMap.set(piece.id, spriteContainer);
     });

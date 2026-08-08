@@ -38,7 +38,7 @@ export class Game {
     console.log('[Game] Starting active puzzle session:', this.config);
 
     const viewportW = this.container.clientWidth || window.innerWidth;
-    const viewportH = this.container.clientHeight || window.innerHeight;
+    const viewportH = this.container.clientHeight || (window.innerHeight - 48);
 
     // 1. Instantiate Puzzle Engine (Normal or Jigsaw)
     const puzzleOptions = {
@@ -107,7 +107,8 @@ export class Game {
   handleResize(width, height) {
     if (!this.puzzle || !this.renderer) return;
 
-    this.puzzle.resize(width, height);
+    const viewportH = this.container.clientHeight || (height - 48);
+    this.puzzle.resize(width, viewportH);
     this.renderer.resize(this.puzzle, this.config.processedImage.canvas, this.config.mode);
 
     // Re-bind input events to new sprites
