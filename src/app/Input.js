@@ -2,7 +2,7 @@ import { PuzzleValidator } from '../puzzle/PuzzleValidator.js';
 import { PieceAnimations } from '../animation/PieceAnimations.js';
 
 /**
- * InputHandler — Unified Pointer Handler with Local Container Coordinate Transformation
+ * InputHandler — Unified Pointer Handler with Local Container Coordinate Transformation & Safe Animation Scoping
  */
 export class InputHandler {
   constructor({ puzzle, puzzleRenderer, timer, movementTracker, onPuzzleComplete, onFirstMovement }) {
@@ -133,23 +133,24 @@ export class InputHandler {
       this.hoveredPiece = null;
     }
 
-    const activeSprite = this.renderer.getSpriteForPiece(this.activePiece);
+    const draggedPiece = this.activePiece;
+    const activeSprite = this.renderer.getSpriteForPiece(draggedPiece);
     if (activeSprite) activeSprite.zIndex = 1;
 
     const cell = this.getGridCellAtPointer(localPos.x, localPos.y);
 
-    if (cell && cell.targetPiece && cell.targetPiece !== this.activePiece) {
+    if (cell && cell.targetPiece && cell.targetPiece !== draggedPiece) {
       const targetPiece = cell.targetPiece;
       const targetGridX = cell.targetX;
       const targetGridY = cell.targetY;
       const sourceGridX = this.startGridPos.x;
       const sourceGridY = this.startGridPos.y;
 
-      this.activePiece.setPosition(targetGridX, targetGridY);
+      draggedPiece.setPosition(targetGridX, targetGridY);
       targetPiece.setPosition(sourceGridX, sourceGridY);
 
-      this.activePiece.placed = PuzzleValidator.isPieceInCorrectSlot(this.activePiece);
-      this.activePiece.locked = this.activePiece.placed;
+      draggedPiece.placed = PuzzleValidator.isPieceInCorrectSlot(draggedPiece);
+      draggedPiece.locked = draggedPiece.placed;
 
       targetPiece.placed = PuzzleValidator.isPieceInCorrectSlot(targetPiece);
       targetPiece.locked = targetPiece.placed;
@@ -157,16 +158,16 @@ export class InputHandler {
       const targetSprite = this.renderer.getSpriteForPiece(targetPiece);
 
       PieceAnimations.animateSnap(activeSprite, targetGridX, targetGridY, () => {
-        if (this.activePiece.placed) PieceAnimations.animateLockPop(activeSprite);
+        if (draggedPiece && draggedPiece.placed) PieceAnimations.animateLockPop(activeSprite);
       });
 
       PieceAnimations.animateSnap(targetSprite, sourceGridX, sourceGridY, () => {
-        if (targetPiece.placed) PieceAnimations.animateLockPop(targetSprite);
+        if (targetPiece && targetPiece.placed) PieceAnimations.animateLockPop(targetSprite);
       });
 
-      console.log(`[Input] Tile Swapped: Piece ${this.activePiece.id} ◄► Piece ${targetPiece.id}`);
+      console.log(`[Input] Tile Swapped: Piece ${draggedPiece.id} ◄► Piece ${targetPiece.id}`);
     } else {
-      this.activePiece.setPosition(this.startGridPos.x, this.startGridPos.y);
+      draggedPiece.setPosition(this.startGridPos.x, this.startGridPos.y);
       PieceAnimations.animateSnap(activeSprite, this.startGridPos.x, this.startGridPos.y);
     }
 
