@@ -2,8 +2,8 @@ import { SettingsStore } from '../storage/SettingsStore.js';
 import { ImageStore } from '../storage/ImageStore.js';
 
 /**
- * HomeView — Progressive Chunked Gallery & Local-First IndexedDB Image Cache
- * Eliminates Cloudflare bandwidth spikes by chunking gallery loads and caching selected images in local IndexedDB.
+ * HomeView — Progressive Chunked Gallery & Floating Capsule Navbar
+ * Reduces top navbar height and detaches into a floating rounded glassmorphism capsule on scroll.
  */
 export class HomeView {
   constructor(container, onStartGame) {
@@ -64,7 +64,7 @@ export class HomeView {
     this.element.className = 'view home-view active';
 
     this.element.innerHTML = `
-      <!-- Top Header Navbar with Centered Start CTA & Segmented Controls -->
+      <!-- Top Header Navbar with Centered Start CTA & Floating Capsule Scroll Feature -->
       <header class="home-header">
         <div class="nav-left">
           <h1 class="home-title">Pick and Play</h1>
@@ -73,7 +73,7 @@ export class HomeView {
         <!-- Center: Start Capsule CTA -->
         <div class="nav-center">
           <button class="btn btn-primary nav-start-btn" id="btn-start">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
             Start Puzzle
           </button>
         </div>
@@ -324,6 +324,18 @@ export class HomeView {
   }
 
   bindEvents() {
+    // Scroll event listener for floating circular capsule header
+    this.element.addEventListener('scroll', () => {
+      const header = this.element.querySelector('.home-header');
+      if (header) {
+        if (this.element.scrollTop > 25) {
+          header.classList.add('scrolled-floating');
+        } else {
+          header.classList.remove('scrolled-floating');
+        }
+      }
+    });
+
     // Load More Puzzles progressive chunk button
     const btnLoadMore = this.element.querySelector('#btn-load-more');
     if (btnLoadMore) {
