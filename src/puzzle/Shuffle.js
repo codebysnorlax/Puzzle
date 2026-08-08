@@ -2,10 +2,11 @@ import { SeededRandom } from './SeededRandom.js';
 
 /**
  * Shuffle — Grid position permutation shuffler for tile-swap gameplay
+ * Guarantees that at game start, the puzzle opens 100% scrambled (puzzled, NOT solved)
  */
 export class Shuffle {
   /**
-   * Permute grid positions among all pieces using Fisher-Yates shuffle on SeededRandom PRNG
+   * Permute grid positions among all pieces using Fisher-Yates shuffle with strict derangement
    * @param {Array<Piece>} pieces 
    * @param {object} boardLayout 
    * @param {number} viewportWidth 
@@ -33,16 +34,29 @@ export class Shuffle {
       gridSlots[j] = temp;
     }
 
-    // Assign shuffled grid slots to pieces
+    // Guarantee strict derangement: no piece lands on its correct position at start
+    for (let i = 0; i < pieces.length; i++) {
+      const p = pieces[i];
+      const s = gridSlots[i];
+      if (s.x === p.correctX && s.y === p.correctY && pieces.length > 1) {
+        // Swap with next adjacent slot to force a scramble
+        const swapIdx = (i + 1) % pieces.length;
+        const temp = gridSlots[i];
+        gridSlots[i] = gridSlots[swapIdx];
+        gridSlots[swapIdx] = temp;
+      }
+    }
+
+    // Assign scrambled grid slots to pieces
     pieces.forEach((piece, idx) => {
       const slot = gridSlots[idx];
       piece.setPosition(slot.x, slot.y);
       piece.currentGridRow = slot.row;
       piece.currentGridCol = slot.col;
 
-      const isCorrect = (piece.x === piece.correctX && piece.y === piece.correctY);
-      piece.placed = isCorrect;
-      piece.locked = isCorrect;
+      // AT GAME START, THE PUZZLE MUST BE 100% UNPLACED & UNLOCKED (SCRAMBLED)
+      piece.placed = false;
+      piece.locked = false;
     });
 
     return pieces;
