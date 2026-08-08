@@ -1,7 +1,7 @@
-/* Presentation & Multi-Breakpoint Responsive Styles — Pill-Rounded Navbar Capsules & Micro Green Cached Dot */
+/* Presentation & Multi-Breakpoint Responsive Styles — Modern Minimal Navbar Redesign */
 
 :root {
-  --header-height: 44px;
+  --header-height: 50px;
   --radius-pill: 9999px;
 }
 
@@ -46,31 +46,34 @@
   padding: var(--space-3) 0;
 }
 
-/* Small Capsule Pill Buttons & Controls */
+/* General Buttons */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-2);
-  min-height: 30px;
-  padding: 0 var(--space-3);
+  gap: 6px;
+  min-height: 32px;
+  height: 32px;
+  padding: 0 14px;
   border-radius: var(--radius-pill);
   font-weight: 600;
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   transition: all var(--transition-fast);
   cursor: pointer;
   white-space: nowrap;
+  border: 1px solid transparent;
 }
 
 .btn-primary {
   background: var(--primary);
   color: #ffffff;
-  border: 1px solid var(--primary);
+  border-color: var(--primary);
 }
 
 .btn-primary:hover {
   background: var(--primary-hover);
   border-color: var(--primary-hover);
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3);
 }
 
 .btn-primary:active {
@@ -80,7 +83,7 @@
 .btn-secondary {
   background: var(--bg-surface);
   color: var(--text-main);
-  border: 1px solid var(--border-subtle);
+  border-color: var(--border-subtle);
 }
 
 .btn-secondary:hover {
@@ -89,9 +92,9 @@
 }
 
 .btn-icon {
-  width: 30px;
-  height: 30px;
-  min-height: 30px;
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
   padding: 0;
   border-radius: var(--radius-pill);
   background: var(--bg-surface);
@@ -101,242 +104,115 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  cursor: pointer;
+  transition: all var(--transition-fast);
 }
 
 .btn-icon:hover {
   border-color: var(--primary);
   color: var(--primary);
-}
-
-/* Refined Start Puzzle CTA Button — Compact & Proportionate */
-.nav-start-btn {
-  appearance: none;
-  -webkit-appearance: none;
-  background-color: transparent !important;
-  border: 1px solid var(--primary) !important;
-  border-radius: var(--radius-pill);
-  box-sizing: border-box;
-  color: var(--text-main) !important;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  font-family: inherit;
-  font-size: 0.78rem;
-  font-weight: 600;
-  line-height: 1;
-  margin: 0;
-  min-height: 30px;
-  height: 30px;
-  min-width: 0;
-  outline: none;
-  padding: 0 14px;
-  text-align: center;
-  text-decoration: none;
-  user-select: none;
-  -webkit-user-select: none;
-  touch-action: manipulation;
-  transition: all var(--transition-fast);
-}
-
-.nav-start-btn svg {
-  stroke: var(--primary);
-  width: 13px;
-  height: 13px;
-}
-
-.nav-start-btn:hover {
-  background-color: rgba(2, 132, 199, 0.1) !important;
-  border-color: var(--primary) !important;
-  color: var(--primary) !important;
-}
-
-.nav-start-btn:active {
-  transform: translateY(1px);
-}
-
-/* 100% Smooth Pill-Rounded Segmented Capsule Navbar Toolbar (Zero Sharp Corners) */
-.nav-segmented-capsule {
-  display: inline-flex;
-  align-items: center;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-pill) !important; /* Smooth 100% capsule rounded corners */
-  overflow: hidden;
-  padding: 0 2px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-  flex-shrink: 0;
-  height: 30px;
-}
-
-/* Dark mode override for segmented capsule */
-[data-theme="dark"] .nav-segmented-capsule {
-  background: #0b111e;
-  border-color: rgba(255, 255, 255, 0.14);
-}
-
-.nav-segmented-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  background: transparent;
-  border: none;
-  border-right: 1px solid var(--border-subtle);
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  padding: 0;
-  margin: 0;
-  outline: none;
-}
-
-.nav-segmented-capsule > button:first-child,
-.nav-segmented-capsule > .custom-select-wrap:first-child .nav-segmented-select {
-  border-top-left-radius: var(--radius-pill);
-  border-bottom-left-radius: var(--radius-pill);
-  padding-left: 12px;
-}
-
-.nav-segmented-capsule > button:last-child,
-.nav-segmented-capsule > .custom-select-wrap:last-child .nav-segmented-select {
-  border-top-right-radius: var(--radius-pill);
-  border-bottom-right-radius: var(--radius-pill);
-  padding-right: 12px;
-}
-
-[data-theme="dark"] .nav-segmented-btn {
-  border-right-color: rgba(255, 255, 255, 0.1);
-}
-
-.nav-segmented-btn:last-child {
-  border-right: none;
-}
-
-.nav-segmented-btn:hover {
   background: var(--bg-hover);
-  color: var(--text-main);
 }
 
-.nav-segmented-btn.active {
-  color: var(--primary);
-  background: rgba(2, 132, 199, 0.15);
-}
-
-.nav-segmented-btn svg {
-  width: 13px;
-  height: 13px;
-}
-
-/* Segmented Text Items inside Capsule Toolbars */
-.nav-segmented-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  height: 30px;
-  padding: 0 10px;
-  border-right: 1px solid var(--border-subtle);
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: var(--text-main);
-  white-space: nowrap;
-}
-
-[data-theme="dark"] .nav-segmented-item {
-  border-right-color: rgba(255, 255, 255, 0.1);
-}
-
-.nav-segmented-item:last-child {
-  border-right: none;
-}
-
-.nav-segmented-item svg {
-  width: 12px;
-  height: 12px;
-}
-
-/* Segmented Select Dropdowns */
-.nav-segmented-select {
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  background: transparent !important;
-  color: var(--text-main);
-  border: none !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
-  padding: 0 24px 0 10px;
-  height: 30px;
-  font-size: 0.76rem;
-  font-weight: 500;
-  cursor: pointer;
-  outline: none;
-  transition: all var(--transition-fast);
-}
-
-.nav-segmented-select:hover {
-  color: var(--primary);
-}
-
-/* Custom Sleek Capsule Dropdown Selector */
-.nav-select-group {
+/* Modern Minimal Navbar Header Design */
+.home-header {
+  height: var(--header-height);
+  position: sticky;
+  top: 0;
+  z-index: 100;
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 0 20px;
+  background: var(--bg-surface);
+  transition: all var(--transition-fast);
 }
 
-.custom-select-wrap {
+.home-header.scrolled {
+  background: rgba(11, 17, 30, 0.9) !important;
+  backdrop-filter: blur(16px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+[data-theme="light"] .home-header.scrolled {
+  background: rgba(255, 255, 255, 0.9) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+/* Navbar Left Brand Mark */
+.nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.brand-icon {
+  width: 26px;
+  height: 26px;
+  background: linear-gradient(135deg, var(--primary) 0%, #0284c7 100%);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.3);
+}
+
+.home-title {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-main);
+}
+
+/* Navbar Right Actions Bar */
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Clean Pill Select Controls */
+.nav-pill-select-wrap {
   position: relative;
   display: inline-flex;
   align-items: center;
 }
 
-.custom-select-wrap::after {
+.nav-pill-select-wrap::after {
   content: '';
   position: absolute;
   right: 10px;
-  top: 48%;
+  top: 50%;
   width: 4px;
   height: 4px;
   border-right: 1.8px solid var(--text-muted);
   border-bottom: 1.8px solid var(--text-muted);
-  transform: translateY(-50%) rotate(45deg);
+  transform: translateY(-60%) rotate(45deg);
   pointer-events: none;
-  transition: border-color var(--transition-fast);
 }
 
-.custom-select-wrap:hover::after {
-  border-color: var(--primary);
-}
-
-.nav-select {
+.nav-pill-select {
   appearance: none;
   -webkit-appearance: none;
-  -moz-appearance: none;
   background: var(--bg-surface);
   color: var(--text-main);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-pill);
-  padding: 0 28px 0 12px;
-  height: 30px;
-  font-size: 0.76rem;
-  font-weight: 500;
+  padding: 0 26px 0 12px;
+  height: 32px;
+  font-size: 0.78rem;
+  font-weight: 600;
   cursor: pointer;
   outline: none;
   transition: all var(--transition-fast);
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.04);
 }
 
-.nav-select:hover {
+.nav-pill-select:hover {
   border-color: var(--primary);
   background: var(--bg-hover);
-}
-
-.nav-select:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.2);
 }
 
 /* Home View Layout */
@@ -349,76 +225,8 @@
   scroll-behavior: smooth;
 }
 
-/* Ultra-Slim Sticky Home Header & Scroll-Triggered Floating Capsule */
-.home-header {
-  height: var(--header-height);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: var(--space-4);
-  border-bottom: 1px solid var(--border-subtle);
-  padding: 0 var(--space-4);
-  background: var(--bg-surface);
-  transition: all 350ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-/* Scrolled Floating Circular Capsule Header */
-.home-header.scrolled-floating {
-  top: 8px;
-  margin-top: 4px;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--border-strong);
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(16px);
-  background: rgba(11, 17, 30, 0.82);
-  padding: 0 var(--space-4);
-}
-
-[data-theme="light"] .home-header.scrolled-floating {
-  background: rgba(255, 255, 255, 0.88);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-}
-
-.nav-left {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.nav-center {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.nav-right {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-}
-
-/* Metallic Gradient Branding Title */
-.home-title {
-  font-size: 0.95rem;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  background: linear-gradient(135deg, #ffffff 0%, #94a3b8 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  display: inline-block;
-}
-
-[data-theme="light"] .home-title {
-  background: linear-gradient(135deg, #0f172a 0%, #475569 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
 .home-section-title {
-  font-size: 0.88rem;
+  font-size: 0.9rem;
   font-weight: 600;
   margin-bottom: var(--space-3);
   display: flex;
@@ -427,7 +235,7 @@
   color: var(--text-main);
 }
 
-/* Image Selection Gallery — Subtle Small Blur (2.5px) + B&W Grayscale + Noise Overlay */
+/* Image Selection Gallery */
 .image-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
@@ -526,13 +334,13 @@
   min-height: 22px !important;
   max-width: 22px !important;
   max-height: 22px !important;
-  border-radius: 50% !important; /* 100% perfect round circle */
+  border-radius: 50% !important;
   box-sizing: border-box;
   padding: 0 !important;
   margin: 0 !important;
-  background: rgba(239, 68, 68, 0.2) !important; /* Soft light translucent red */
+  background: rgba(239, 68, 68, 0.2) !important;
   backdrop-filter: blur(6px);
-  color: #f87171 !important; /* Soft pastel red icon */
+  color: #f87171 !important;
   border: 1px solid rgba(248, 113, 113, 0.35) !important;
   display: flex !important;
   align-items: center !important;
@@ -692,11 +500,11 @@
 
 @media (max-width: 768px) {
   :root {
-    --header-height: 40px;
+    --header-height: 46px;
   }
 
-  .nav-select-group {
-    display: none;
+  .nav-desktop-controls {
+    display: none !important;
   }
 
   .hamburger-btn-wrap {
@@ -711,39 +519,9 @@
     grid-template-columns: repeat(2, 1fr);
   }
 
-  /* Compact Mobile HUD Toolbar */
   .game-hud {
     padding: 0 var(--space-2);
     gap: 4px;
     overflow-x: auto;
-    scrollbar-width: none;
-  }
-
-  .game-hud::-webkit-scrollbar {
-    display: none;
-  }
-
-  .nav-segmented-item {
-    padding: 0 8px;
-    font-size: 0.72rem;
-    height: 28px;
-  }
-
-  .nav-segmented-item svg {
-    width: 12px;
-    height: 12px;
-  }
-
-  #hud-mode-badge {
-    max-width: 85px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .btn-icon {
-    width: 28px;
-    height: 28px;
-    min-height: 28px;
   }
 }

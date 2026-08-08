@@ -2,8 +2,8 @@ import { SettingsStore } from '../storage/SettingsStore.js';
 import { ImageStore } from '../storage/ImageStore.js';
 
 /**
- * HomeView — Progressive Chunked Gallery & Floating Capsule Navbar
- * Pill-rounded navbar control boxes, micro green dot cached indicator, and smart Load More visibility.
+ * HomeView — Clean Modern Gallery & Sleek Minimal Navbar
+ * Displays all call puzzles cleanly with local-first IndexedDB caching & modern pill navbar controls.
  */
 export class HomeView {
   constructor(container, onStartGame) {
@@ -30,9 +30,9 @@ export class HomeView {
     this.customImages = [];
     this.cachedIds = new Set(); // Set of image IDs currently saved in IndexedDB
 
-    // Progressive Chunking parameters
-    this.chunkSize = 6;
-    this.displayedCount = 6; // Initial chunk size
+    // Display all items directly so all call images are visible
+    this.chunkSize = 12;
+    this.displayedCount = 25; // Displays sample images + all 19 call images!
 
     this.selectedImage = this.sampleImages[0].url;
     this.selectedImageId = this.sampleImages[0].id;
@@ -64,32 +64,29 @@ export class HomeView {
     this.element.className = 'view home-view active';
 
     this.element.innerHTML = `
-      <!-- Top Header Navbar with Centered Start CTA & Pill-Rounded Capsule Toolbars -->
+      <!-- Sleek Modern Redesigned Navbar Header -->
       <header class="home-header">
-        <div class="nav-left">
-          <h1 class="home-title">Pick and Play</h1>
+        <div class="nav-brand">
+          <div class="brand-icon">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>
+          </div>
+          <span class="home-title">Pick and Play</span>
         </div>
 
-        <!-- Center: Start Capsule CTA -->
-        <div class="nav-center">
-          <button class="btn btn-primary nav-start-btn" id="btn-start">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-            Start Puzzle
-          </button>
-        </div>
-
-        <div class="nav-right">
-          <!-- 100% Pill-Rounded Segmented Capsule Navbar Group -->
-          <div class="nav-segmented-capsule nav-select-group">
-            <div class="custom-select-wrap" style="border-right: 1px solid var(--border-subtle);">
-              <select class="nav-select nav-segmented-select" id="nav-mode-select" title="Puzzle Mode">
+        <div class="nav-actions">
+          <!-- Desktop Pill Control Group -->
+          <div class="nav-actions nav-desktop-controls">
+            <!-- Mode Dropdown Pill -->
+            <div class="nav-pill-select-wrap">
+              <select class="nav-pill-select" id="nav-mode-select" title="Puzzle Mode">
                 <option value="normal" selected>Mode: Normal</option>
                 <option value="jigsaw">Mode: Jigsaw</option>
               </select>
             </div>
 
-            <div class="custom-select-wrap" style="border-right: 1px solid var(--border-subtle);">
-              <select class="nav-select nav-segmented-select" id="nav-diff-select" title="Difficulty Level">
+            <!-- Difficulty Dropdown Pill -->
+            <div class="nav-pill-select-wrap">
+              <select class="nav-pill-select" id="nav-diff-select" title="Difficulty Level">
                 <option value="easy">Easy (9)</option>
                 <option value="normal" selected>Normal (16)</option>
                 <option value="hard">Hard (25)</option>
@@ -97,19 +94,25 @@ export class HomeView {
               </select>
             </div>
 
-            <!-- Single Dynamic Light / Dark Theme Toggle Button -->
-            <button class="nav-segmented-btn" id="home-theme-toggle-single" title="Toggle Light / Dark Theme">
+            <!-- Light / Dark Theme Button Pill -->
+            <button class="btn-icon" id="home-theme-toggle-single" title="Toggle Theme">
               ${currentTheme === 'dark' ? `
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
               ` : `
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
               `}
             </button>
           </div>
 
-          <!-- Mobile Hamburger Toggle Button -->
+          <!-- Play Now Primary Action CTA Button -->
+          <button class="btn btn-primary" id="btn-start">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Play Now
+          </button>
+
+          <!-- Mobile Hamburger Drawer Button -->
           <div class="hamburger-btn-wrap">
-            <button class="btn btn-icon" id="btn-hamburger" title="Open Controls Menu">
+            <button class="btn-icon" id="btn-hamburger" title="Open Menu">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
             </button>
           </div>
@@ -125,7 +128,7 @@ export class HomeView {
               Choose Mystery Puzzle
             </h2>
             <span id="gallery-count-badge" style="font-size: 0.78rem; font-weight: 600; color: var(--text-muted);">
-              Showing 6 of 23
+              23 Puzzles Available
             </span>
           </div>
 
@@ -133,10 +136,10 @@ export class HomeView {
             <!-- Grid cards populated dynamically in updateGalleryGrid -->
           </div>
 
-          <!-- Progressive Chunk Load More Button -->
-          <div id="load-more-wrap" style="display: flex; justify-content: center; margin-top: var(--space-4);">
-            <button class="nav-start-btn" id="btn-load-more" style="min-height: 30px; padding: 0 1.2em; font-size: 0.78rem;">
-              Load More Puzzles (+6)
+          <!-- Optional Load More Button -->
+          <div id="load-more-wrap" style="display: none; justify-content: center; margin-top: var(--space-4);">
+            <button class="btn btn-secondary" id="btn-load-more">
+              Load More Puzzles
             </button>
           </div>
         </section>
@@ -154,16 +157,16 @@ export class HomeView {
 
           <div style="display: flex; flex-direction: column; gap: var(--space-3);">
             <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">Puzzle Mode</label>
-            <div class="custom-select-wrap">
-              <select class="nav-select" id="mobile-mode-select" style="width: 100%;">
+            <div class="nav-pill-select-wrap">
+              <select class="nav-pill-select" id="mobile-mode-select" style="width: 100%;">
                 <option value="normal" selected>Normal (Grid Swap)</option>
                 <option value="jigsaw">Jigsaw (Interlocking)</option>
               </select>
             </div>
 
             <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-top: var(--space-2);">Difficulty Level</label>
-            <div class="custom-select-wrap">
-              <select class="nav-select" id="mobile-diff-select" style="width: 100%;">
+            <div class="nav-pill-select-wrap">
+              <select class="nav-pill-select" id="mobile-diff-select" style="width: 100%;">
                 <option value="easy">Easy (9)</option>
                 <option value="normal" selected>Normal (16)</option>
                 <option value="hard">Hard (25)</option>
@@ -188,24 +191,19 @@ export class HomeView {
     const fullCatalog = [...this.sampleImages, ...this.callPuzzles, ...this.customImages];
     const totalCount = fullCatalog.length;
 
-    // Check how many items are already cached locally in IndexedDB
-    const uncachedRemoteCount = this.callPuzzles.filter(p => !this.cachedIds.has(p.id)).length;
-
     // Slice current chunk to display
     const visibleItems = fullCatalog.slice(0, this.displayedCount);
 
     // Update count badge text
     const countBadge = this.element.querySelector('#gallery-count-badge');
     if (countBadge) {
-      countBadge.textContent = `Showing ${visibleItems.length} of ${totalCount}`;
+      countBadge.textContent = `${visibleItems.length} Puzzles Available`;
     }
 
-    // Smart Load More Button visibility:
-    // Hide if all items displayed OR if there are no uncached remote call images left to load!
+    // Hide or show Load More button
     const loadMoreWrap = this.element.querySelector('#load-more-wrap');
     if (loadMoreWrap) {
-      const shouldHide = this.displayedCount >= totalCount || uncachedRemoteCount === 0;
-      loadMoreWrap.style.display = shouldHide ? 'none' : 'flex';
+      loadMoreWrap.style.display = this.displayedCount >= totalCount ? 'none' : 'flex';
     }
 
     grid.innerHTML = `
@@ -326,14 +324,14 @@ export class HomeView {
   }
 
   bindEvents() {
-    // Scroll event listener for floating circular capsule header
+    // Scroll event listener for smooth navbar shadow
     this.element.addEventListener('scroll', () => {
       const header = this.element.querySelector('.home-header');
       if (header) {
-        if (this.element.scrollTop > 25) {
-          header.classList.add('scrolled-floating');
+        if (this.element.scrollTop > 15) {
+          header.classList.add('scrolled');
         } else {
-          header.classList.remove('scrolled-floating');
+          header.classList.remove('scrolled');
         }
       }
     });
@@ -358,9 +356,9 @@ export class HomeView {
         SettingsStore.applyTheme(nextTheme);
 
         singleThemeBtn.innerHTML = nextTheme === 'dark' ? `
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
         ` : `
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
         `;
       });
     }
