@@ -67,6 +67,11 @@ export class Game {
       this.config.mode
     );
 
+    // Wire HUD navbar Peek Hint button handler
+    if (this.gameView) {
+      this.gameView.onPeekHint = () => this.handlePeekHint();
+    }
+
     // 4. Attach responsive resize callback
     this.app.pixiApp.onResize = (width, height) => {
       this.handleResize(width, height);
@@ -102,6 +107,15 @@ export class Game {
     });
 
     this.isStarted = true;
+  }
+
+  handlePeekHint() {
+    if (!this.renderer || !this.config || !this.config.processedImage || !this.puzzle) return;
+    this.renderer.showTemporaryHint(
+      this.config.processedImage.canvas,
+      this.puzzle.boardLayout,
+      2200
+    );
   }
 
   handleResize(width, height) {

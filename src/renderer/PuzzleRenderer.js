@@ -1,4 +1,4 @@
-import { Container, Graphics, Texture } from 'pixi.js';
+import { Container, Graphics, Texture, Sprite } from 'pixi.js';
 import { PieceRenderer } from './PieceRenderer.js';
 
 /**
@@ -18,6 +18,8 @@ export class PuzzleRenderer {
 
     this.pieceSpritesMap = new Map(); // piece.id -> Container
     this.tickerCallback = null;
+    this.hintSprite = null;
+    this.hintTimeout = null;
   }
 
   /**
@@ -78,6 +80,36 @@ export class PuzzleRenderer {
       this.piecesContainer.addChild(spriteContainer);
       this.pieceSpritesMap.set(piece.id, spriteContainer);
     });
+  }
+
+  /**
+   * Temporarily display a subtle 28% translucent reference hint overlay over board target for durationMs
+   */
+  showTemporaryHint(imageCanvas, boardLayout, durationMs = 2200) {
+    if (this.hintSprite) {
+      this.boardContainer.removeChild(this.hintSprite);
+      this.hintSprite.destroy();
+      this.hintSprite = null;
+    }
+
+    const hintTexture = Texture.from(imageCanvas);
+    this.hintSprite = new Sprite(hintTexture);
+    this.hintSprite.x = boardLayout.x;
+    this.hintSprite.y = boardLayout.y;
+    this.hintSprite.width = boardLayout.width;
+    this.hintSprite.height = boardLayout.height;
+    this.hintSprite.alpha = 0.28; // Subtle 28% alpha hint peek overlay
+
+    this.boardContainer.addChild(this.hintSprite);
+
+    if (this.hintTimeout) clearTimeout(this.hintTimeout);
+    this.hintTimeout = setTimeout(() => {
+      if (this.hintSprite) {
+        this.boardContainer.removeChild(this.hintSprite);
+        this.hintSprite.destroy();
+        this.hintSprite = null;
+      }
+    }, durationMs);
   }
 
   /**
@@ -143,6 +175,10 @@ export class PuzzleRenderer {
   }
 
   clear() {
+    if (this.hintTimeout) {
+      clearTimeout(this.hintTimeout);
+      this.hintTimeout = null;
+    }
     if (this.tickerCallback) {
       this.pixiApp.app.ticker.remove(this.tickerCallback);
       this.tickerCallback = null;
@@ -150,5 +186,6 @@ export class PuzzleRenderer {
     this.piecesContainer.removeChildren();
     this.boardContainer.removeChildren();
     this.pieceSpritesMap.clear();
+    this.hintSprite = null;
   }
 }
