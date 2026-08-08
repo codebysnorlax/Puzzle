@@ -2,14 +2,15 @@ import { SettingsStore } from '../storage/SettingsStore.js';
 import { ImageStore } from '../storage/ImageStore.js';
 
 /**
- * HomeView — Clean editorial menu with B&W Small Blur & Dark Noise Overlay
+ * HomeView — Progressive Chunked Gallery & Local-First IndexedDB Image Cache
+ * Eliminates Cloudflare bandwidth spikes by chunking gallery loads and caching selected images in local IndexedDB.
  */
 export class HomeView {
   constructor(container, onStartGame) {
     this.container = container;
     this.onStartGame = onStartGame;
 
-    // Built-in local sample images
+    // Built-in sample images
     this.sampleImages = [
       { id: 'demo1', name: 'Mountain Landscape', url: './puzzles/demo.jpg', isCustom: false },
       { id: 'demo2', name: 'Scenic Sunset', url: './puzzles/demo2.jpg', isCustom: false },
@@ -17,21 +18,42 @@ export class HomeView {
       { id: 'test', name: 'Vibrant Artwork', url: './puzzles/test.jpg', isCustom: false }
     ];
 
+    // Catalog of 19 call puzzles
+    this.callPuzzles = Array.from({ length: 19 }, (_, i) => ({
+      id: `call_puzzle_${i + 1}`,
+      name: `Puzzle ${i + 1}`,
+      url: `./call/puzzle${i + 1}.png`,
+      isCustom: false,
+      isCallPuzzle: true
+    }));
+
     this.customImages = [];
+    this.cachedIds = new Set(); // Set of image IDs currently saved in IndexedDB
+
+    // Progressive Chunking parameters
+    this.chunkSize = 6;
+    this.displayedCount = 6; // Initial chunk size
+
     this.selectedImage = this.sampleImages[0].url;
-    this.selectedMode = 'normal'; // Default: Normal Rectangular Grid Swap
+    this.selectedImageId = this.sampleImages[0].id;
+    this.selectedMode = 'normal'; // Default: Normal Grid Swap
     this.selectedDifficulty = 'normal'; // 'easy', 'normal', 'hard', 'expert'
 
     this.render();
-    this.loadCustomImages();
+    this.loadCustomAndCachedImages();
   }
 
-  async loadCustomImages() {
+  async loadCustomAndCachedImages() {
     try {
-      this.customImages = await ImageStore.getAllImages();
+      const records = await ImageStore.getAllImages();
+      this.customImages = records.filter(r => r.isCustom);
+      
+      // Track all cached IDs in IndexedDB
+      this.cachedIds = new Set(records.map(r => r.id));
+
       this.updateGalleryGrid();
     } catch (err) {
-      console.warn('[HomeView] Failed to load custom images from IndexedDB:', err);
+      console.warn('[HomeView] Failed to load cached images from IndexedDB:', err);
     }
   }
 
@@ -42,13 +64,13 @@ export class HomeView {
     this.element.className = 'view home-view active';
 
     this.element.innerHTML = `
-      <!-- Top Header Navbar with Centered Start CTA -->
+      <!-- Top Header Navbar with Centered Start CTA & Segmented Controls -->
       <header class="home-header">
         <div class="nav-left">
-          <h1 class="home-title">PixelCraft PWA</h1>
+          <h1 class="home-title">Pick and Play</h1>
         </div>
 
-        <!-- Center: Prominent Start Capsule CTA -->
+        <!-- Center: Start Capsule CTA -->
         <div class="nav-center">
           <button class="btn btn-primary nav-start-btn" id="btn-start">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
@@ -57,33 +79,32 @@ export class HomeView {
         </div>
 
         <div class="nav-right">
-          <!-- Desktop Navbar Dropdown Selectors -->
-          <div class="nav-select-group">
-            <div class="custom-select-wrap">
-              <select class="nav-select" id="nav-mode-select" title="Puzzle Mode">
-                <option value="normal" selected>Mode: Normal (Grid Swap)</option>
-                <option value="jigsaw">Mode: Jigsaw (Interlocking)</option>
+          <!-- Sleek Segmented Capsule Navbar Group -->
+          <div class="nav-segmented-capsule nav-select-group">
+            <div class="custom-select-wrap" style="border-right: 1px solid var(--border-subtle);">
+              <select class="nav-select nav-segmented-select" id="nav-mode-select" title="Puzzle Mode">
+                <option value="normal" selected>Mode: Normal</option>
+                <option value="jigsaw">Mode: Jigsaw</option>
               </select>
             </div>
 
-            <div class="custom-select-wrap">
-              <select class="nav-select" id="nav-diff-select" title="Difficulty Level">
-                <option value="easy">Diff: Easy (9)</option>
-                <option value="normal" selected>Diff: Normal (16)</option>
-                <option value="hard">Diff: Hard (25)</option>
-                <option value="expert">Diff: Expert (36)</option>
+            <div class="custom-select-wrap" style="border-right: 1px solid var(--border-subtle);">
+              <select class="nav-select nav-segmented-select" id="nav-diff-select" title="Difficulty Level">
+                <option value="easy">Easy (9)</option>
+                <option value="normal" selected>Normal (16)</option>
+                <option value="hard">Hard (25)</option>
+                <option value="expert">Expert (36)</option>
               </select>
             </div>
-          </div>
 
-          <!-- Light / Dark Capsule Theme Switcher -->
-          <div class="theme-toggle-capsule" id="home-theme-toggle" title="Toggle Light / Dark Mode">
-            <div class="theme-toggle-btn ${currentTheme === 'light' ? 'active' : ''}" data-theme-val="light" title="Light Mode">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-            </div>
-            <div class="theme-toggle-btn ${currentTheme === 'dark' ? 'active' : ''}" data-theme-val="dark" title="Dark Mode">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-            </div>
+            <!-- Single Dynamic Light / Dark Theme Toggle Button -->
+            <button class="nav-segmented-btn" id="home-theme-toggle-single" title="Toggle Light / Dark Theme">
+              ${currentTheme === 'dark' ? `
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+              ` : `
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+              `}
+            </button>
           </div>
 
           <!-- Mobile Hamburger Toggle Button -->
@@ -95,15 +116,28 @@ export class HomeView {
         </div>
       </header>
 
-      <!-- Main Section: Image Gallery -->
+      <!-- Main Section: Progressive Chunked Image Gallery -->
       <main>
         <section class="flat-section">
-          <h2 class="home-section-title">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-            Choose Mystery Puzzle
-          </h2>
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-3);">
+            <h2 class="home-section-title" style="margin-bottom: 0;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              Choose Mystery Puzzle
+            </h2>
+            <span id="gallery-count-badge" style="font-size: 0.78rem; font-weight: 600; color: var(--text-muted);">
+              Showing 6 of 23
+            </span>
+          </div>
+
           <div class="image-grid" id="image-grid">
             <!-- Grid cards populated dynamically in updateGalleryGrid -->
+          </div>
+
+          <!-- Progressive Chunk Load More Button -->
+          <div id="load-more-wrap" style="display: flex; justify-content: center; margin-top: var(--space-4);">
+            <button class="nav-start-btn" id="btn-load-more" style="min-height: 34px; padding: 0 1.2em; font-size: 0.8rem;">
+              Load More Puzzles (+6)
+            </button>
           </div>
         </section>
       </main>
@@ -150,24 +184,55 @@ export class HomeView {
     const grid = this.element.querySelector('#image-grid');
     if (!grid) return;
 
-    const allImages = [...this.sampleImages, ...this.customImages];
+    // Full catalog: Samples + Call Puzzles + Custom Uploads
+    const fullCatalog = [...this.sampleImages, ...this.callPuzzles, ...this.customImages];
+    const totalCount = fullCatalog.length;
+
+    // Slice current chunk to display
+    const visibleItems = fullCatalog.slice(0, this.displayedCount);
+
+    // Update count badge text
+    const countBadge = this.element.querySelector('#gallery-count-badge');
+    if (countBadge) {
+      countBadge.textContent = `Showing ${visibleItems.length} of ${totalCount}`;
+    }
+
+    // Hide or show Load More button
+    const loadMoreWrap = this.element.querySelector('#load-more-wrap');
+    if (loadMoreWrap) {
+      loadMoreWrap.style.display = this.displayedCount >= totalCount ? 'none' : 'flex';
+    }
 
     grid.innerHTML = `
-      ${allImages.map(img => `
-        <div class="image-card ${this.selectedImage === img.url || this.selectedImage === img.blob ? 'selected' : ''}" data-url="${img.url}" data-id="${img.id}">
-          <img src="${img.url}" alt="${img.name}" />
-          <div class="image-card-noise-overlay"></div>
-          <div class="image-card-mystery-badge">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            Mystery
+      ${visibleItems.map(img => {
+        const isSelected = (this.selectedImageId && this.selectedImageId === img.id) || (this.selectedImage === img.url || this.selectedImage === img.blob);
+        const isCached = this.cachedIds.has(img.id);
+
+        return `
+          <div class="image-card ${isSelected ? 'selected' : ''}" data-url="${img.url}" data-id="${img.id}" data-name="${img.name}" data-is-call="${img.isCallPuzzle || false}">
+            <img src="${img.url}" alt="${img.name}" loading="lazy" />
+            <div class="image-card-noise-overlay"></div>
+
+            ${isCached ? `
+              <div class="image-card-mystery-badge" style="background: rgba(16, 185, 129, 0.85) !important;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                Saved
+              </div>
+            ` : `
+              <div class="image-card-mystery-badge">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                Mystery
+              </div>
+            `}
+
+            ${img.isCustom ? `
+              <button class="image-card-delete" data-delete-id="${img.id}" title="Delete Custom Image">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              </button>
+            ` : ''}
           </div>
-          ${img.isCustom ? `
-            <button class="image-card-delete" data-delete-id="${img.id}" title="Delete Custom Image">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-            </button>
-          ` : ''}
-        </div>
-      `).join('')}
+        `;
+      }).join('')}
 
       <div class="image-card image-card-upload" id="upload-card">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -183,20 +248,34 @@ export class HomeView {
     const grid = this.element.querySelector('#image-grid');
     if (!grid) return;
 
-    // Image card selection
+    // Image card selection & automatic local caching
     const cards = grid.querySelectorAll('.image-card:not(.image-card-upload)');
     cards.forEach(card => {
-      card.addEventListener('click', (e) => {
-        if (e.target.closest('.image-card-delete')) return; // Ignore if delete button clicked
+      card.addEventListener('click', async (e) => {
+        if (e.target.closest('.image-card-delete')) return; // Ignore delete button clicks
 
         grid.querySelectorAll('.image-card').forEach(c => c.classList.remove('selected'));
         card.classList.add('selected');
         
-        const customImg = this.customImages.find(c => c.id === card.dataset.id);
+        const id = card.dataset.id;
+        const url = card.dataset.url;
+        const name = card.dataset.name;
+        const isCall = card.dataset.isCall === 'true';
+
+        this.selectedImageId = id;
+
+        // Check if custom image Blob
+        const customImg = this.customImages.find(c => c.id === id);
         if (customImg) {
-          this.selectedImage = customImg.blob; // Pass Blob directly to ImageProcessor
+          this.selectedImage = customImg.blob;
+        } else if (isCall) {
+          // Smart automatic IndexedDB local caching on selection!
+          const cached = await ImageStore.cacheRemoteImage(id, name, url);
+          this.selectedImage = cached.blob || cached.url;
+          this.cachedIds.add(id);
+          this.updateGalleryGrid(); // Update badge to "Saved"
         } else {
-          this.selectedImage = card.dataset.url;
+          this.selectedImage = url;
         }
       });
     });
@@ -210,8 +289,10 @@ export class HomeView {
         if (confirm('Delete this custom image from local storage?')) {
           await ImageStore.deleteImage(id);
           this.customImages = this.customImages.filter(img => img.id !== id);
-          if (this.selectedImage && typeof this.selectedImage !== 'string') {
+          this.cachedIds.delete(id);
+          if (this.selectedImageId === id) {
             this.selectedImage = this.sampleImages[0].url;
+            this.selectedImageId = this.sampleImages[0].id;
           }
           this.updateGalleryGrid();
         }
@@ -230,7 +311,9 @@ export class HomeView {
           try {
             const savedRecord = await ImageStore.saveImage(file);
             this.customImages.push(savedRecord);
+            this.cachedIds.add(savedRecord.id);
             this.selectedImage = savedRecord.blob;
+            this.selectedImageId = savedRecord.id;
             this.updateGalleryGrid();
           } catch (err) {
             console.error('[HomeView] Failed to save image into IndexedDB:', err);
@@ -241,18 +324,32 @@ export class HomeView {
   }
 
   bindEvents() {
-    // Theme toggle
-    const toggleBtns = this.element.querySelectorAll('.theme-toggle-btn');
-    toggleBtns.forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const targetTheme = btn.dataset.themeVal;
-        toggleBtns.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        SettingsStore.saveSettings({ theme: targetTheme });
-        SettingsStore.applyTheme(targetTheme);
+    // Load More Puzzles progressive chunk button
+    const btnLoadMore = this.element.querySelector('#btn-load-more');
+    if (btnLoadMore) {
+      btnLoadMore.addEventListener('click', () => {
+        this.displayedCount += this.chunkSize;
+        this.updateGalleryGrid();
       });
-    });
+    }
+
+    // Single Dynamic Theme toggle button
+    const singleThemeBtn = this.element.querySelector('#home-theme-toggle-single');
+    if (singleThemeBtn) {
+      singleThemeBtn.addEventListener('click', () => {
+        const current = SettingsStore.getSettings().theme || 'light';
+        const nextTheme = current === 'dark' ? 'light' : 'dark';
+        
+        SettingsStore.saveSettings({ theme: nextTheme });
+        SettingsStore.applyTheme(nextTheme);
+
+        singleThemeBtn.innerHTML = nextTheme === 'dark' ? `
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        ` : `
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        `;
+      });
+    }
 
     // Mode dropdown selects
     const desktopMode = this.element.querySelector('#nav-mode-select');
@@ -295,10 +392,19 @@ export class HomeView {
 
     // Start puzzle button
     const btnStart = this.element.querySelector('#btn-start');
-    btnStart.addEventListener('click', () => {
+    btnStart.addEventListener('click', async () => {
       if (this.onStartGame) {
+        let finalImage = this.selectedImage;
+
+        // If selected image is a call puzzle URL, ensure locally cached in IndexedDB before launching
+        if (typeof finalImage === 'string' && finalImage.includes('/call/')) {
+          const id = this.selectedImageId || 'call_puzzle_1';
+          const cached = await ImageStore.cacheRemoteImage(id, 'Call Puzzle', finalImage);
+          finalImage = cached.blob || cached.url;
+        }
+
         this.onStartGame({
-          imageUrl: this.selectedImage || this.sampleImages[0].url,
+          imageUrl: finalImage,
           mode: this.selectedMode,
           difficulty: this.selectedDifficulty
         });

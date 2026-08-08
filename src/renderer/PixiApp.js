@@ -2,7 +2,7 @@ import { Application } from 'pixi.js';
 
 /**
  * PixiApp — PixiJS v8 Application Lifecycle Manager
- * Handles responsive canvas binding, DPR resolution scaling, and clean destruction.
+ * Handles responsive canvas binding, DPR resolution scaling, transparent theme inheritance, and clean destruction.
  */
 export class PixiApp {
   constructor() {
@@ -23,12 +23,12 @@ export class PixiApp {
 
     this.app = new Application();
     
-    // PixiJS v8 async initialization protocol
+    // PixiJS v8 async initialization protocol with 100% transparent background
     await this.app.init({
       resizeTo: containerElement,
       resolution: window.devicePixelRatio || 1,
       autoDensity: true,
-      backgroundColor: 0x0f141c, // Matches --bg-base theme color
+      backgroundAlpha: 0, // Transparent canvas background allowing CSS --bg-base theme to show through
       antialias: true
     });
 
@@ -47,7 +47,7 @@ export class PixiApp {
     this.setupResizeObserver();
 
     this.isInitialized = true;
-    console.log('[PixiApp] PixiJS engine initialized cleanly.');
+    console.log('[PixiApp] PixiJS engine initialized cleanly with transparent stage background.');
   }
 
   setupResizeObserver() {

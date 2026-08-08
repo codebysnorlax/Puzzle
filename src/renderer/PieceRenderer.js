@@ -2,7 +2,7 @@ import { Container, Sprite, Texture, Graphics, Rectangle } from 'pixi.js';
 import { JigsawShape } from '../puzzle/jigsaw/JigsawShape.js';
 
 /**
- * PieceRenderer — Visual rendering for Normal & Jigsaw pieces using PixiJS Sprites and Bezier Masks
+ * PieceRenderer — Visual rendering for Normal & Organic Jigsaw pieces using PixiJS Sprites & Unclipped Bezier Masks
  */
 export class PieceRenderer {
   /**
@@ -23,17 +23,16 @@ export class PieceRenderer {
     const frameW = baseTexture.width / cols;
     const frameH = baseTexture.height / rows;
 
-    // Safely clamp frame bounds to prevent boundary clipping
-    const frameX = Math.min(baseTexture.width - frameW, piece.col * frameW);
-    const frameY = Math.min(baseTexture.height - frameH, piece.row * frameH);
-
-    const croppedTexture = new Texture({
-      source: baseTexture.source,
-      frame: new Rectangle(frameX, frameY, frameW, frameH)
-    });
+    const origFrameX = Math.min(baseTexture.width - frameW, piece.col * frameW);
+    const origFrameY = Math.min(baseTexture.height - frameH, piece.row * frameH);
 
     if (mode === 'normal') {
       // 1. Normal Mode — Rectangular Tile
+      const croppedTexture = new Texture({
+        source: baseTexture.source,
+        frame: new Rectangle(origFrameX, origFrameY, frameW, frameH)
+      });
+
       const sprite = new Sprite(croppedTexture);
       sprite.width = piece.width;
       sprite.height = piece.height;
@@ -45,7 +44,33 @@ export class PieceRenderer {
       container.addChild(border);
 
     } else {
-      // 2. Jigsaw Mode — Interlocking Bezier Tab / Slot Masking
+      // 2. Jigsaw Mode — Organic Bezier Interlocking Mask & Margin-Expanded Unclipped Texture
+      const marginW = Math.round(piece.width * 0.35);
+      const marginH = Math.round(piece.height * 0.35);
+
+      const cropX = Math.max(0, origFrameX - marginW);
+      const cropY = Math.max(0, origFrameY - marginH);
+      const cropW = Math.min(baseTexture.width - cropX, frameW + marginW * 2);
+      const cropH = Math.min(baseTexture.height - cropY, frameH + marginH * 2);
+
+      const expandedTexture = new Texture({
+        source: baseTexture.source,
+        frame: new Rectangle(cropX, cropY, cropW, cropH)
+      });
+
+      const sprite = new Sprite(expandedTexture);
+      const scaleX = piece.width / frameW;
+      const scaleY = piece.height / frameH;
+
+      sprite.scale.set(scaleX, scaleY);
+
+      // Offset sprite so original frame (col * frameW, row * frameH) maps to container origin (0, 0)
+      const offsetX = (origFrameX - cropX) * scaleX;
+      const offsetY = (origFrameY - cropY) * scaleY;
+      sprite.x = -offsetX;
+      sprite.y = -offsetY;
+
+      // Bezier Curve Mask
       const mask = new Graphics();
       mask.beginPath();
       mask.moveTo(0, 0);
@@ -67,15 +92,12 @@ export class PieceRenderer {
       mask.closePath();
       mask.fill({ color: 0xffffff });
 
-      const sprite = new Sprite(croppedTexture);
-      sprite.width = piece.width;
-      sprite.height = piece.height;
       sprite.mask = mask;
 
       container.addChild(mask);
       container.addChild(sprite);
 
-      // Draw matching Bezier stroke outline
+      // Draw matching organic Bezier stroke outline
       const border = new Graphics();
       border.beginPath();
       border.moveTo(0, 0);
@@ -84,7 +106,7 @@ export class PieceRenderer {
       JigsawShape.drawEdge(border, piece.width, piece.height, 0, piece.height, bottomEdge);
       JigsawShape.drawEdge(border, 0, piece.height, 0, 0, leftEdge);
       border.closePath();
-      border.stroke({ width: 1.5, color: 0xffffff, alpha: 0.45 });
+      border.stroke({ width: 1.8, color: 0xffffff, alpha: 0.5 });
       container.addChild(border);
     }
 

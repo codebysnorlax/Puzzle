@@ -1,7 +1,7 @@
 import { SettingsStore } from '../storage/SettingsStore.js';
 
 /**
- * GameView — Active gameplay container with compact single-line HUD toolbar & Segmented Control Pill
+ * GameView — Active gameplay container with Segmented Capsule HUD toolbars & Single Dynamic Theme Toggle
  */
 export class GameView {
   constructor(container, { onBackToHome, onOpenSettings, onRestartGame, onPeekHint }) {
@@ -21,44 +21,47 @@ export class GameView {
     this.element.className = 'view game-view';
 
     this.element.innerHTML = `
-      <!-- Compact Single-Line Top Header HUD Toolbar -->
+      <!-- Compact Single-Line Top Header HUD Toolbar with Segmented Capsules -->
       <header class="game-hud">
-        <div style="display: flex; align-items: center; gap: 6px;">
-          <button class="btn btn-icon" id="hud-btn-back" title="Back to Home">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        <!-- Left: Back Button & Mode Badge grouped in Segmented Capsule -->
+        <div class="nav-segmented-capsule">
+          <button class="nav-segmented-btn" id="hud-btn-back" title="Back to Home">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
           </button>
-          <span class="hud-stat" id="hud-mode-badge" style="text-transform: capitalize; font-size: 0.75rem; font-weight: 600;">Normal</span>
+          <div class="nav-segmented-item" id="hud-mode-badge" style="text-transform: capitalize;">Normal</div>
         </div>
 
-        <div class="hud-stat-group">
-          <div class="hud-stat" title="Timer">
+        <!-- Center: Stats (Timer | Moves | Rating) grouped in Segmented Capsule -->
+        <div class="nav-segmented-capsule hud-stat-group">
+          <div class="nav-segmented-item" title="Timer">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             <span id="hud-timer">00:00</span>
           </div>
 
-          <div class="hud-stat" title="Total Moves">
+          <div class="nav-segmented-item" title="Total Moves">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 9l4 4 10-10"/></svg>
-            <span id="hud-moves">0 moves</span>
+            <span id="hud-moves">0m</span>
           </div>
 
-          <div class="hud-stat" title="Smart Performance Rating (1 - 100)" id="hud-rating-stat">
+          <div class="nav-segmented-item" title="Smart Performance Rating (1 - 100)" id="hud-rating-stat">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
             <span id="hud-rating">100/100</span>
           </div>
         </div>
 
-        <!-- Sleek Segmented Capsule Control Group Matching User Reference Design -->
+        <!-- Right: Actions (Hint | Theme | Restart | Settings) grouped in Segmented Capsule -->
         <div class="nav-segmented-capsule">
           <button class="nav-segmented-btn" id="hud-btn-hint" title="Peek Reference Hint">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
           </button>
 
-          <button class="nav-segmented-btn ${currentTheme === 'light' ? 'active' : ''}" id="game-theme-btn-light" title="Light Mode">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-          </button>
-
-          <button class="nav-segmented-btn ${currentTheme === 'dark' ? 'active' : ''}" id="game-theme-btn-dark" title="Dark Mode">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <!-- Single Dynamic Light / Dark Theme Toggle Button -->
+          <button class="nav-segmented-btn" id="hud-theme-toggle-single" title="Toggle Light / Dark Theme">
+            ${currentTheme === 'dark' ? `
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+            ` : `
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            `}
           </button>
 
           <button class="nav-segmented-btn" id="hud-btn-restart" title="Restart Puzzle">
@@ -89,18 +92,24 @@ export class GameView {
   }
 
   bindEvents() {
-    const lightBtn = this.element.querySelector('#game-theme-btn-light');
-    const darkBtn = this.element.querySelector('#game-theme-btn-dark');
+    const singleThemeBtn = this.element.querySelector('#hud-theme-toggle-single');
 
-    const switchTheme = (targetTheme) => {
-      if (lightBtn) lightBtn.classList.toggle('active', targetTheme === 'light');
-      if (darkBtn) darkBtn.classList.toggle('active', targetTheme === 'dark');
-      SettingsStore.saveSettings({ theme: targetTheme });
-      SettingsStore.applyTheme(targetTheme);
-    };
+    if (singleThemeBtn) {
+      singleThemeBtn.addEventListener('click', () => {
+        const current = SettingsStore.getSettings().theme || 'light';
+        const nextTheme = current === 'dark' ? 'light' : 'dark';
+        
+        SettingsStore.saveSettings({ theme: nextTheme });
+        SettingsStore.applyTheme(nextTheme);
 
-    if (lightBtn) lightBtn.addEventListener('click', () => switchTheme('light'));
-    if (darkBtn) darkBtn.addEventListener('click', () => switchTheme('dark'));
+        // Update button icon dynamically
+        singleThemeBtn.innerHTML = nextTheme === 'dark' ? `
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        ` : `
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        `;
+      });
+    }
 
     this.element.querySelector('#hud-btn-back').addEventListener('click', () => {
       if (this.onBackToHome) this.onBackToHome();
@@ -148,7 +157,6 @@ export class GameView {
       const badge = this.element.querySelector('#hud-mode-badge');
       if (badge) {
         const isMobile = window.innerWidth < 640;
-        // Avoid duplicate redundant mode string on mobile (e.g. Normal vs Normal (Normal))
         if (isMobile) {
           badge.textContent = mode;
         } else {
@@ -178,7 +186,6 @@ export class GameView {
       badge.textContent = `✓ Solved (${rating}/100)`;
       badge.style.background = 'var(--success)';
       badge.style.color = '#ffffff';
-      badge.style.borderColor = 'var(--success)';
     }
 
     const floatingBar = this.element.querySelector('#solved-floating-bar');
@@ -196,7 +203,6 @@ export class GameView {
     if (badge) {
       badge.style.background = '';
       badge.style.color = '';
-      badge.style.borderColor = '';
     }
 
     const floatingBar = this.element.querySelector('#solved-floating-bar');

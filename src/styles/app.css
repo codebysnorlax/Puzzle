@@ -1,4 +1,4 @@
-/* Presentation & Multi-Breakpoint Responsive Styles — Segmented Capsule Navbar & Custom Capsule Dropdowns */
+/* Presentation & Multi-Breakpoint Responsive Styles — Segmented Capsule HUD Toolbars & Subtle Small Mystery Blur */
 
 :root {
   --radius-pill: 9999px;
@@ -107,17 +107,71 @@
   color: var(--primary);
 }
 
+/* Transparent Start Puzzle CTA Button — Outline Stroke Only */
+.nav-start-btn {
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: transparent !important;
+  border: 1.5px solid var(--primary) !important;
+  border-radius: 0.9375em;
+  box-sizing: border-box;
+  color: var(--text-main) !important;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  line-height: normal;
+  margin: 0;
+  min-height: 38px;
+  min-width: 0;
+  outline: none;
+  padding: 0 1.6em;
+  text-align: center;
+  text-decoration: none;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  transition: none;
+}
+
+.nav-start-btn svg {
+  stroke: var(--primary);
+}
+
+.nav-start-btn:hover {
+  transform: none !important;
+  box-shadow: none !important;
+  background-color: transparent !important;
+  border-color: var(--primary) !important;
+  color: var(--text-main) !important;
+}
+
+.nav-start-btn:active {
+  transform: none !important;
+  box-shadow: none !important;
+}
+
 /* Sleek Segmented Capsule Navbar Toolbar (User Reference Design) */
 .nav-segmented-capsule {
   display: inline-flex;
   align-items: center;
-  background: #0b111e;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
   border-radius: 10px;
   overflow: hidden;
   padding: 0;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   flex-shrink: 0;
+}
+
+/* Dark mode override for segmented capsule */
+[data-theme="dark"] .nav-segmented-capsule {
+  background: #0b111e;
+  border-color: rgba(255, 255, 255, 0.14);
 }
 
 .nav-segmented-btn {
@@ -128,7 +182,7 @@
   height: 34px;
   background: transparent;
   border: none;
-  border-right: 1px solid rgba(255, 255, 255, 0.12);
+  border-right: 1px solid var(--border-subtle);
   color: var(--text-muted);
   cursor: pointer;
   transition: all var(--transition-fast);
@@ -137,18 +191,67 @@
   outline: none;
 }
 
+[data-theme="dark"] .nav-segmented-btn {
+  border-right-color: rgba(255, 255, 255, 0.12);
+}
+
 .nav-segmented-btn:last-child {
   border-right: none;
 }
 
 .nav-segmented-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #ffffff;
+  background: var(--bg-hover);
+  color: var(--text-main);
 }
 
 .nav-segmented-btn.active {
   color: var(--primary);
-  background: rgba(2, 132, 199, 0.2);
+  background: rgba(2, 132, 199, 0.15);
+}
+
+/* Segmented Text Items inside Capsule Toolbars */
+.nav-segmented-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 12px;
+  border-right: 1px solid var(--border-subtle);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-main);
+  white-space: nowrap;
+}
+
+[data-theme="dark"] .nav-segmented-item {
+  border-right-color: rgba(255, 255, 255, 0.12);
+}
+
+.nav-segmented-item:last-child {
+  border-right: none;
+}
+
+/* Segmented Select Dropdowns */
+.nav-segmented-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background: transparent !important;
+  color: var(--text-main);
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0 28px 0 12px;
+  height: 34px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  transition: all var(--transition-fast);
+}
+
+.nav-segmented-select:hover {
+  color: var(--primary);
 }
 
 /* Custom Sleek Capsule Dropdown Selector */
@@ -167,10 +270,10 @@
 .custom-select-wrap::after {
   content: '';
   position: absolute;
-  right: 14px;
+  right: 10px;
   top: 48%;
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   border-right: 2px solid var(--text-muted);
   border-bottom: 2px solid var(--text-muted);
   transform: translateY(-50%) rotate(45deg);
@@ -275,14 +378,6 @@
   gap: var(--space-3);
 }
 
-.nav-start-btn {
-  padding: 0 var(--space-6);
-  height: 38px;
-  font-size: 0.88rem;
-  font-weight: 700;
-  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.25);
-}
-
 .home-title {
   font-size: 1.35rem;
   font-weight: 700;
@@ -300,7 +395,7 @@
   color: var(--text-main);
 }
 
-/* Image Selection Gallery — Hard-to-Guess Mystery Filter */
+/* Image Selection Gallery — Subtle Small Blur (2.5px) + B&W Grayscale + Noise Overlay */
 .image-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
@@ -316,15 +411,15 @@
   cursor: pointer;
   border: 1px solid var(--border-subtle);
   transition: all var(--transition-fast);
-  background: var(--bg-elevated);
+  background: #0f172a !important; /* Locked dark slate background */
 }
 
 .image-card img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  /* Hard to guess at first glance: 6.5px blur + 1.8 contrast + 75% grayscale */
-  filter: blur(6.5px) contrast(1.8) grayscale(75%) brightness(0.85);
+  /* Tasteful Small Blur (2.5px) + B&W Grayscale Contrast + Noise Overlay */
+  filter: blur(2.5px) grayscale(100%) contrast(1.1) brightness(0.9);
   transition: filter var(--transition-normal);
 }
 
@@ -333,9 +428,9 @@
   transform: none;
 }
 
-/* Keep mystery state when selected — player must play to reveal color! */
+/* Keep subtle small blur when selected */
 .image-card.selected img {
-  filter: blur(6.5px) contrast(1.8) grayscale(75%) brightness(0.85);
+  filter: blur(2.5px) grayscale(100%) contrast(1.1) brightness(0.9);
 }
 
 .image-card.selected {
@@ -361,11 +456,11 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  background: rgba(15, 23, 42, 0.65);
+  background: rgba(15, 23, 42, 0.75) !important;
   backdrop-filter: blur(4px);
   padding: 3px 8px;
   border-radius: var(--radius-pill);
-  color: #ffffff;
+  color: #ffffff !important;
   font-weight: 600;
   font-size: 0.7rem;
   letter-spacing: 0.03em;
@@ -435,7 +530,7 @@
   gap: var(--space-1);
   border: 1px dashed var(--border-strong);
   color: var(--text-muted);
-  background: var(--bg-surface);
+  background: var(--bg-surface) !important;
 }
 
 .image-card-upload:hover {
@@ -474,7 +569,7 @@
   gap: var(--space-4);
 }
 
-/* Game View Header */
+/* Game View Header & Light Mode Theme Adaptability */
 .game-view {
   display: flex;
   flex-direction: column;
@@ -488,27 +583,21 @@
   justify-content: space-between;
   background: var(--bg-surface);
   border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-main);
   z-index: 10;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
 }
 
 .hud-stat-group {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: 0;
 }
 
 .hud-stat {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  background: var(--bg-elevated);
-  padding: 0.3rem 0.75rem;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--border-subtle);
-  font-size: 0.82rem;
-  font-weight: 500;
-  color: var(--text-main);
-  white-space: nowrap;
 }
 
 #puzzle-canvas-container {
@@ -518,6 +607,7 @@
   width: 100%;
   height: calc(100vh - var(--header-height));
   background: var(--bg-base);
+  transition: background var(--transition-fast);
 }
 
 /* Modals */
@@ -587,18 +677,13 @@
     display: none;
   }
 
-  .hud-stat-group {
-    gap: 4px;
-  }
-
-  .hud-stat {
-    padding: 0.2rem 0.45rem;
+  .nav-segmented-item {
+    padding: 0 8px;
     font-size: 0.72rem;
     height: 30px;
-    line-height: 1;
   }
 
-  .hud-stat svg {
+  .nav-segmented-item svg {
     width: 12px;
     height: 12px;
   }
@@ -608,8 +693,6 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    padding: 0.2rem 0.45rem;
-    font-size: 0.72rem;
   }
 
   .btn-icon {

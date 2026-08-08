@@ -23,20 +23,22 @@ export class PuzzleRenderer {
   }
 
   /**
-   * Render dark anti-cheat board target slot backdrop with subtle slot guidelines
+   * Render dark or light anti-cheat board target slot backdrop with subtle slot guidelines
    */
   renderBoardTarget(boardLayout, mode = 'normal', cols = 4, rows = 4) {
     this.boardContainer.removeChildren();
 
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+
     const shadow = new Graphics();
     shadow.roundRect(boardLayout.x + 4, boardLayout.y + 4, boardLayout.width, boardLayout.height, 10);
-    shadow.fill({ color: 0x000000, alpha: 0.45 });
+    shadow.fill({ color: 0x000000, alpha: isLight ? 0.12 : 0.45 });
 
-    // Anti-cheat dark surface backdrop
+    // Anti-cheat surface backdrop adapting to Light/Dark theme
     const boardBackdrop = new Graphics();
     boardBackdrop.roundRect(boardLayout.x, boardLayout.y, boardLayout.width, boardLayout.height, 10);
-    boardBackdrop.fill({ color: 0x111827, alpha: 0.95 });
-    boardBackdrop.stroke({ width: 2, color: 0x374151, alpha: 0.8 });
+    boardBackdrop.fill({ color: isLight ? 0xe2e8f0 : 0x111827, alpha: 0.95 });
+    boardBackdrop.stroke({ width: 2, color: isLight ? 0xc0ccda : 0x374151, alpha: 0.8 });
 
     // Subtle slot grid guidelines
     const gridLines = new Graphics();
@@ -53,7 +55,7 @@ export class PuzzleRenderer {
         );
       }
     }
-    gridLines.stroke({ width: 1, color: 0xffffff, alpha: 0.08 });
+    gridLines.stroke({ width: 1, color: isLight ? 0x64748b : 0xffffff, alpha: isLight ? 0.25 : 0.08 });
 
     this.boardContainer.addChild(shadow);
     this.boardContainer.addChild(boardBackdrop);
