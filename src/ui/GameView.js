@@ -1,11 +1,12 @@
 /**
- * GameView — Active gameplay container, top HUD bar, and reference image drawer
+ * GameView — Active gameplay container with compact top HUD header bar
  */
 export class GameView {
-  constructor(container, onBackToHome, onOpenSettings) {
+  constructor(container, { onBackToHome, onOpenSettings, onRestartGame }) {
     this.container = container;
     this.onBackToHome = onBackToHome;
     this.onOpenSettings = onOpenSettings;
+    this.onRestartGame = onRestartGame;
 
     this.render();
   }
@@ -15,41 +16,50 @@ export class GameView {
     this.element.className = 'view game-view';
 
     this.element.innerHTML = `
+      <!-- Compact Top Header HUD Toolbar -->
       <header class="game-hud">
-        <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <div style="display: flex; align-items: center; gap: var(--space-3);">
           <button class="btn btn-icon" id="hud-btn-back" title="Back to Home">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
           </button>
-          <span class="hud-stat" id="hud-mode-badge" style="text-transform: capitalize;">Normal</span>
+          <span class="hud-stat" id="hud-mode-badge" style="text-transform: capitalize; font-size: 0.8rem; font-weight: 600;">Normal</span>
         </div>
 
-        <div style="display: flex; align-items: center; gap: 1rem;">
-          <div class="hud-stat">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <div class="hud-stat-group">
+          <div class="hud-stat" title="Timer">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             <span id="hud-timer">00:00</span>
           </div>
 
-          <div class="hud-stat">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 9l4 4 10-10"/></svg>
+          <div class="hud-stat" title="Total Moves">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 9l4 4 10-10"/></svg>
             <span id="hud-moves">0 moves</span>
+          </div>
+
+          <div class="hud-stat" title="Total Distance">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            <span id="hud-dist">0 px</span>
           </div>
         </div>
 
-        <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <div style="display: flex; align-items: center; gap: var(--space-2);">
           <button class="btn btn-icon" id="hud-btn-ref" title="Toggle Reference Image">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          </button>
+          <button class="btn btn-icon" id="hud-btn-restart" title="Restart Puzzle">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6"/><path d="M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
           </button>
           <button class="btn btn-icon" id="hud-btn-settings" title="Settings">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
           </button>
         </div>
       </header>
 
-      <!-- Pixi Canvas Target Mount Point -->
+      <!-- Pixi Canvas Target Viewport -->
       <div id="puzzle-canvas-container">
-        <!-- Floating Reference Image Modal/Preview -->
-        <div id="reference-preview" class="glass-card" style="display: none; position: absolute; bottom: 20px; right: 20px; width: 220px; padding: 0.5rem; z-index: 50;">
-          <div style="font-size: 0.75rem; font-weight: 600; color: var(--color-text-muted); margin-bottom: 0.25rem;">Reference Image</div>
+        <!-- Floating Reference Image Preview -->
+        <div id="reference-preview" class="surface-card" style="display: none; position: absolute; bottom: 16px; right: 16px; width: 180px; padding: var(--space-2); z-index: 50;">
+          <div style="font-size: 0.72rem; font-weight: 600; color: var(--text-muted); margin-bottom: var(--space-1);">Reference Image</div>
           <img id="ref-img-element" src="" alt="Reference" style="width: 100%; height: auto; border-radius: var(--radius-sm);" />
         </div>
       </div>
@@ -62,6 +72,10 @@ export class GameView {
   bindEvents() {
     this.element.querySelector('#hud-btn-back').addEventListener('click', () => {
       if (this.onBackToHome) this.onBackToHome();
+    });
+
+    this.element.querySelector('#hud-btn-restart').addEventListener('click', () => {
+      if (this.onRestartGame) this.onRestartGame();
     });
 
     this.element.querySelector('#hud-btn-settings').addEventListener('click', () => {
@@ -85,6 +99,9 @@ export class GameView {
     }
     if (moves !== undefined) {
       this.element.querySelector('#hud-moves').textContent = `${moves} moves`;
+    }
+    if (distance !== undefined) {
+      this.element.querySelector('#hud-dist').textContent = `${distance} px`;
     }
     if (imageUrl) {
       this.element.querySelector('#ref-img-element').src = imageUrl;

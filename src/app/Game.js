@@ -76,8 +76,11 @@ export class Game {
       this.gameView.updateHUD({ timeStr });
     });
 
-    this.movementTracker = new MovementTracker(({ moveCount }) => {
-      this.gameView.updateHUD({ moves: moveCount });
+    this.movementTracker = new MovementTracker(({ moveCount, totalDistance }) => {
+      this.gameView.updateHUD({
+        moves: moveCount,
+        distance: Math.round(totalDistance)
+      });
     });
 
     // 6. Instantiate Input Handler

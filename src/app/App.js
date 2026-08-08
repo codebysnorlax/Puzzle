@@ -34,11 +34,11 @@ export class App {
     this.homeView = new HomeView(this.container, (config) => this.startGame(config));
 
     // 2. Game View
-    this.gameView = new GameView(
-      this.container,
-      () => this.showHome(),
-      () => this.settingsView.show()
-    );
+    this.gameView = new GameView(this.container, {
+      onBackToHome: () => this.showHome(),
+      onOpenSettings: () => this.settingsView.show(),
+      onRestartGame: () => this.restartGame()
+    });
 
     // 3. Result View Modal
     this.resultView = new ResultView(this.container, {
