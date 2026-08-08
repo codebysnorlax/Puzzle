@@ -17,6 +17,7 @@ export class PuzzleRenderer {
     this.stage.addChild(this.piecesContainer);
 
     this.pieceSpritesMap = new Map(); // piece.id -> Container
+    this.tickerCallback = null;
   }
 
   /**
@@ -55,6 +56,39 @@ export class PuzzleRenderer {
   }
 
   /**
+   * Play pulsing victory border animation around completed puzzle
+   */
+  playCompletionAnimation(boardLayout) {
+    const victoryGlow = new Graphics();
+    this.boardContainer.addChild(victoryGlow);
+
+    let alpha = 0.4;
+    let growing = true;
+
+    this.tickerCallback = () => {
+      if (growing) {
+        alpha += 0.02;
+        if (alpha >= 1.0) growing = false;
+      } else {
+        alpha -= 0.02;
+        if (alpha <= 0.3) growing = true;
+      }
+
+      victoryGlow.clear();
+      victoryGlow.roundRect(
+        boardLayout.x - 3,
+        boardLayout.y - 3,
+        boardLayout.width + 6,
+        boardLayout.height + 6,
+        10
+      );
+      victoryGlow.stroke({ width: 4, color: 0x10b981, alpha: alpha });
+    };
+
+    this.pixiApp.app.ticker.add(this.tickerCallback);
+  }
+
+  /**
    * Re-render board target and update sprite positions on viewport resize
    */
   resize(puzzle, imageCanvas, mode = 'normal') {
@@ -84,6 +118,10 @@ export class PuzzleRenderer {
   }
 
   clear() {
+    if (this.tickerCallback) {
+      this.pixiApp.app.ticker.remove(this.tickerCallback);
+      this.tickerCallback = null;
+    }
     this.piecesContainer.removeChildren();
     this.boardContainer.removeChildren();
     this.pieceSpritesMap.clear();

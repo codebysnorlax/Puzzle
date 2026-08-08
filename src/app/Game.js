@@ -3,6 +3,7 @@ import { JigsawPuzzle } from '../puzzle/jigsaw/JigsawPuzzle.js';
 import { PuzzleRenderer } from '../renderer/PuzzleRenderer.js';
 import { Timer } from '../game/Timer.js';
 import { MovementTracker } from '../game/MovementTracker.js';
+import { calculateSmartRating } from '../game/SmartRating.js';
 import { InputHandler } from './Input.js';
 import { GameHistory } from '../storage/GameHistory.js';
 import { GameStates } from './GameState.js';
@@ -77,9 +78,16 @@ export class Game {
     });
 
     this.movementTracker = new MovementTracker(({ moveCount, totalDistance }) => {
+      const currentRating = calculateSmartRating({
+        moveCount,
+        totalDistance,
+        timeSeconds: this.timer ? this.timer.getElapsedSeconds() : 0,
+        totalPieces: this.puzzle ? this.puzzle.pieces.length : 16
+      });
+
       this.gameView.updateHUD({
         moves: moveCount,
-        distance: Math.round(totalDistance)
+        rating: currentRating
       });
     });
 
@@ -130,11 +138,28 @@ export class Game {
     const finalMoves = this.movementTracker.moveCount;
     const finalDistance = Math.round(this.movementTracker.totalDistance);
 
-    console.log(`[Game] 🎉 Puzzle Complete! Time: ${finalTimeStr}, Moves: ${finalMoves}, Dist: ${finalDistance}px`);
+    const finalRating = calculateSmartRating({
+      moveCount: finalMoves,
+      totalDistance: finalDistance,
+      timeSeconds: Math.round(elapsedMs / 1000),
+      totalPieces: this.puzzle.pieces.length
+    });
+
+    console.log(`[Game] 🎉 Puzzle Complete! Time: ${finalTimeStr}, Moves: ${finalMoves}, Smart Rating: ${finalRating}/100`);
 
     this.app.stateMachine.transitionTo(GameStates.SOLVED);
 
-    // Save match result into IndexedDB
+    // 1. Play victory glowing animated border on Pixi canvas
+    if (this.renderer) {
+      this.renderer.playCompletionAnimation(this.puzzle.boardLayout);
+    }
+
+    // 2. Show non-blocking status feedback in HUD and floating bar
+    if (this.gameView) {
+      this.gameView.showCompletionState({ rating: finalRating });
+    }
+
+    // 3. Save match result into IndexedDB
     try {
       await GameHistory.saveMatch({
         imageName: 'Puzzle Image',
@@ -144,18 +169,12 @@ export class Game {
         timeMs: elapsedMs,
         moveCount: finalMoves,
         totalDistance: finalDistance,
+        rating: finalRating,
         seed: String(this.puzzle.seed)
       });
     } catch (e) {
       console.warn('[Game] Failed to save history to IndexedDB:', e);
     }
-
-    // Show completion modal dialog
-    this.resultView.showStats({
-      timeStr: finalTimeStr,
-      moves: finalMoves,
-      distanceStr: `${finalDistance.toLocaleString()} px`
-    });
   }
 
   destroy() {
@@ -165,6 +184,7 @@ export class Game {
     if (this.timer) this.timer.stop();
     if (this.inputHandler) this.inputHandler.destroy();
     if (this.renderer) this.renderer.clear();
+    if (this.gameView) this.gameView.hideCompletionState();
 
     this.puzzle = null;
     this.renderer = null;

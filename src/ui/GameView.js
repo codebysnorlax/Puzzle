@@ -1,7 +1,7 @@
 import { SettingsStore } from '../storage/SettingsStore.js';
 
 /**
- * GameView — Active gameplay container with compact top HUD header bar & Light/Dark theme switcher
+ * GameView — Active gameplay container with HUD header bar & non-blocking completion feedback
  */
 export class GameView {
   constructor(container, { onBackToHome, onOpenSettings, onRestartGame }) {
@@ -40,9 +40,9 @@ export class GameView {
             <span id="hud-moves">0 moves</span>
           </div>
 
-          <div class="hud-stat" title="Total Distance">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-            <span id="hud-dist">0 px</span>
+          <div class="hud-stat" title="Smart Performance Rating (1 - 100)" id="hud-rating-stat">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            <span id="hud-rating">100/100</span>
           </div>
         </div>
 
@@ -76,6 +76,15 @@ export class GameView {
           <div style="font-size: 0.72rem; font-weight: 600; color: var(--text-muted); margin-bottom: var(--space-1);">Reference Image</div>
           <img id="ref-img-element" src="" alt="Reference" style="width: 100%; height: auto; border-radius: var(--radius-sm);" />
         </div>
+
+        <!-- Non-Blocking Solved Action Bar -->
+        <div id="solved-floating-bar" style="display: none; position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 60;">
+          <div style="background: var(--bg-surface); border: 1px solid var(--border-strong); border-radius: var(--radius-pill); padding: 0.4rem 1.2rem; display: flex; align-items: center; gap: var(--space-3); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);">
+            <span id="solved-floating-text" style="font-weight: 700; color: var(--success); font-size: 0.88rem;">🎉 Solved! (95/100)</span>
+            <button class="btn btn-primary" id="solved-btn-restart" style="min-height: 32px; padding: 0 var(--space-4); font-size: 0.8rem;">Play Again</button>
+            <button class="btn btn-secondary" id="solved-btn-home" style="min-height: 32px; padding: 0 var(--space-4); font-size: 0.8rem;">Gallery</button>
+          </div>
+        </div>
       </div>
     `;
 
@@ -101,6 +110,7 @@ export class GameView {
     });
 
     this.element.querySelector('#hud-btn-restart').addEventListener('click', () => {
+      this.hideCompletionState();
       if (this.onRestartGame) this.onRestartGame();
     });
 
@@ -114,9 +124,27 @@ export class GameView {
       const isVisible = refPreview.style.display !== 'none';
       refPreview.style.display = isVisible ? 'none' : 'block';
     });
+
+    // Solved floating bar actions
+    const solvedRestart = this.element.querySelector('#solved-btn-restart');
+    const solvedHome = this.element.querySelector('#solved-btn-home');
+
+    if (solvedRestart) {
+      solvedRestart.addEventListener('click', () => {
+        this.hideCompletionState();
+        if (this.onRestartGame) this.onRestartGame();
+      });
+    }
+
+    if (solvedHome) {
+      solvedHome.addEventListener('click', () => {
+        this.hideCompletionState();
+        if (this.onBackToHome) this.onBackToHome();
+      });
+    }
   }
 
-  updateHUD({ mode, difficulty, timeStr, moves, distance, imageUrl }) {
+  updateHUD({ mode, difficulty, timeStr, moves, rating, imageUrl }) {
     if (!this.element) return;
 
     if (mode && difficulty) {
@@ -131,9 +159,9 @@ export class GameView {
       const movesEl = this.element.querySelector('#hud-moves');
       if (movesEl) movesEl.textContent = `${moves} moves`;
     }
-    if (distance !== undefined) {
-      const distEl = this.element.querySelector('#hud-dist');
-      if (distEl) distEl.textContent = `${distance} px`;
+    if (rating !== undefined) {
+      const ratingEl = this.element.querySelector('#hud-rating');
+      if (ratingEl) ratingEl.textContent = `${rating}/100`;
     }
     if (imageUrl) {
       const refImg = this.element.querySelector('#ref-img-element');
@@ -145,6 +173,39 @@ export class GameView {
         }
       }
     }
+  }
+
+  showCompletionState({ rating = 100 }) {
+    if (!this.element) return;
+
+    const badge = this.element.querySelector('#hud-mode-badge');
+    if (badge) {
+      badge.textContent = `✓ Solved! (${rating}/100)`;
+      badge.style.background = 'var(--success)';
+      badge.style.color = '#ffffff';
+      badge.style.borderColor = 'var(--success)';
+    }
+
+    const floatingBar = this.element.querySelector('#solved-floating-bar');
+    const floatingText = this.element.querySelector('#solved-floating-text');
+    if (floatingBar && floatingText) {
+      floatingText.textContent = `🎉 Solved! Rating: ${rating}/100`;
+      floatingBar.style.display = 'block';
+    }
+  }
+
+  hideCompletionState() {
+    if (!this.element) return;
+
+    const badge = this.element.querySelector('#hud-mode-badge');
+    if (badge) {
+      badge.style.background = '';
+      badge.style.color = '';
+      badge.style.borderColor = '';
+    }
+
+    const floatingBar = this.element.querySelector('#solved-floating-bar');
+    if (floatingBar) floatingBar.style.display = 'none';
   }
 
   getCanvasContainer() {
