@@ -1,10 +1,10 @@
 /**
- * SettingsStore — Manages UI preferences and light configuration in localStorage
+ * SettingsStore — Manages UI preferences and theme persistence in localStorage
  */
 const SETTINGS_KEY = 'pixelcraft_pwa_settings';
 
 const DEFAULT_SETTINGS = {
-  theme: 'dark',
+  theme: 'dark', // 'dark' | 'light'
   sound: true,
   snapSensitivity: 'normal', // 'strict' (15px), 'normal' (25px), 'relaxed' (40px)
   lastDifficulty: 'normal',
@@ -27,11 +27,21 @@ export class SettingsStore {
       const current = this.getSettings();
       const updated = { ...current, ...settings };
       localStorage.setItem(SETTINGS_KEY, JSON.stringify(updated));
+      if (updated.theme) {
+        this.applyTheme(updated.theme);
+      }
       return updated;
     } catch (e) {
       console.warn('[SettingsStore] Failed to write settings to localStorage', e);
       return DEFAULT_SETTINGS;
     }
+  }
+
+  static applyTheme(theme) {
+    const activeTheme = theme || this.getSettings().theme || 'dark';
+    document.documentElement.setAttribute('data-theme', activeTheme);
+    console.log(`[SettingsStore] Theme applied: ${activeTheme}`);
+    return activeTheme;
   }
 
   static getSnapThreshold() {

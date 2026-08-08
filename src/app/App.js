@@ -6,6 +6,7 @@ import { SettingsView } from '../ui/SettingsView.js';
 import { PixiApp } from '../renderer/PixiApp.js';
 import { ImageProcessor } from '../image/ImageProcessor.js';
 import { Game } from './Game.js';
+import { SettingsStore } from '../storage/SettingsStore.js';
 
 export class App {
   constructor(rootContainer) {
@@ -14,6 +15,9 @@ export class App {
     this.pixiApp = new PixiApp();
     this.activeGame = null;
     
+    // Apply stored Light/Dark theme on boot
+    SettingsStore.applyTheme();
+
     this.activeConfig = {
       imageUrl: null,
       mode: 'normal',

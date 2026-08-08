@@ -1,4 +1,4 @@
-/* Modern CSS Reset */
+/* Modern Responsive Reset */
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -10,11 +10,12 @@ html, body {
   width: 100%;
   overflow: hidden;
   font-family: var(--font-sans);
-  background-color: var(--color-bg);
-  color: var(--color-text);
+  background-color: var(--bg-base);
+  color: var(--text-main);
   -webkit-tap-highlight-color: transparent;
   user-select: none;
   -webkit-user-select: none;
+  -webkit-font-smoothing: antialiased;
 }
 
 button, input, select {
@@ -27,6 +28,7 @@ button, input, select {
 
 button {
   cursor: pointer;
+  min-height: var(--touch-target);
 }
 
 img, svg {
