@@ -48,8 +48,12 @@ export class Timer {
     }
   }
 
+  getElapsedSeconds() {
+    return Math.floor(this.elapsedMs / 1000);
+  }
+
   getFormattedTime() {
-    const totalSeconds = Math.floor(this.elapsedMs / 1000);
+    const totalSeconds = this.getElapsedSeconds();
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = totalSeconds % 60;
 
