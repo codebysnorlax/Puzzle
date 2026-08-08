@@ -1,7 +1,7 @@
 import { SettingsStore } from '../storage/SettingsStore.js';
 
 /**
- * HomeView — Clean editorial menu with Navbar Dropdowns & Mobile Hamburger Drawer
+ * HomeView — Clean editorial menu with centered Navbar Start CTA & Custom Selectors
  */
 export class HomeView {
   constructor(container, onStartGame) {
@@ -30,27 +30,38 @@ export class HomeView {
     this.element.className = 'view home-view active';
 
     this.element.innerHTML = `
-      <!-- Top Header Navbar -->
+      <!-- Top Header Navbar with Centered Start CTA -->
       <header class="home-header">
-        <div>
+        <div class="nav-left">
           <h1 class="home-title">PixelCraft PWA</h1>
-          <p class="home-subtitle">Local-First Image Puzzle</p>
         </div>
 
-        <div style="display: flex; align-items: center; gap: var(--space-3);">
+        <!-- Center: Prominent Start Capsule CTA -->
+        <div class="nav-center">
+          <button class="btn btn-primary nav-start-btn" id="btn-start">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Start Puzzle
+          </button>
+        </div>
+
+        <div class="nav-right">
           <!-- Desktop Navbar Dropdown Selectors -->
           <div class="nav-select-group">
-            <select class="nav-select" id="nav-mode-select" title="Puzzle Mode">
-              <option value="normal" selected>Mode: Normal (Grid Swap)</option>
-              <option value="jigsaw">Mode: Jigsaw (Interlocking)</option>
-            </select>
+            <div class="custom-select-wrap">
+              <select class="nav-select" id="nav-mode-select" title="Puzzle Mode">
+                <option value="normal" selected>Mode: Normal (Grid Swap)</option>
+                <option value="jigsaw">Mode: Jigsaw (Interlocking)</option>
+              </select>
+            </div>
 
-            <select class="nav-select" id="nav-diff-select" title="Difficulty Level">
-              <option value="easy">Diff: Easy (9)</option>
-              <option value="normal" selected>Diff: Normal (16)</option>
-              <option value="hard">Diff: Hard (25)</option>
-              <option value="expert">Diff: Expert (36)</option>
-            </select>
+            <div class="custom-select-wrap">
+              <select class="nav-select" id="nav-diff-select" title="Difficulty Level">
+                <option value="easy">Diff: Easy (9)</option>
+                <option value="normal" selected>Diff: Normal (16)</option>
+                <option value="hard">Diff: Hard (25)</option>
+                <option value="expert">Diff: Expert (36)</option>
+              </select>
+            </div>
           </div>
 
           <!-- Light / Dark Capsule Theme Switcher -->
@@ -72,9 +83,9 @@ export class HomeView {
         </div>
       </header>
 
-      <!-- Main Section: Image Gallery & Start Button -->
+      <!-- Main Section: Image Gallery -->
       <main>
-        <section class="flat-section" style="border-bottom: none;">
+        <section class="flat-section">
           <h2 class="home-section-title">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
             Choose Image
@@ -92,14 +103,6 @@ export class HomeView {
             </div>
           </div>
         </section>
-
-        <!-- Start Capsule Button -->
-        <div style="text-align: center; margin-top: var(--space-6);">
-          <button class="btn btn-primary" id="btn-start" style="padding: 0 var(--space-10); min-height: 44px; font-size: 0.95rem;">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-            Start Puzzle
-          </button>
-        </div>
       </main>
 
       <!-- Mobile Hamburger Drawer Overlay -->
@@ -114,18 +117,22 @@ export class HomeView {
 
           <div style="display: flex; flex-direction: column; gap: var(--space-3);">
             <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">Puzzle Mode</label>
-            <select class="nav-select" id="mobile-mode-select" style="width: 100%; height: 40px;">
-              <option value="normal" selected>Normal (Grid Swap)</option>
-              <option value="jigsaw">Jigsaw (Interlocking)</option>
-            </select>
+            <div class="custom-select-wrap">
+              <select class="nav-select" id="mobile-mode-select" style="width: 100%;">
+                <option value="normal" selected>Normal (Grid Swap)</option>
+                <option value="jigsaw">Jigsaw (Interlocking)</option>
+              </select>
+            </div>
 
             <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-top: var(--space-2);">Difficulty Level</label>
-            <select class="nav-select" id="mobile-diff-select" style="width: 100%; height: 40px;">
-              <option value="easy">Easy (9)</option>
-              <option value="normal" selected>Normal (16)</option>
-              <option value="hard">Hard (25)</option>
-              <option value="expert">Expert (36)</option>
-            </select>
+            <div class="custom-select-wrap">
+              <select class="nav-select" id="mobile-diff-select" style="width: 100%;">
+                <option value="easy">Easy (9)</option>
+                <option value="normal" selected>Normal (16)</option>
+                <option value="hard">Hard (25)</option>
+                <option value="expert">Expert (36)</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
