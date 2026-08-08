@@ -21,22 +21,41 @@ export class PuzzleRenderer {
   }
 
   /**
-   * Render board target slot grid backdrop
+   * Render dark anti-cheat board target slot backdrop with subtle slot guidelines
    */
-  renderBoardTarget(boardLayout, mode = 'normal') {
+  renderBoardTarget(boardLayout, mode = 'normal', cols = 4, rows = 4) {
     this.boardContainer.removeChildren();
 
     const shadow = new Graphics();
-    shadow.roundRect(boardLayout.x + 3, boardLayout.y + 3, boardLayout.width, boardLayout.height, 8);
-    shadow.fill({ color: 0x000000, alpha: 0.3 });
+    shadow.roundRect(boardLayout.x + 4, boardLayout.y + 4, boardLayout.width, boardLayout.height, 10);
+    shadow.fill({ color: 0x000000, alpha: 0.45 });
 
-    const boardOutline = new Graphics();
-    boardOutline.roundRect(boardLayout.x, boardLayout.y, boardLayout.width, boardLayout.height, 8);
-    boardOutline.fill({ color: 0x18202c, alpha: 0.6 });
-    boardOutline.stroke({ width: 2, color: 0x3b4d68, alpha: 0.8 });
+    // Anti-cheat dark surface backdrop
+    const boardBackdrop = new Graphics();
+    boardBackdrop.roundRect(boardLayout.x, boardLayout.y, boardLayout.width, boardLayout.height, 10);
+    boardBackdrop.fill({ color: 0x111827, alpha: 0.95 });
+    boardBackdrop.stroke({ width: 2, color: 0x374151, alpha: 0.8 });
+
+    // Subtle slot grid guidelines
+    const gridLines = new Graphics();
+    const cellW = boardLayout.width / cols;
+    const cellH = boardLayout.height / rows;
+
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        gridLines.rect(
+          boardLayout.x + c * cellW,
+          boardLayout.y + r * cellH,
+          cellW,
+          cellH
+        );
+      }
+    }
+    gridLines.stroke({ width: 1, color: 0xffffff, alpha: 0.08 });
 
     this.boardContainer.addChild(shadow);
-    this.boardContainer.addChild(boardOutline);
+    this.boardContainer.addChild(boardBackdrop);
+    this.boardContainer.addChild(gridLines);
   }
 
   /**
@@ -44,7 +63,7 @@ export class PuzzleRenderer {
    */
   async renderPuzzle(puzzle, imageCanvas, mode = 'normal') {
     this.clear();
-    this.renderBoardTarget(puzzle.boardLayout, mode);
+    this.renderBoardTarget(puzzle.boardLayout, mode, puzzle.cols, puzzle.rows);
 
     const baseTexture = Texture.from(imageCanvas);
 
