@@ -99,6 +99,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .btn-icon:hover {
@@ -175,6 +176,7 @@
   border-radius: var(--radius-pill);
   padding: 2px;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 .theme-toggle-btn {
@@ -398,6 +400,7 @@
   font-size: 0.82rem;
   font-weight: 500;
   color: var(--text-main);
+  white-space: nowrap;
 }
 
 #puzzle-canvas-container {
@@ -445,7 +448,7 @@
 
 @media (max-width: 768px) {
   :root {
-    --header-height: 52px;
+    --header-height: 48px;
   }
 
   .nav-select-group {
@@ -464,12 +467,55 @@
     grid-template-columns: repeat(2, 1fr);
   }
 
+  /* Compact Mobile HUD Toolbar */
+  .game-hud {
+    padding: 0 var(--space-2);
+    gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: none; /* Hide scrollbar */
+  }
+
+  .game-hud::-webkit-scrollbar {
+    display: none;
+  }
+
   .hud-stat-group {
-    gap: var(--space-1);
+    gap: 4px;
   }
 
   .hud-stat {
-    padding: 0.2rem 0.5rem;
-    font-size: 0.75rem;
+    padding: 0.2rem 0.45rem;
+    font-size: 0.72rem;
+    height: 30px;
+    line-height: 1;
+  }
+
+  .hud-stat svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  #hud-mode-badge {
+    max-width: 85px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: 0.2rem 0.45rem;
+    font-size: 0.72rem;
+  }
+
+  .btn-icon {
+    width: 32px;
+    height: 32px;
+    min-height: 32px;
+  }
+
+  .theme-toggle-capsule {
+    padding: 1px;
+  }
+
+  .theme-toggle-btn {
+    width: 24px;
+    height: 24px;
   }
 }
