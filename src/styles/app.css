@@ -1,4 +1,8 @@
-/* Presentation & Multi-Breakpoint Responsive Styles */
+/* Presentation & Multi-Breakpoint Responsive Styles — Capsule UI & Flat Layout */
+
+:root {
+  --radius-pill: 9999px;
+}
 
 #app {
   width: 100vw;
@@ -8,6 +12,7 @@
   display: flex;
   flex-direction: column;
   background: var(--bg-base);
+  color: var(--text-main);
 }
 
 /* View Switcher */
@@ -28,7 +33,7 @@
   z-index: 2;
 }
 
-/* Surfaces & Cards */
+/* Flat Clean Surfaces (No Box-in-Box Nesting) */
 .surface-card {
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
@@ -36,17 +41,22 @@
   padding: var(--space-5);
 }
 
-/* Buttons & Touch Targets */
+.flat-section {
+  padding: var(--space-4) 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+/* Small Capsule Pill Buttons & Controls */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  min-height: var(--touch-target);
+  min-height: 38px;
   padding: 0 var(--space-5);
-  border-radius: var(--radius-sm);
-  font-weight: 500;
-  font-size: 0.9rem;
+  border-radius: var(--radius-pill);
+  font-weight: 600;
+  font-size: 0.85rem;
   transition: all var(--transition-fast);
   cursor: pointer;
   white-space: nowrap;
@@ -54,13 +64,13 @@
 
 .btn-primary {
   background: var(--primary);
-  color: #0f141c;
-  font-weight: 600;
+  color: #ffffff;
+  border: 1px solid var(--primary);
 }
 
 .btn-primary:hover {
   background: var(--primary-hover);
-  color: #ffffff;
+  border-color: var(--primary-hover);
 }
 
 .btn-primary:active {
@@ -75,15 +85,15 @@
 
 .btn-secondary:hover {
   border-color: var(--border-strong);
-  background: var(--bg-elevated);
+  background: var(--bg-hover);
 }
 
 .btn-icon {
-  width: var(--touch-target);
-  height: var(--touch-target);
-  min-height: var(--touch-target);
+  width: 38px;
+  height: 38px;
+  min-height: 38px;
   padding: 0;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-pill);
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   color: var(--text-main);
@@ -93,43 +103,72 @@
 }
 
 .btn-icon:hover {
-  border-color: var(--border-strong);
+  border-color: var(--primary);
   color: var(--primary);
+}
+
+/* Capsule Theme Toggle Switch */
+.theme-toggle-capsule {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  padding: 3px;
+  cursor: pointer;
+}
+
+.theme-toggle-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-pill);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  transition: all var(--transition-fast);
+}
+
+.theme-toggle-btn.active {
+  background: var(--primary);
+  color: #ffffff;
 }
 
 /* Home View Layout */
 .home-view {
   overflow-y: auto;
-  padding: var(--space-8) var(--space-4);
+  padding: var(--space-6) var(--space-4);
   max-width: var(--content-max);
   margin: 0 auto;
   width: 100%;
 }
 
 .home-header {
-  text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: var(--space-6);
   border-bottom: 1px solid var(--border-subtle);
   padding-bottom: var(--space-4);
 }
 
 .home-title {
-  font-size: 1.6rem;
+  font-size: 1.5rem;
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--text-main);
-  margin-bottom: var(--space-1);
 }
 
 .home-subtitle {
   color: var(--text-muted);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
 }
 
 .home-section-title {
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 600;
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-3);
   display: flex;
   align-items: center;
   gap: var(--space-2);
@@ -141,19 +180,18 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
   gap: var(--space-3);
-  margin-bottom: var(--space-6);
+  margin-bottom: var(--space-5);
 }
 
 .image-card {
   aspect-ratio: 4/3;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   overflow: hidden;
   position: relative;
   cursor: pointer;
   border: 1px solid var(--border-subtle);
   transition: all var(--transition-fast);
   background: var(--bg-elevated);
-  min-height: 80px;
 }
 
 .image-card img {
@@ -169,7 +207,7 @@
 
 .image-card.selected {
   border: 2px solid var(--primary);
-  box-shadow: 0 0 12px rgba(56, 189, 248, 0.25);
+  box-shadow: 0 0 10px rgba(174, 32, 22, 0.2);
 }
 
 .image-card-upload {
@@ -188,53 +226,46 @@
   color: var(--text-main);
 }
 
-/* Segmented Options Control */
+/* Floating Capsule Options Group */
 .options-group {
   display: flex;
   gap: var(--space-2);
-  margin-bottom: var(--space-6);
+  margin-bottom: var(--space-4);
   flex-wrap: wrap;
 }
 
 .option-chip {
   flex: 1;
-  min-width: 100px;
-  min-height: var(--touch-target);
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-sm);
+  min-width: 90px;
+  min-height: 38px;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-pill);
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   text-align: center;
   cursor: pointer;
   transition: all var(--transition-fast);
   display: flex;
-  flex-direction: column;
+  align-items: center;
   justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-main);
+}
+
+.option-chip:hover {
+  border-color: var(--border-strong);
+  background: var(--bg-hover);
 }
 
 .option-chip.selected {
   background: var(--primary);
-  color: #0f141c;
+  color: #ffffff;
   border-color: var(--primary);
   font-weight: 600;
 }
 
-.option-chip.selected .option-chip-desc {
-  color: rgba(15, 20, 28, 0.75);
-}
-
-.option-chip-title {
-  font-weight: 600;
-  font-size: 0.85rem;
-}
-
-.option-chip-desc {
-  font-size: 0.72rem;
-  color: var(--text-muted);
-  margin-top: 1px;
-}
-
-/* Game View Layout */
+/* Game View Header */
 .game-view {
   display: flex;
   flex-direction: column;
@@ -254,10 +285,7 @@
 .hud-stat-group {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: var(--text-main);
+  gap: var(--space-2);
 }
 
 .hud-stat {
@@ -265,9 +293,12 @@
   align-items: center;
   gap: var(--space-1);
   background: var(--bg-elevated);
-  padding: 0.3rem 0.6rem;
-  border-radius: var(--radius-sm);
+  padding: 0.3rem 0.75rem;
+  border-radius: var(--radius-pill);
   border: 1px solid var(--border-subtle);
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text-main);
 }
 
 #puzzle-canvas-container {
@@ -283,7 +314,7 @@
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
@@ -308,11 +339,7 @@
   padding: var(--space-6);
 }
 
-/* ==========================================================================
-   Responsive Breakpoints: Mobile (<640px), Tablet (640px-1024px), Desktop (>1024px)
-   ========================================================================== */
-
-/* Mobile Viewport (<640px) */
+/* Responsive Media Queries */
 @media (max-width: 639px) {
   :root {
     --header-height: 52px;
@@ -322,60 +349,21 @@
     padding: var(--space-4) var(--space-3);
   }
 
-  .home-title {
-    font-size: 1.35rem;
-  }
-
   .image-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: var(--space-2);
   }
 
   .options-group {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: var(--space-2);
-  }
-
-  .btn-primary#btn-start {
-    width: 100%;
-    padding: var(--space-4);
   }
 
   .hud-stat-group {
-    gap: var(--space-2);
-    font-size: 0.8rem;
+    gap: var(--space-1);
   }
 
   .hud-stat {
-    padding: 0.2rem 0.4rem;
-  }
-
-  #reference-preview {
-    width: 140px !important;
-    bottom: 12px !important;
-    right: 12px !important;
-  }
-}
-
-/* Tablet Viewport (640px - 1024px) */
-@media (min-width: 640px) and (max-width: 1024px) {
-  .image-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-
-  .options-group {
-    display: flex;
-  }
-}
-
-/* Large Desktop Viewport (>1024px) */
-@media (min-width: 1025px) {
-  .image-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-
-  .home-view {
-    padding: var(--space-10) var(--space-6);
+    padding: 0.2rem 0.5rem;
+    font-size: 0.75rem;
   }
 }

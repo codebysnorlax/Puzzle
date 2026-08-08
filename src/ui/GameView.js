@@ -1,5 +1,7 @@
+import { SettingsStore } from '../storage/SettingsStore.js';
+
 /**
- * GameView — Active gameplay container with compact top HUD header bar
+ * GameView — Active gameplay container with compact top HUD header bar & Light/Dark theme switcher
  */
 export class GameView {
   constructor(container, { onBackToHome, onOpenSettings, onRestartGame }) {
@@ -12,13 +14,15 @@ export class GameView {
   }
 
   render() {
+    const currentTheme = SettingsStore.getSettings().theme || 'light';
+
     this.element = document.createElement('div');
     this.element.className = 'view game-view';
 
     this.element.innerHTML = `
       <!-- Compact Top Header HUD Toolbar -->
       <header class="game-hud">
-        <div style="display: flex; align-items: center; gap: var(--space-3);">
+        <div style="display: flex; align-items: center; gap: var(--space-2);">
           <button class="btn btn-icon" id="hud-btn-back" title="Back to Home">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
           </button>
@@ -27,22 +31,32 @@ export class GameView {
 
         <div class="hud-stat-group">
           <div class="hud-stat" title="Timer">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             <span id="hud-timer">00:00</span>
           </div>
 
           <div class="hud-stat" title="Total Moves">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 9l4 4 10-10"/></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 9l4 4 10-10"/></svg>
             <span id="hud-moves">0 moves</span>
           </div>
 
           <div class="hud-stat" title="Total Distance">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
             <span id="hud-dist">0 px</span>
           </div>
         </div>
 
         <div style="display: flex; align-items: center; gap: var(--space-2);">
+          <!-- Direct Light/Dark Theme Switcher -->
+          <div class="theme-toggle-capsule" id="game-theme-toggle" title="Toggle Light / Dark Mode">
+            <div class="theme-toggle-btn ${currentTheme === 'light' ? 'active' : ''}" data-theme-val="light" title="Light Mode">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+            </div>
+            <div class="theme-toggle-btn ${currentTheme === 'dark' ? 'active' : ''}" data-theme-val="dark" title="Dark Mode">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            </div>
+          </div>
+
           <button class="btn btn-icon" id="hud-btn-ref" title="Toggle Reference Image">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
           </button>
@@ -70,6 +84,19 @@ export class GameView {
   }
 
   bindEvents() {
+    // Theme toggle
+    const toggleBtns = this.element.querySelectorAll('.theme-toggle-btn');
+    toggleBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const targetTheme = btn.dataset.themeVal;
+        toggleBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        SettingsStore.saveSettings({ theme: targetTheme });
+        SettingsStore.applyTheme(targetTheme);
+      });
+    });
+
     this.element.querySelector('#hud-btn-back').addEventListener('click', () => {
       if (this.onBackToHome) this.onBackToHome();
     });

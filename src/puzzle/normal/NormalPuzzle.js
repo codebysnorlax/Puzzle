@@ -2,7 +2,7 @@ import { Puzzle } from '../Puzzle.js';
 import { Piece } from '../Piece.js';
 
 /**
- * NormalPuzzle — Rectangular grid piece engine implementation
+ * NormalPuzzle — Rectangular grid tile swap engine implementation
  */
 export class NormalPuzzle extends Puzzle {
   generate() {
@@ -28,6 +28,9 @@ export class NormalPuzzle extends Puzzle {
           width: pieceWidth,
           height: pieceHeight
         });
+
+        piece.gridCols = cols;
+        piece.gridRows = rows;
 
         this.pieces.push(piece);
         index++;

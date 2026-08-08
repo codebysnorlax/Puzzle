@@ -1,12 +1,14 @@
+import { SettingsStore } from '../storage/SettingsStore.js';
+
 /**
- * HomeView — Main menu & image / mode / difficulty configuration view
+ * HomeView — Clean editorial menu with top Light/Dark theme toggle & capsule controls
  */
 export class HomeView {
   constructor(container, onStartGame) {
     this.container = container;
     this.onStartGame = onStartGame;
 
-    // Built-in image assets located in public/puzzles/
+    // Built-in local image assets
     this.sampleImages = [
       { id: 'demo1', name: 'Mountain Landscape', url: './puzzles/demo.jpg' },
       { id: 'demo2', name: 'Scenic Sunset', url: './puzzles/demo2.jpg' },
@@ -15,28 +17,43 @@ export class HomeView {
     ];
 
     this.selectedImage = this.sampleImages[0].url;
-    this.selectedMode = 'normal'; // 'normal' | 'jigsaw'
+    this.selectedMode = 'normal'; // Default: Normal Rectangular Grid Swap
     this.selectedDifficulty = 'normal'; // 'easy', 'normal', 'hard', 'expert'
 
     this.render();
   }
 
   render() {
+    const currentTheme = SettingsStore.getSettings().theme || 'light';
+
     this.element = document.createElement('div');
     this.element.className = 'view home-view active';
 
     this.element.innerHTML = `
+      <!-- Top Header with Brand & Theme Toggle -->
       <header class="home-header">
-        <h1 class="home-title">PixelCraft PWA</h1>
-        <p class="home-subtitle">High Performance Local-First Image Puzzle</p>
+        <div>
+          <h1 class="home-title">PixelCraft PWA</h1>
+          <p class="home-subtitle">Select an image & start swapping tiles</p>
+        </div>
+
+        <!-- Light / Dark Capsule Theme Switcher -->
+        <div class="theme-toggle-capsule" id="home-theme-toggle" title="Toggle Light / Dark Mode">
+          <div class="theme-toggle-btn ${currentTheme === 'light' ? 'active' : ''}" data-theme-val="light" title="Light Mode">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          </div>
+          <div class="theme-toggle-btn ${currentTheme === 'dark' ? 'active' : ''}" data-theme-val="dark" title="Dark Mode">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          </div>
+        </div>
       </header>
 
       <main>
-        <!-- Image Selector Section -->
-        <section class="surface-card" style="margin-bottom: var(--space-6);">
+        <!-- Flat Section 1: Image Gallery -->
+        <section class="flat-section">
           <h2 class="home-section-title">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
-            Choose Puzzle Image
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            Choose Image
           </h2>
           <div class="image-grid" id="image-grid">
             ${this.sampleImages.map((img, idx) => `
@@ -45,63 +62,42 @@ export class HomeView {
               </div>
             `).join('')}
             <div class="image-card image-card-upload" id="upload-card">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
               <span style="font-size: 0.78rem; font-weight: 600;">Upload</span>
               <input type="file" id="file-input" accept="image/*" style="display: none;" />
             </div>
           </div>
         </section>
 
-        <!-- Mode & Difficulty Selection -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--space-5); margin-bottom: var(--space-6);">
-          <!-- Mode Picker -->
-          <section class="surface-card">
-            <h2 class="home-section-title">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-              Puzzle Mode
-            </h2>
-            <div class="options-group">
-              <div class="option-chip selected" data-mode="normal">
-                <div class="option-chip-title">Normal</div>
-                <div class="option-chip-desc">Rectangular Grid Swap</div>
-              </div>
-              <div class="option-chip" data-mode="jigsaw">
-                <div class="option-chip-title">Jigsaw</div>
-                <div class="option-chip-desc">Interlocking Tabs</div>
-              </div>
-            </div>
-          </section>
+        <!-- Flat Section 2: Mode Selector -->
+        <section class="flat-section">
+          <h2 class="home-section-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            Puzzle Mode
+          </h2>
+          <div class="options-group">
+            <div class="option-chip selected" data-mode="normal">Normal (Tile Swap)</div>
+            <div class="option-chip" data-mode="jigsaw">Jigsaw (Interlocking)</div>
+          </div>
+        </section>
 
-          <!-- Difficulty Picker -->
-          <section class="surface-card">
-            <h2 class="home-section-title">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-              Difficulty
-            </h2>
-            <div class="options-group" id="difficulty-group">
-              <div class="option-chip" data-diff="easy">
-                <div class="option-chip-title">Easy</div>
-                <div class="option-chip-desc">~9 pieces</div>
-              </div>
-              <div class="option-chip selected" data-diff="normal">
-                <div class="option-chip-title">Normal</div>
-                <div class="option-chip-desc">~16 pieces</div>
-              </div>
-              <div class="option-chip" data-diff="hard">
-                <div class="option-chip-title">Hard</div>
-                <div class="option-chip-desc">~25 pieces</div>
-              </div>
-              <div class="option-chip" data-diff="expert">
-                <div class="option-chip-title">Expert</div>
-                <div class="option-chip-desc">~36 pieces</div>
-              </div>
-            </div>
-          </section>
-        </div>
+        <!-- Flat Section 3: Difficulty Selector -->
+        <section class="flat-section" style="border-bottom: none;">
+          <h2 class="home-section-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            Difficulty
+          </h2>
+          <div class="options-group" id="difficulty-group">
+            <div class="option-chip" data-diff="easy">Easy (9)</div>
+            <div class="option-chip selected" data-diff="normal">Normal (16)</div>
+            <div class="option-chip" data-diff="hard">Hard (25)</div>
+            <div class="option-chip" data-diff="expert">Expert (36)</div>
+          </div>
+        </section>
 
-        <!-- Start CTA -->
-        <div style="text-align: center; margin-top: var(--space-4);">
-          <button class="btn btn-primary" id="btn-start" style="padding: var(--space-4) var(--space-10); font-size: 1rem;">
+        <!-- Start Capsule Button -->
+        <div style="text-align: center; margin-top: var(--space-6);">
+          <button class="btn btn-primary" id="btn-start" style="padding: 0 var(--space-10); min-height: 44px; font-size: 0.95rem;">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
             Start Puzzle
           </button>
@@ -114,6 +110,19 @@ export class HomeView {
   }
 
   bindEvents() {
+    // Theme toggle
+    const toggleBtns = this.element.querySelectorAll('.theme-toggle-btn');
+    toggleBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const targetTheme = btn.dataset.themeVal;
+        toggleBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        SettingsStore.saveSettings({ theme: targetTheme });
+        SettingsStore.applyTheme(targetTheme);
+      });
+    });
+
     // Image selection
     const imageCards = this.element.querySelectorAll('.image-card:not(.image-card-upload)');
     imageCards.forEach(card => {
@@ -124,7 +133,7 @@ export class HomeView {
       });
     });
 
-    // File upload
+    // Custom upload
     const uploadCard = this.element.querySelector('#upload-card');
     const fileInput = this.element.querySelector('#file-input');
 
@@ -135,7 +144,6 @@ export class HomeView {
         this.selectedImage = file;
         const objectUrl = URL.createObjectURL(file);
         
-        // Add preview card
         const newCard = document.createElement('div');
         newCard.className = 'image-card selected';
         newCard.innerHTML = `<img src="${objectUrl}" alt="Uploaded" />`;
@@ -172,7 +180,7 @@ export class HomeView {
       });
     });
 
-    // Start button
+    // Start puzzle button
     const btnStart = this.element.querySelector('#btn-start');
     btnStart.addEventListener('click', () => {
       if (this.onStartGame) {

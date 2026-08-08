@@ -52,6 +52,9 @@ export class JigsawPuzzle extends Puzzle {
           edges
         });
 
+        piece.gridCols = cols;
+        piece.gridRows = rows;
+
         this.pieces.push(piece);
         index++;
       }
