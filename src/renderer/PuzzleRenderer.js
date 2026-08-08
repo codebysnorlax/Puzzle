@@ -26,15 +26,13 @@ export class PuzzleRenderer {
     this.boardContainer.removeChildren();
 
     const shadow = new Graphics();
-    // Drop shadow behind board
-    shadow.roundRect(boardLayout.x + 4, boardLayout.y + 4, boardLayout.width, boardLayout.height, 12);
-    shadow.fill({ color: 0x000000, alpha: 0.4 });
+    shadow.roundRect(boardLayout.x + 3, boardLayout.y + 3, boardLayout.width, boardLayout.height, 8);
+    shadow.fill({ color: 0x000000, alpha: 0.3 });
 
-    // Target board outline
     const boardOutline = new Graphics();
-    boardOutline.roundRect(boardLayout.x, boardLayout.y, boardLayout.width, boardLayout.height, 12);
-    boardOutline.fill({ color: 0x1e293b, alpha: 0.5 });
-    boardOutline.stroke({ width: 2, color: 0x475569, alpha: 0.8 });
+    boardOutline.roundRect(boardLayout.x, boardLayout.y, boardLayout.width, boardLayout.height, 8);
+    boardOutline.fill({ color: 0x18202c, alpha: 0.6 });
+    boardOutline.stroke({ width: 2, color: 0x3b4d68, alpha: 0.8 });
 
     this.boardContainer.addChild(shadow);
     this.boardContainer.addChild(boardOutline);
@@ -47,7 +45,6 @@ export class PuzzleRenderer {
     this.clear();
     this.renderBoardTarget(puzzle.boardLayout, mode);
 
-    // Create Pixi Texture from image canvas
     const baseTexture = Texture.from(imageCanvas);
 
     puzzle.pieces.forEach(piece => {
@@ -55,8 +52,14 @@ export class PuzzleRenderer {
       this.piecesContainer.addChild(spriteContainer);
       this.pieceSpritesMap.set(piece.id, spriteContainer);
     });
+  }
 
-    console.log(`[PuzzleRenderer] Rendered ${puzzle.pieces.length} piece containers.`);
+  /**
+   * Re-render board target and update sprite positions on viewport resize
+   */
+  resize(puzzle, imageCanvas, mode = 'normal') {
+    if (!puzzle || !imageCanvas) return;
+    this.renderPuzzle(puzzle, imageCanvas, mode);
   }
 
   /**

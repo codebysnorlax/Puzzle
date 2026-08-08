@@ -1,8 +1,8 @@
-import { Application, Container, Graphics, Text, TextStyle } from 'pixi.js';
+import { Application } from 'pixi.js';
 
 /**
  * PixiApp — PixiJS v8 Application Lifecycle Manager
- * Handles responsive canvas binding, DPR resolution scaling, ticker loop, and clean destruction.
+ * Handles responsive canvas binding, DPR resolution scaling, and clean destruction.
  */
 export class PixiApp {
   constructor() {
@@ -10,6 +10,7 @@ export class PixiApp {
     this.container = null;
     this.isInitialized = false;
     this.resizeObserver = null;
+    this.onResize = null;
   }
 
   /**
@@ -27,7 +28,7 @@ export class PixiApp {
       resizeTo: containerElement,
       resolution: window.devicePixelRatio || 1,
       autoDensity: true,
-      backgroundColor: 0x090d16,
+      backgroundColor: 0x0f141c, // Matches --bg-base theme color
       antialias: true
     });
 
@@ -46,10 +47,7 @@ export class PixiApp {
     this.setupResizeObserver();
 
     this.isInitialized = true;
-    console.log('[PixiApp] PixiJS v8 engine initialized successfully.');
-
-    // Render test sprite scene (Phase 2 requirement)
-    this.renderTestScene();
+    console.log('[PixiApp] PixiJS engine initialized cleanly.');
   }
 
   setupResizeObserver() {
@@ -57,59 +55,14 @@ export class PixiApp {
     this.resizeObserver = new ResizeObserver(() => {
       if (this.app && this.app.renderer) {
         this.app.resize();
+        if (this.onResize) {
+          const width = this.container.clientWidth || window.innerWidth;
+          const height = this.container.clientHeight || window.innerHeight;
+          this.onResize(width, height);
+        }
       }
     });
     this.resizeObserver.observe(this.container);
-  }
-
-  /**
-   * Render test scene to verify WebGL rendering and 60fps ticker loop
-   */
-  renderTestScene() {
-    if (!this.app) return;
-
-    const testContainer = new Container();
-    this.app.stage.addChild(testContainer);
-
-    // Draw styled puzzle piece test card
-    const graphics = new Graphics();
-    graphics.roundRect(-80, -80, 160, 160, 20);
-    graphics.fill({ color: 0x6366f1, alpha: 0.85 });
-    graphics.stroke({ width: 4, color: 0xa855f7, alpha: 1 });
-
-    // Inner tab indicator
-    graphics.circle(0, -80, 24);
-    graphics.fill({ color: 0x6366f1, alpha: 0.85 });
-    graphics.stroke({ width: 4, color: 0xa855f7, alpha: 1 });
-
-    testContainer.addChild(graphics);
-
-    // Text label
-    const textStyle = new TextStyle({
-      fontFamily: 'Inter, sans-serif',
-      fontSize: 14,
-      fontWeight: 'bold',
-      fill: 0xffffff,
-      align: 'center'
-    });
-    const label = new Text({ text: 'PixiJS v8\nReady', style: textStyle });
-    label.anchor.set(0.5);
-    testContainer.addChild(label);
-
-    const updatePosition = () => {
-      if (!this.app || !this.app.renderer) return;
-      const width = this.app.renderer.width / (this.app.renderer.resolution || 1);
-      const height = this.app.renderer.height / (this.app.renderer.resolution || 1);
-      testContainer.x = width / 2;
-      testContainer.y = height / 2;
-    };
-    updatePosition();
-
-    // Smooth rotation ticker animation
-    this.app.ticker.add((ticker) => {
-      testContainer.rotation += 0.008 * ticker.deltaTime;
-      updatePosition();
-    });
   }
 
   /**
@@ -120,6 +73,8 @@ export class PixiApp {
       this.resizeObserver.disconnect();
       this.resizeObserver = null;
     }
+
+    this.onResize = null;
 
     if (this.app) {
       try {

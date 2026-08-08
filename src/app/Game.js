@@ -66,7 +66,12 @@ export class Game {
       this.config.mode
     );
 
-    // 4. Instantiate Timer and MovementTracker
+    // 4. Attach responsive resize callback
+    this.app.pixiApp.onResize = (width, height) => {
+      this.handleResize(width, height);
+    };
+
+    // 5. Instantiate Timer and MovementTracker
     this.timer = new Timer((timeStr) => {
       this.gameView.updateHUD({ timeStr });
     });
@@ -75,7 +80,7 @@ export class Game {
       this.gameView.updateHUD({ moves: moveCount });
     });
 
-    // 5. Instantiate Input Handler
+    // 6. Instantiate Input Handler
     this.inputHandler = new InputHandler({
       puzzle: this.puzzle,
       puzzleRenderer: this.renderer,
@@ -86,6 +91,26 @@ export class Game {
     });
 
     this.isStarted = true;
+  }
+
+  handleResize(width, height) {
+    if (!this.puzzle || !this.renderer) return;
+
+    this.puzzle.resize(width, height);
+    this.renderer.resize(this.puzzle, this.config.processedImage.canvas, this.config.mode);
+
+    // Re-bind input events to new sprites
+    if (this.inputHandler) {
+      this.inputHandler.destroy();
+      this.inputHandler = new InputHandler({
+        puzzle: this.puzzle,
+        puzzleRenderer: this.renderer,
+        timer: this.timer,
+        movementTracker: this.movementTracker,
+        onFirstMovement: () => this.handleFirstMovement(),
+        onPuzzleComplete: () => this.handlePuzzleCompletion()
+      });
+    }
   }
 
   handleFirstMovement() {
@@ -131,6 +156,9 @@ export class Game {
   }
 
   destroy() {
+    if (this.app && this.app.pixiApp) {
+      this.app.pixiApp.onResize = null;
+    }
     if (this.timer) this.timer.stop();
     if (this.inputHandler) this.inputHandler.destroy();
     if (this.renderer) this.renderer.clear();
