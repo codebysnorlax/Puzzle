@@ -1,26 +1,38 @@
 import { SettingsStore } from '../storage/SettingsStore.js';
+import { ImageStore } from '../storage/ImageStore.js';
 
 /**
- * HomeView — Clean editorial menu with centered Navbar Start CTA & Custom Selectors
+ * HomeView — Clean editorial menu with IndexedDB image persistence & manual deletion
  */
 export class HomeView {
   constructor(container, onStartGame) {
     this.container = container;
     this.onStartGame = onStartGame;
 
-    // Built-in local image assets
+    // Built-in local sample images
     this.sampleImages = [
-      { id: 'demo1', name: 'Mountain Landscape', url: './puzzles/demo.jpg' },
-      { id: 'demo2', name: 'Scenic Sunset', url: './puzzles/demo2.jpg' },
-      { id: 'snorlax', name: 'Snorlax', url: './puzzles/snorlax.png' },
-      { id: 'test', name: 'Vibrant Artwork', url: './puzzles/test.jpg' }
+      { id: 'demo1', name: 'Mountain Landscape', url: './puzzles/demo.jpg', isCustom: false },
+      { id: 'demo2', name: 'Scenic Sunset', url: './puzzles/demo2.jpg', isCustom: false },
+      { id: 'snorlax', name: 'Snorlax', url: './puzzles/snorlax.png', isCustom: false },
+      { id: 'test', name: 'Vibrant Artwork', url: './puzzles/test.jpg', isCustom: false }
     ];
 
+    this.customImages = [];
     this.selectedImage = this.sampleImages[0].url;
     this.selectedMode = 'normal'; // Default: Normal Rectangular Grid Swap
     this.selectedDifficulty = 'normal'; // 'easy', 'normal', 'hard', 'expert'
 
     this.render();
+    this.loadCustomImages();
+  }
+
+  async loadCustomImages() {
+    try {
+      this.customImages = await ImageStore.getAllImages();
+      this.updateGalleryGrid();
+    } catch (err) {
+      console.warn('[HomeView] Failed to load custom images from IndexedDB:', err);
+    }
   }
 
   render() {
@@ -91,16 +103,7 @@ export class HomeView {
             Choose Image
           </h2>
           <div class="image-grid" id="image-grid">
-            ${this.sampleImages.map((img, idx) => `
-              <div class="image-card ${idx === 0 ? 'selected' : ''}" data-url="${img.url}">
-                <img src="${img.url}" alt="${img.name}" />
-              </div>
-            `).join('')}
-            <div class="image-card image-card-upload" id="upload-card">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-              <span style="font-size: 0.78rem; font-weight: 600;">Upload</span>
-              <input type="file" id="file-input" accept="image/*" style="display: none;" />
-            </div>
+            <!-- Grid cards populated dynamically in updateGalleryGrid -->
           </div>
         </section>
       </main>
@@ -139,7 +142,97 @@ export class HomeView {
     `;
 
     this.container.appendChild(this.element);
+    this.updateGalleryGrid();
     this.bindEvents();
+  }
+
+  updateGalleryGrid() {
+    const grid = this.element.querySelector('#image-grid');
+    if (!grid) return;
+
+    const allImages = [...this.sampleImages, ...this.customImages];
+
+    grid.innerHTML = `
+      ${allImages.map(img => `
+        <div class="image-card ${this.selectedImage === img.url || this.selectedImage === img.blob ? 'selected' : ''}" data-url="${img.url}" data-id="${img.id}">
+          <img src="${img.url}" alt="${img.name}" />
+          ${img.isCustom ? `
+            <button class="image-card-delete" data-delete-id="${img.id}" title="Delete Custom Image">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            </button>
+          ` : ''}
+        </div>
+      `).join('')}
+
+      <div class="image-card image-card-upload" id="upload-card">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <span style="font-size: 0.78rem; font-weight: 600;">Upload</span>
+        <input type="file" id="file-input" accept="image/*" style="display: none;" />
+      </div>
+    `;
+
+    this.bindGalleryEvents();
+  }
+
+  bindGalleryEvents() {
+    const grid = this.element.querySelector('#image-grid');
+    if (!grid) return;
+
+    // Image card selection
+    const cards = grid.querySelectorAll('.image-card:not(.image-card-upload)');
+    cards.forEach(card => {
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('.image-card-delete')) return; // Ignore if delete button clicked
+
+        grid.querySelectorAll('.image-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        
+        const customImg = this.customImages.find(c => c.id === card.dataset.id);
+        if (customImg) {
+          this.selectedImage = customImg.blob; // Pass Blob directly to ImageProcessor
+        } else {
+          this.selectedImage = card.dataset.url;
+        }
+      });
+    });
+
+    // Delete custom image button
+    const deleteBtns = grid.querySelectorAll('.image-card-delete');
+    deleteBtns.forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const id = btn.dataset.deleteId;
+        if (confirm('Delete this custom image from local storage?')) {
+          await ImageStore.deleteImage(id);
+          this.customImages = this.customImages.filter(img => img.id !== id);
+          if (this.selectedImage && typeof this.selectedImage !== 'string') {
+            this.selectedImage = this.sampleImages[0].url;
+          }
+          this.updateGalleryGrid();
+        }
+      });
+    });
+
+    // File upload
+    const uploadCard = grid.querySelector('#upload-card');
+    const fileInput = grid.querySelector('#file-input');
+
+    if (uploadCard && fileInput) {
+      uploadCard.addEventListener('click', () => fileInput.click());
+      fileInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          try {
+            const savedRecord = await ImageStore.saveImage(file);
+            this.customImages.push(savedRecord);
+            this.selectedImage = savedRecord.blob;
+            this.updateGalleryGrid();
+          } catch (err) {
+            console.error('[HomeView] Failed to save image into IndexedDB:', err);
+          }
+        }
+      });
+    }
   }
 
   bindEvents() {
@@ -194,43 +287,6 @@ export class HomeView {
         if (e.target === mobileDrawer) mobileDrawer.classList.remove('active');
       });
     }
-
-    // Image selection
-    const imageCards = this.element.querySelectorAll('.image-card:not(.image-card-upload)');
-    imageCards.forEach(card => {
-      card.addEventListener('click', () => {
-        this.element.querySelectorAll('.image-card').forEach(c => c.classList.remove('selected'));
-        card.classList.add('selected');
-        this.selectedImage = card.dataset.url;
-      });
-    });
-
-    // Custom upload
-    const uploadCard = this.element.querySelector('#upload-card');
-    const fileInput = this.element.querySelector('#file-input');
-
-    uploadCard.addEventListener('click', () => fileInput.click());
-    fileInput.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        this.selectedImage = file;
-        const objectUrl = URL.createObjectURL(file);
-        
-        const newCard = document.createElement('div');
-        newCard.className = 'image-card selected';
-        newCard.innerHTML = `<img src="${objectUrl}" alt="Uploaded" />`;
-        
-        this.element.querySelectorAll('.image-card').forEach(c => c.classList.remove('selected'));
-        const grid = this.element.querySelector('#image-grid');
-        grid.insertBefore(newCard, uploadCard);
-        
-        newCard.addEventListener('click', () => {
-          this.element.querySelectorAll('.image-card').forEach(c => c.classList.remove('selected'));
-          newCard.classList.add('selected');
-          this.selectedImage = file;
-        });
-      }
-    });
 
     // Start puzzle button
     const btnStart = this.element.querySelector('#btn-start');
