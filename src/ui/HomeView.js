@@ -1,7 +1,7 @@
 import { SettingsStore } from '../storage/SettingsStore.js';
 
 /**
- * HomeView — Clean editorial menu with top Light/Dark theme toggle & capsule controls
+ * HomeView — Clean editorial menu with Navbar Dropdowns & Mobile Hamburger Drawer
  */
 export class HomeView {
   constructor(container, onStartGame) {
@@ -30,27 +30,51 @@ export class HomeView {
     this.element.className = 'view home-view active';
 
     this.element.innerHTML = `
-      <!-- Top Header with Brand & Theme Toggle -->
+      <!-- Top Header Navbar -->
       <header class="home-header">
         <div>
           <h1 class="home-title">PixelCraft PWA</h1>
-          <p class="home-subtitle">Select an image & start swapping tiles</p>
+          <p class="home-subtitle">Local-First Image Puzzle</p>
         </div>
 
-        <!-- Light / Dark Capsule Theme Switcher -->
-        <div class="theme-toggle-capsule" id="home-theme-toggle" title="Toggle Light / Dark Mode">
-          <div class="theme-toggle-btn ${currentTheme === 'light' ? 'active' : ''}" data-theme-val="light" title="Light Mode">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <div style="display: flex; align-items: center; gap: var(--space-3);">
+          <!-- Desktop Navbar Dropdown Selectors -->
+          <div class="nav-select-group">
+            <select class="nav-select" id="nav-mode-select" title="Puzzle Mode">
+              <option value="normal" selected>Mode: Normal (Grid Swap)</option>
+              <option value="jigsaw">Mode: Jigsaw (Interlocking)</option>
+            </select>
+
+            <select class="nav-select" id="nav-diff-select" title="Difficulty Level">
+              <option value="easy">Diff: Easy (9)</option>
+              <option value="normal" selected>Diff: Normal (16)</option>
+              <option value="hard">Diff: Hard (25)</option>
+              <option value="expert">Diff: Expert (36)</option>
+            </select>
           </div>
-          <div class="theme-toggle-btn ${currentTheme === 'dark' ? 'active' : ''}" data-theme-val="dark" title="Dark Mode">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+
+          <!-- Light / Dark Capsule Theme Switcher -->
+          <div class="theme-toggle-capsule" id="home-theme-toggle" title="Toggle Light / Dark Mode">
+            <div class="theme-toggle-btn ${currentTheme === 'light' ? 'active' : ''}" data-theme-val="light" title="Light Mode">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+            </div>
+            <div class="theme-toggle-btn ${currentTheme === 'dark' ? 'active' : ''}" data-theme-val="dark" title="Dark Mode">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            </div>
+          </div>
+
+          <!-- Mobile Hamburger Toggle Button -->
+          <div class="hamburger-btn-wrap">
+            <button class="btn btn-icon" id="btn-hamburger" title="Open Controls Menu">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </button>
           </div>
         </div>
       </header>
 
+      <!-- Main Section: Image Gallery & Start Button -->
       <main>
-        <!-- Flat Section 1: Image Gallery -->
-        <section class="flat-section">
+        <section class="flat-section" style="border-bottom: none;">
           <h2 class="home-section-title">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
             Choose Image
@@ -69,32 +93,6 @@ export class HomeView {
           </div>
         </section>
 
-        <!-- Flat Section 2: Mode Selector -->
-        <section class="flat-section">
-          <h2 class="home-section-title">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-            Puzzle Mode
-          </h2>
-          <div class="options-group">
-            <div class="option-chip selected" data-mode="normal">Normal (Tile Swap)</div>
-            <div class="option-chip" data-mode="jigsaw">Jigsaw (Interlocking)</div>
-          </div>
-        </section>
-
-        <!-- Flat Section 3: Difficulty Selector -->
-        <section class="flat-section" style="border-bottom: none;">
-          <h2 class="home-section-title">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-            Difficulty
-          </h2>
-          <div class="options-group" id="difficulty-group">
-            <div class="option-chip" data-diff="easy">Easy (9)</div>
-            <div class="option-chip selected" data-diff="normal">Normal (16)</div>
-            <div class="option-chip" data-diff="hard">Hard (25)</div>
-            <div class="option-chip" data-diff="expert">Expert (36)</div>
-          </div>
-        </section>
-
         <!-- Start Capsule Button -->
         <div style="text-align: center; margin-top: var(--space-6);">
           <button class="btn btn-primary" id="btn-start" style="padding: 0 var(--space-10); min-height: 44px; font-size: 0.95rem;">
@@ -103,6 +101,34 @@ export class HomeView {
           </button>
         </div>
       </main>
+
+      <!-- Mobile Hamburger Drawer Overlay -->
+      <div class="mobile-drawer-overlay" id="mobile-drawer">
+        <div class="mobile-drawer-content">
+          <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-subtle); padding-bottom: var(--space-3);">
+            <span style="font-weight: 700; font-size: 1rem;">Puzzle Controls</span>
+            <button class="btn btn-icon" id="btn-close-drawer" style="width: 32px; height: 32px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: var(--space-3);">
+            <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">Puzzle Mode</label>
+            <select class="nav-select" id="mobile-mode-select" style="width: 100%; height: 40px;">
+              <option value="normal" selected>Normal (Grid Swap)</option>
+              <option value="jigsaw">Jigsaw (Interlocking)</option>
+            </select>
+
+            <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-top: var(--space-2);">Difficulty Level</label>
+            <select class="nav-select" id="mobile-diff-select" style="width: 100%; height: 40px;">
+              <option value="easy">Easy (9)</option>
+              <option value="normal" selected>Normal (16)</option>
+              <option value="hard">Hard (25)</option>
+              <option value="expert">Expert (36)</option>
+            </select>
+          </div>
+        </div>
+      </div>
     `;
 
     this.container.appendChild(this.element);
@@ -122,6 +148,45 @@ export class HomeView {
         SettingsStore.applyTheme(targetTheme);
       });
     });
+
+    // Mode dropdown selects
+    const desktopMode = this.element.querySelector('#nav-mode-select');
+    const mobileMode = this.element.querySelector('#mobile-mode-select');
+
+    const syncMode = (val) => {
+      this.selectedMode = val;
+      if (desktopMode) desktopMode.value = val;
+      if (mobileMode) mobileMode.value = val;
+    };
+
+    if (desktopMode) desktopMode.addEventListener('change', (e) => syncMode(e.target.value));
+    if (mobileMode) mobileMode.addEventListener('change', (e) => syncMode(e.target.value));
+
+    // Difficulty dropdown selects
+    const desktopDiff = this.element.querySelector('#nav-diff-select');
+    const mobileDiff = this.element.querySelector('#mobile-diff-select');
+
+    const syncDiff = (val) => {
+      this.selectedDifficulty = val;
+      if (desktopDiff) desktopDiff.value = val;
+      if (mobileDiff) mobileDiff.value = val;
+    };
+
+    if (desktopDiff) desktopDiff.addEventListener('change', (e) => syncDiff(e.target.value));
+    if (mobileDiff) mobileDiff.addEventListener('change', (e) => syncDiff(e.target.value));
+
+    // Mobile Hamburger Drawer
+    const btnHamburger = this.element.querySelector('#btn-hamburger');
+    const mobileDrawer = this.element.querySelector('#mobile-drawer');
+    const btnCloseDrawer = this.element.querySelector('#btn-close-drawer');
+
+    if (btnHamburger && mobileDrawer) {
+      btnHamburger.addEventListener('click', () => mobileDrawer.classList.add('active'));
+      btnCloseDrawer.addEventListener('click', () => mobileDrawer.classList.remove('active'));
+      mobileDrawer.addEventListener('click', (e) => {
+        if (e.target === mobileDrawer) mobileDrawer.classList.remove('active');
+      });
+    }
 
     // Image selection
     const imageCards = this.element.querySelectorAll('.image-card:not(.image-card-upload)');
@@ -158,26 +223,6 @@ export class HomeView {
           this.selectedImage = file;
         });
       }
-    });
-
-    // Mode selection
-    const modeChips = this.element.querySelectorAll('[data-mode]');
-    modeChips.forEach(chip => {
-      chip.addEventListener('click', () => {
-        modeChips.forEach(c => c.classList.remove('selected'));
-        chip.classList.add('selected');
-        this.selectedMode = chip.dataset.mode;
-      });
-    });
-
-    // Difficulty selection
-    const diffChips = this.element.querySelectorAll('[data-diff]');
-    diffChips.forEach(chip => {
-      chip.addEventListener('click', () => {
-        diffChips.forEach(c => c.classList.remove('selected'));
-        chip.classList.add('selected');
-        this.selectedDifficulty = chip.dataset.diff;
-      });
     });
 
     // Start puzzle button

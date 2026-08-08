@@ -1,4 +1,4 @@
-/* Presentation & Multi-Breakpoint Responsive Styles — Capsule UI & Flat Layout */
+/* Presentation & Multi-Breakpoint Responsive Styles — Capsule UI & Navbar Dropdowns */
 
 :root {
   --radius-pill: 9999px;
@@ -33,7 +33,7 @@
   z-index: 2;
 }
 
-/* Flat Clean Surfaces (No Box-in-Box Nesting) */
+/* Surfaces */
 .surface-card {
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
@@ -107,21 +107,46 @@
   color: var(--primary);
 }
 
-/* Capsule Theme Toggle Switch */
+/* Capsule Navbar Dropdown Selector */
+.nav-select-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.nav-select {
+  background: var(--bg-surface);
+  color: var(--text-main);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  padding: 0 var(--space-3);
+  height: 36px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+  transition: all var(--transition-fast);
+}
+
+.nav-select:hover, .nav-select:focus {
+  border-color: var(--primary);
+}
+
+/* Theme Toggle Capsule */
 .theme-toggle-capsule {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: 2px;
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-pill);
-  padding: 3px;
+  padding: 2px;
   cursor: pointer;
 }
 
 .theme-toggle-btn {
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   border-radius: var(--radius-pill);
   display: flex;
   align-items: center;
@@ -154,7 +179,7 @@
 }
 
 .home-title {
-  font-size: 1.5rem;
+  font-size: 1.4rem;
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--text-main);
@@ -162,7 +187,7 @@
 
 .home-subtitle {
   color: var(--text-muted);
-  font-size: 0.85rem;
+  font-size: 0.82rem;
 }
 
 .home-section-title {
@@ -226,43 +251,35 @@
   color: var(--text-main);
 }
 
-/* Floating Capsule Options Group */
-.options-group {
+/* Mobile Hamburger Menu Overlay */
+.mobile-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 200;
   display: flex;
-  gap: var(--space-2);
-  margin-bottom: var(--space-4);
-  flex-wrap: wrap;
+  flex-direction: column;
+  justify-content: flex-start;
+  padding: var(--space-4);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-normal);
 }
 
-.option-chip {
-  flex: 1;
-  min-width: 90px;
-  min-height: 38px;
-  padding: 0 var(--space-4);
-  border-radius: var(--radius-pill);
+.mobile-drawer-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.mobile-drawer-content {
   background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  text-align: center;
-  cursor: pointer;
-  transition: all var(--transition-fast);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
   display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: var(--text-main);
-}
-
-.option-chip:hover {
-  border-color: var(--border-strong);
-  background: var(--bg-hover);
-}
-
-.option-chip.selected {
-  background: var(--primary);
-  color: #ffffff;
-  border-color: var(--primary);
-  font-weight: 600;
+  flex-direction: column;
+  gap: var(--space-4);
 }
 
 /* Game View Header */
@@ -340,9 +357,21 @@
 }
 
 /* Responsive Media Queries */
+.hamburger-btn-wrap {
+  display: none;
+}
+
 @media (max-width: 639px) {
   :root {
     --header-height: 52px;
+  }
+
+  .nav-select-group {
+    display: none; /* Hidden on mobile; available via hamburger drawer */
+  }
+
+  .hamburger-btn-wrap {
+    display: block;
   }
 
   .home-view {
@@ -350,11 +379,6 @@
   }
 
   .image-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .options-group {
-    display: grid;
     grid-template-columns: repeat(2, 1fr);
   }
 
