@@ -3,7 +3,7 @@ import { ImageStore } from '../storage/ImageStore.js';
 
 /**
  * HomeView — Progressive Chunked Gallery & Floating Capsule Navbar
- * Reduces top navbar height and detaches into a floating rounded glassmorphism capsule on scroll.
+ * Pill-rounded navbar control boxes, micro green dot cached indicator, and smart Load More visibility.
  */
 export class HomeView {
   constructor(container, onStartGame) {
@@ -64,7 +64,7 @@ export class HomeView {
     this.element.className = 'view home-view active';
 
     this.element.innerHTML = `
-      <!-- Top Header Navbar with Centered Start CTA & Floating Capsule Scroll Feature -->
+      <!-- Top Header Navbar with Centered Start CTA & Pill-Rounded Capsule Toolbars -->
       <header class="home-header">
         <div class="nav-left">
           <h1 class="home-title">Pick and Play</h1>
@@ -73,13 +73,13 @@ export class HomeView {
         <!-- Center: Start Capsule CTA -->
         <div class="nav-center">
           <button class="btn btn-primary nav-start-btn" id="btn-start">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
             Start Puzzle
           </button>
         </div>
 
         <div class="nav-right">
-          <!-- Sleek Segmented Capsule Navbar Group -->
+          <!-- 100% Pill-Rounded Segmented Capsule Navbar Group -->
           <div class="nav-segmented-capsule nav-select-group">
             <div class="custom-select-wrap" style="border-right: 1px solid var(--border-subtle);">
               <select class="nav-select nav-segmented-select" id="nav-mode-select" title="Puzzle Mode">
@@ -100,9 +100,9 @@ export class HomeView {
             <!-- Single Dynamic Light / Dark Theme Toggle Button -->
             <button class="nav-segmented-btn" id="home-theme-toggle-single" title="Toggle Light / Dark Theme">
               ${currentTheme === 'dark' ? `
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
               ` : `
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
               `}
             </button>
           </div>
@@ -110,13 +110,13 @@ export class HomeView {
           <!-- Mobile Hamburger Toggle Button -->
           <div class="hamburger-btn-wrap">
             <button class="btn btn-icon" id="btn-hamburger" title="Open Controls Menu">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
             </button>
           </div>
         </div>
       </header>
 
-      <!-- Main Section: Progressive Chunked Image Gallery -->
+      <!-- Main Section: Image Gallery -->
       <main>
         <section class="flat-section">
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-3);">
@@ -135,7 +135,7 @@ export class HomeView {
 
           <!-- Progressive Chunk Load More Button -->
           <div id="load-more-wrap" style="display: flex; justify-content: center; margin-top: var(--space-4);">
-            <button class="nav-start-btn" id="btn-load-more" style="min-height: 34px; padding: 0 1.2em; font-size: 0.8rem;">
+            <button class="nav-start-btn" id="btn-load-more" style="min-height: 30px; padding: 0 1.2em; font-size: 0.78rem;">
               Load More Puzzles (+6)
             </button>
           </div>
@@ -188,6 +188,9 @@ export class HomeView {
     const fullCatalog = [...this.sampleImages, ...this.callPuzzles, ...this.customImages];
     const totalCount = fullCatalog.length;
 
+    // Check how many items are already cached locally in IndexedDB
+    const uncachedRemoteCount = this.callPuzzles.filter(p => !this.cachedIds.has(p.id)).length;
+
     // Slice current chunk to display
     const visibleItems = fullCatalog.slice(0, this.displayedCount);
 
@@ -197,10 +200,12 @@ export class HomeView {
       countBadge.textContent = `Showing ${visibleItems.length} of ${totalCount}`;
     }
 
-    // Hide or show Load More button
+    // Smart Load More Button visibility:
+    // Hide if all items displayed OR if there are no uncached remote call images left to load!
     const loadMoreWrap = this.element.querySelector('#load-more-wrap');
     if (loadMoreWrap) {
-      loadMoreWrap.style.display = this.displayedCount >= totalCount ? 'none' : 'flex';
+      const shouldHide = this.displayedCount >= totalCount || uncachedRemoteCount === 0;
+      loadMoreWrap.style.display = shouldHide ? 'none' : 'flex';
     }
 
     grid.innerHTML = `
@@ -213,21 +218,18 @@ export class HomeView {
             <img src="${img.url}" alt="${img.name}" loading="lazy" />
             <div class="image-card-noise-overlay"></div>
 
-            ${isCached ? `
-              <div class="image-card-mystery-badge" style="background: rgba(16, 185, 129, 0.85) !important;">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-                Saved
-              </div>
-            ` : `
-              <div class="image-card-mystery-badge">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                Mystery
-              </div>
-            `}
+            <!-- Micro Green Dot Indicator for Cached Local Images -->
+            ${isCached ? `<div class="image-card-cached-dot" title="Saved locally in IndexedDB"></div>` : ''}
+
+            <!-- Clean Mystery Badge at Bottom Right -->
+            <div class="image-card-mystery-badge">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              Mystery
+            </div>
 
             ${img.isCustom ? `
               <button class="image-card-delete" data-delete-id="${img.id}" title="Delete Custom Image">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
               </button>
             ` : ''}
           </div>
@@ -235,7 +237,7 @@ export class HomeView {
       }).join('')}
 
       <div class="image-card image-card-upload" id="upload-card">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
         <span style="font-size: 0.78rem; font-weight: 600;">Upload</span>
         <input type="file" id="file-input" accept="image/*" style="display: none;" />
       </div>
@@ -273,7 +275,7 @@ export class HomeView {
           const cached = await ImageStore.cacheRemoteImage(id, name, url);
           this.selectedImage = cached.blob || cached.url;
           this.cachedIds.add(id);
-          this.updateGalleryGrid(); // Update badge to "Saved"
+          this.updateGalleryGrid(); // Render micro green dot
         } else {
           this.selectedImage = url;
         }
@@ -356,9 +358,9 @@ export class HomeView {
         SettingsStore.applyTheme(nextTheme);
 
         singleThemeBtn.innerHTML = nextTheme === 'dark' ? `
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
         ` : `
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
         `;
       });
     }

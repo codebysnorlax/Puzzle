@@ -1,4 +1,4 @@
-/* Presentation & Multi-Breakpoint Responsive Styles — Refined Ultra-Sleek Floating Navbar & Proportioned Controls */
+/* Presentation & Multi-Breakpoint Responsive Styles — Pill-Rounded Navbar Capsules & Micro Green Cached Dot */
 
 :root {
   --header-height: 44px;
@@ -156,15 +156,15 @@
   transform: translateY(1px);
 }
 
-/* Sleek Segmented Capsule Navbar Toolbar */
+/* 100% Smooth Pill-Rounded Segmented Capsule Navbar Toolbar (Zero Sharp Corners) */
 .nav-segmented-capsule {
   display: inline-flex;
   align-items: center;
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
-  border-radius: 8px;
+  border-radius: var(--radius-pill) !important; /* Smooth 100% capsule rounded corners */
   overflow: hidden;
-  padding: 0;
+  padding: 0 2px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
   flex-shrink: 0;
   height: 30px;
@@ -173,7 +173,7 @@
 /* Dark mode override for segmented capsule */
 [data-theme="dark"] .nav-segmented-capsule {
   background: #0b111e;
-  border-color: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.14);
 }
 
 .nav-segmented-btn {
@@ -191,6 +191,20 @@
   padding: 0;
   margin: 0;
   outline: none;
+}
+
+.nav-segmented-capsule > button:first-child,
+.nav-segmented-capsule > .custom-select-wrap:first-child .nav-segmented-select {
+  border-top-left-radius: var(--radius-pill);
+  border-bottom-left-radius: var(--radius-pill);
+  padding-left: 12px;
+}
+
+.nav-segmented-capsule > button:last-child,
+.nav-segmented-capsule > .custom-select-wrap:last-child .nav-segmented-select {
+  border-top-right-radius: var(--radius-pill);
+  border-bottom-right-radius: var(--radius-pill);
+  padding-right: 12px;
 }
 
 [data-theme="dark"] .nav-segmented-btn {
@@ -282,7 +296,7 @@
 .custom-select-wrap::after {
   content: '';
   position: absolute;
-  right: 8px;
+  right: 10px;
   top: 48%;
   width: 4px;
   height: 4px;
@@ -464,6 +478,20 @@
   opacity: 0.35;
   mix-blend-mode: overlay;
   pointer-events: none;
+}
+
+/* Micro Green Dot Indicator for Locally Cached IndexedDB Images */
+.image-card-cached-dot {
+  position: absolute;
+  top: 7px;
+  left: 7px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.85);
+  pointer-events: none;
+  z-index: 5;
 }
 
 /* Mystery Badge Positioned at Bottom Right */
