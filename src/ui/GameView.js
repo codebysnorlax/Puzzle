@@ -57,9 +57,6 @@ export class GameView {
             </div>
           </div>
 
-          <button class="btn btn-icon" id="hud-btn-ref" title="Toggle Reference Image">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-          </button>
           <button class="btn btn-icon" id="hud-btn-restart" title="Restart Puzzle">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6"/><path d="M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
           </button>
@@ -71,12 +68,6 @@ export class GameView {
 
       <!-- Pixi Canvas Target Viewport -->
       <div id="puzzle-canvas-container">
-        <!-- Floating Reference Image Preview -->
-        <div id="reference-preview" class="surface-card" style="display: none; position: absolute; bottom: 16px; right: 16px; width: 160px; padding: var(--space-2); z-index: 50;">
-          <div style="font-size: 0.72rem; font-weight: 600; color: var(--text-muted); margin-bottom: var(--space-1);">Reference Image</div>
-          <img id="ref-img-element" src="" alt="Reference" style="width: 100%; height: auto; border-radius: var(--radius-sm);" />
-        </div>
-
         <!-- Non-Blocking Solved Action Bar -->
         <div id="solved-floating-bar" style="display: none; position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 60; width: max-content; max-width: 90vw;">
           <div style="background: var(--bg-surface); border: 1px solid var(--border-strong); border-radius: var(--radius-pill); padding: 0.4rem 1rem; display: flex; align-items: center; gap: var(--space-2); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);">
@@ -118,13 +109,6 @@ export class GameView {
       if (this.onOpenSettings) this.onOpenSettings();
     });
 
-    const refBtn = this.element.querySelector('#hud-btn-ref');
-    const refPreview = this.element.querySelector('#reference-preview');
-    refBtn.addEventListener('click', () => {
-      const isVisible = refPreview.style.display !== 'none';
-      refPreview.style.display = isVisible ? 'none' : 'block';
-    });
-
     // Solved floating bar actions
     const solvedRestart = this.element.querySelector('#solved-btn-restart');
     const solvedHome = this.element.querySelector('#solved-btn-home');
@@ -144,7 +128,7 @@ export class GameView {
     }
   }
 
-  updateHUD({ mode, difficulty, timeStr, moves, rating, imageUrl }) {
+  updateHUD({ mode, difficulty, timeStr, moves, rating }) {
     if (!this.element) return;
 
     if (mode && difficulty) {
@@ -170,16 +154,6 @@ export class GameView {
     if (rating !== undefined) {
       const ratingEl = this.element.querySelector('#hud-rating');
       if (ratingEl) ratingEl.textContent = `${rating}/100`;
-    }
-    if (imageUrl) {
-      const refImg = this.element.querySelector('#ref-img-element');
-      if (refImg) {
-        if (typeof imageUrl === 'string') {
-          refImg.src = imageUrl;
-        } else if (imageUrl instanceof File || imageUrl instanceof Blob) {
-          refImg.src = URL.createObjectURL(imageUrl);
-        }
-      }
     }
   }
 
