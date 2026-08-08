@@ -21,8 +21,10 @@ export class PieceRenderer {
 
     const frameW = baseTexture.width / cols;
     const frameH = baseTexture.height / rows;
-    const frameX = piece.col * frameW;
-    const frameY = piece.row * frameH;
+
+    // Safely clamp frame bounds to prevent boundary clipping
+    const frameX = Math.min(baseTexture.width - frameW, piece.col * frameW);
+    const frameY = Math.min(baseTexture.height - frameH, piece.row * frameH);
 
     // Crop texture frame from source image
     const croppedTexture = new Texture({
@@ -35,7 +37,7 @@ export class PieceRenderer {
     sprite.height = piece.height;
     container.addChild(sprite);
 
-    // Hairline border outline for clear tile separation
+    // Hairline border outline for tile separation
     const border = new Graphics();
     border.rect(0, 0, piece.width, piece.height);
     border.stroke({ width: 1, color: 0xffffff, alpha: 0.3 });

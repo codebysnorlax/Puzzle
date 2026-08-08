@@ -2,7 +2,7 @@ import { PuzzleValidator } from '../puzzle/PuzzleValidator.js';
 import { PieceAnimations } from '../animation/PieceAnimations.js';
 
 /**
- * InputHandler — Unified Pointer Handler for Forgiving Grid Tile Swap Gameplay
+ * InputHandler — Unified Pointer Handler with Local Container Coordinate Transformation
  */
 export class InputHandler {
   constructor({ puzzle, puzzleRenderer, timer, movementTracker, onPuzzleComplete, onFirstMovement }) {
@@ -20,6 +20,29 @@ export class InputHandler {
     this.hoveredPiece = null;
 
     this.bindEvents();
+  }
+
+  getLocalPointerPos(event) {
+    const container = this.renderer && this.renderer.pixiApp ? this.renderer.pixiApp.container : null;
+    const rect = container ? container.getBoundingClientRect() : { left: 0, top: 0 };
+    
+    let clientX = 0;
+    let clientY = 0;
+
+    if (event.clientX !== undefined && event.clientY !== undefined) {
+      clientX = event.clientX;
+      clientY = event.clientY;
+    } else if (event.global) {
+      clientX = event.global.x;
+      clientY = event.global.y;
+    }
+
+    return {
+      x: clientX - rect.left,
+      y: clientY - rect.top,
+      rawX: clientX,
+      rawY: clientY
+    };
   }
 
   bindEvents() {
@@ -43,42 +66,36 @@ export class InputHandler {
     this.activePiece = piece;
     this.startGridPos = { x: piece.x, y: piece.y };
 
-    const globalPos = event.global || { x: event.clientX, y: event.clientY };
+    const localPos = this.getLocalPointerPos(event);
     this.dragOffset = {
-      x: globalPos.x - piece.x,
-      y: globalPos.y - piece.y
+      x: localPos.x - piece.x,
+      y: localPos.y - piece.y
     };
 
-    // Elevate z-index for drag feedback
     spriteContainer.zIndex = 1000;
-    this.movementTracker.recordDragStart(globalPos.x, globalPos.y);
+    this.movementTracker.recordDragStart(localPos.rawX, localPos.rawY);
   }
 
   onPointerMove(event) {
     if (!this.isDragging || !this.activePiece) return;
 
-    const globalPos = { x: event.clientX, y: event.clientY };
+    const localPos = this.getLocalPointerPos(event);
 
-    // Record movement metrics
-    this.movementTracker.recordDragMove(globalPos.x, globalPos.y);
+    this.movementTracker.recordDragMove(localPos.rawX, localPos.rawY);
 
-    // Trigger auto timer start on first movement
     if (this.movementTracker.hasMovedMeaningfully && this.onFirstMovement) {
       this.onFirstMovement();
     }
 
-    // Drag active piece
+    // Move piece relative to local canvas container
     this.activePiece.setPosition(
-      globalPos.x - this.dragOffset.x,
-      globalPos.y - this.dragOffset.y
+      localPos.x - this.dragOffset.x,
+      localPos.y - this.dragOffset.y
     );
     this.renderer.updatePiecePositions([this.activePiece]);
 
-    // Check which grid cell is under cursor / tile center
-    const tileCenterX = this.activePiece.x + this.activePiece.width / 2;
-    const tileCenterY = this.activePiece.y + this.activePiece.height / 2;
-    const cell = this.getGridCellAtPointer(globalPos.x, globalPos.y) || this.getGridCellAtPointer(tileCenterX, tileCenterY);
-
+    // Check hovered target cell
+    const cell = this.getGridCellAtPointer(localPos.x, localPos.y);
     const targetCandidate = (cell && cell.targetPiece !== this.activePiece) ? cell.targetPiece : null;
 
     if (targetCandidate !== this.hoveredPiece) {
@@ -104,10 +121,9 @@ export class InputHandler {
     if (!this.isDragging || !this.activePiece) return;
 
     this.isDragging = false;
-    const globalPos = { x: event.clientX, y: event.clientY };
+    const localPos = this.getLocalPointerPos(event);
     this.movementTracker.recordDragEnd();
 
-    // Reset hover highlight
     if (this.hoveredPiece) {
       const sprite = this.renderer.getSpriteForPiece(this.hoveredPiece);
       if (sprite) {
@@ -120,10 +136,7 @@ export class InputHandler {
     const activeSprite = this.renderer.getSpriteForPiece(this.activePiece);
     if (activeSprite) activeSprite.zIndex = 1;
 
-    // Use forgiving grid cell projection (checks cursor position first, then tile center)
-    const tileCenterX = this.activePiece.x + this.activePiece.width / 2;
-    const tileCenterY = this.activePiece.y + this.activePiece.height / 2;
-    const cell = this.getGridCellAtPointer(globalPos.x, globalPos.y) || this.getGridCellAtPointer(tileCenterX, tileCenterY);
+    const cell = this.getGridCellAtPointer(localPos.x, localPos.y);
 
     if (cell && cell.targetPiece && cell.targetPiece !== this.activePiece) {
       const targetPiece = cell.targetPiece;
@@ -132,18 +145,15 @@ export class InputHandler {
       const sourceGridX = this.startGridPos.x;
       const sourceGridY = this.startGridPos.y;
 
-      // Update positions in data model
       this.activePiece.setPosition(targetGridX, targetGridY);
       targetPiece.setPosition(sourceGridX, sourceGridY);
 
-      // Check correctness
       this.activePiece.placed = PuzzleValidator.isPieceInCorrectSlot(this.activePiece);
       this.activePiece.locked = this.activePiece.placed;
 
       targetPiece.placed = PuzzleValidator.isPieceInCorrectSlot(targetPiece);
       targetPiece.locked = targetPiece.placed;
 
-      // Animate tile swap transitions
       const targetSprite = this.renderer.getSpriteForPiece(targetPiece);
 
       PieceAnimations.animateSnap(activeSprite, targetGridX, targetGridY, () => {
@@ -154,16 +164,14 @@ export class InputHandler {
         if (targetPiece.placed) PieceAnimations.animateLockPop(targetSprite);
       });
 
-      console.log(`[Input] Tile Swapped: Piece ${this.activePiece.id} ◄► Piece ${targetPiece.id} at Grid (${cell.row}, ${cell.col})`);
+      console.log(`[Input] Tile Swapped: Piece ${this.activePiece.id} ◄► Piece ${targetPiece.id}`);
     } else {
-      // Revert back to original starting grid position
       this.activePiece.setPosition(this.startGridPos.x, this.startGridPos.y);
       PieceAnimations.animateSnap(activeSprite, this.startGridPos.x, this.startGridPos.y);
     }
 
     this.activePiece = null;
 
-    // Check completion
     if (this.puzzle.checkCompletion()) {
       if (this.onPuzzleComplete) {
         this.onPuzzleComplete();
@@ -171,9 +179,6 @@ export class InputHandler {
     }
   }
 
-  /**
-   * Forgiving mathematical grid cell calculator derived from pointer or tile center
-   */
   getGridCellAtPointer(px, py) {
     if (!this.puzzle || !this.puzzle.boardLayout || !this.puzzle.grid) return null;
 
@@ -182,8 +187,7 @@ export class InputHandler {
     const pieceW = board.width / cols;
     const pieceH = board.height / rows;
 
-    // Allow a generous 50px margin around board perimeter
-    const margin = 50;
+    const margin = 40;
     if (
       px < board.x - margin ||
       px > board.x + board.width + margin ||
@@ -202,7 +206,6 @@ export class InputHandler {
     const targetX = Math.round(board.x + col * pieceW);
     const targetY = Math.round(board.y + row * pieceH);
 
-    // Find piece currently residing at (targetX, targetY)
     const targetPiece = this.puzzle.pieces.find(p => {
       return Math.abs(p.x - targetX) < 5 && Math.abs(p.y - targetY) < 5;
     });

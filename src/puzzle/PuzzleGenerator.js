@@ -19,8 +19,6 @@ export class PuzzleGenerator {
   static calculateGridDimensions(aspectRatio, difficulty = 'normal') {
     const targetCount = this.DIFFICULTY_PIECE_COUNTS[difficulty] || 16;
     
-    // C / R approx aspectRatio  ==>  C = R * aspectRatio
-    // R * C = targetCount  ==>  R^2 * aspectRatio = targetCount
     let rows = Math.round(Math.sqrt(targetCount / aspectRatio));
     rows = Math.max(2, rows);
     let cols = Math.round(targetCount / rows);
@@ -30,12 +28,14 @@ export class PuzzleGenerator {
   }
 
   /**
-   * Calculate centered board area inside viewport
+   * Calculate centered board area inside viewport with responsive padding
    */
-  static calculateBoardLayout(imageWidth, imageHeight, viewportWidth, viewportHeight, padding = 40) {
+  static calculateBoardLayout(imageWidth, imageHeight, viewportWidth, viewportHeight, customPadding) {
+    const padding = customPadding !== undefined ? customPadding : (viewportWidth < 640 ? 12 : 24);
     const imgAspect = imageWidth / imageHeight;
-    const availWidth = Math.max(200, viewportWidth - padding * 2);
-    const availHeight = Math.max(200, viewportHeight - padding * 2);
+
+    const availWidth = Math.max(160, viewportWidth - padding * 2);
+    const availHeight = Math.max(160, viewportHeight - padding * 2);
     const availAspect = availWidth / availHeight;
 
     let boardWidth, boardHeight;
