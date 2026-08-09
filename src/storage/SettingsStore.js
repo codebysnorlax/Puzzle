@@ -40,6 +40,17 @@ export class SettingsStore {
   static applyTheme(theme) {
     const activeTheme = theme || this.getSettings().theme || 'light';
     document.documentElement.setAttribute('data-theme', activeTheme);
+
+    // Dynamically sync theme-color meta tag with browser URL bar & mobile status bar
+    let metaThemeColor = document.querySelector('meta[name="theme-color"]');
+    if (!metaThemeColor) {
+      metaThemeColor = document.createElement('meta');
+      metaThemeColor.name = 'theme-color';
+      document.head.appendChild(metaThemeColor);
+    }
+    const color = activeTheme === 'dark' ? '#0f172a' : '#f7f6f2';
+    metaThemeColor.setAttribute('content', color);
+
     return activeTheme;
   }
 

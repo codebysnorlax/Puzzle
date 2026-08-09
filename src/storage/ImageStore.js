@@ -21,6 +21,14 @@ const BUILTIN_CATALOG = [
   }))
 ];
 
+/** On-Call Catalog — Extra 14 puzzles fetched ONLY on demand when user clicks "Call More Puzzles" */
+const ON_CALL_CATALOG = Array.from({ length: 14 }, (_, i) => ({
+  id: `on_call_${i + 1}`,
+  name: `On-Call Puzzle ${i + 1}`,
+  url: `./assets/onCall/puzzle_on_call${i + 1}.webp`,
+  isOnCall: true
+}));
+
 const LS_KEY = 'puzzles_cached';
 const activeObjectUrls = new Set();
 
@@ -63,6 +71,118 @@ export class ImageStore {
    */
   static getCatalog() {
     return BUILTIN_CATALOG;
+  }
+
+  /**
+   * Get On-Call catalog definition.
+   */
+  static getOnCallCatalog() {
+    return ON_CALL_CATALOG;
+  }
+
+  /**
+   * Fetch and cache On-Call puzzles on-demand when user clicks "Call More Puzzles".
+   * STRICT DB-FIRST POLICY:
+   * 1. Check IndexedDB first. If exists in DB, load directly from DB (0 network requests).
+   * 2. If NOT in DB, fetch from CDN (./assets/onCall/puzzle_on_callX.webp) and store in IndexedDB.
+   */
+  static async fetchAndCacheOnCallPuzzles(onProgress = null) {
+    const results = [];
+    const total = ON_CALL_CATALOG.length;
+
+    for (let i = 0; i < total; i++) {
+      const item = ON_CALL_CATALOG[i];
+      try {
+        // 1. ALWAYS check IndexedDB FIRST
+        const existing = await this.getImage(item.id);
+        if (existing && existing.blob && existing.blob.size > 0) {
+          results.push({ ...existing, isCustom: false, isOnCall: true });
+          if (onProgress) onProgress(i + 1, total);
+          continue;
+        }
+
+        // 2. If DB has no record, fetch from CDN URL
+        const res = await fetch(item.url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        let blob = await res.blob();
+
+        if (!blob.type || !blob.type.startsWith('image/')) {
+          blob = blob.slice(0, blob.size, 'image/webp');
+        }
+
+        // 3. Store in IndexedDB
+        const store = await dbManager.getStore('images', 'readwrite');
+        await new Promise((resolve, reject) => {
+          const req = store.put({ id: item.id, name: item.name, blob, createdAt: Date.now() });
+          req.onsuccess = () => resolve();
+          req.onerror = (e) => reject(e.target.error);
+        });
+
+        const cached = await this.getImage(item.id);
+        if (cached) {
+          results.push({ ...cached, isCustom: false, isOnCall: true });
+        } else {
+          results.push({ id: item.id, name: item.name, url: item.url, blob, isCustom: false, isOnCall: true });
+        }
+      } catch (err) {
+        console.warn(`[ImageStore] Failed to fetch/cache on-call puzzle ${item.id}:`, err);
+        results.push({ id: item.id, name: item.name, url: item.url, blob: null, isCustom: false, isOnCall: true });
+      }
+
+      if (onProgress) onProgress(i + 1, total);
+    }
+
+    localStorage.setItem('on_call_puzzles_called', 'true');
+    return results;
+  }
+
+  /**
+   * Get all On-Call puzzles that are ALREADY stored in IndexedDB.
+   */
+  static async getOnCallPuzzlesFromDB() {
+    const results = [];
+    for (const item of ON_CALL_CATALOG) {
+      const cached = await this.getImage(item.id);
+      if (cached && cached.blob && cached.blob.size > 0) {
+        results.push({ ...cached, isCustom: false, isOnCall: true });
+      }
+    }
+    return results;
+  }
+
+  /**
+   * Fetch and cache a SINGLE on-call puzzle item. DB-first.
+   * Used for one-by-one progressive loading with skeleton shimmer.
+   * @param {{ id: string, name: string, url: string }} item
+   * @returns {Promise<object|null>}
+   */
+  static async fetchAndCacheSingleOnCall(item) {
+    // 1. Check IndexedDB first
+    const existing = await this.getImage(item.id);
+    if (existing && existing.blob && existing.blob.size > 0) {
+      return { ...existing, isCustom: false, isOnCall: true };
+    }
+
+    // 2. Fetch from CDN
+    const res = await fetch(item.url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    let blob = await res.blob();
+
+    if (!blob.type || !blob.type.startsWith('image/')) {
+      blob = blob.slice(0, blob.size, 'image/webp');
+    }
+
+    // 3. Store in IndexedDB
+    const store = await dbManager.getStore('images', 'readwrite');
+    await new Promise((resolve, reject) => {
+      const req = store.put({ id: item.id, name: item.name, blob, createdAt: Date.now() });
+      req.onsuccess = () => resolve();
+      req.onerror = (e) => reject(e.target.error);
+    });
+
+    const cached = await this.getImage(item.id);
+    if (cached) return { ...cached, isCustom: false, isOnCall: true };
+    return { id: item.id, name: item.name, url: item.url, blob, isCustom: false, isOnCall: true };
   }
 
   /**
@@ -253,9 +373,11 @@ export class ImageStore {
     console.log('[ImageStore] Starting deep database & cache wipe...');
     try {
       this.revokeAllTrackedUrls();
-      const activeTheme = SettingsStore.getSettings().theme || 'light';
 
-      // Step 1: Open DB and clear all object stores within an explicit transaction that WAITS FOR ONCOMPLETE
+      // Step 1: Close active IDB connection
+      dbManager.close();
+
+      // Step 2: Open and clear object stores within explicit transaction
       try {
         const db = await dbManager.open();
         if (db) {
@@ -263,42 +385,24 @@ export class ImageStore {
           if (storeNames.length > 0) {
             await new Promise((resolve) => {
               const tx = db.transaction(storeNames, 'readwrite');
-              tx.oncomplete = () => {
-                console.log('[ImageStore] IDB Transaction committed successfully.');
-                resolve();
-              };
-              tx.onerror = (e) => {
-                console.warn('[ImageStore] IDB Transaction error:', e);
-                resolve();
-              };
-              tx.onabort = () => {
-                console.warn('[ImageStore] IDB Transaction aborted');
-                resolve();
-              };
+              tx.oncomplete = () => resolve();
+              tx.onerror = () => resolve();
+              tx.onabort = () => resolve();
 
               for (const name of storeNames) {
                 try {
                   tx.objectStore(name).clear();
-                } catch (err) {
-                  console.warn(`[ImageStore] Failed to clear objectStore ${name}:`, err);
-                }
+                } catch (err) {}
               }
             });
           }
         }
-      } catch (e) {
-        console.warn('[ImageStore] Error clearing IDB objectStores:', e);
-      }
+      } catch (e) {}
 
-      // Step 2: Close database connection
-      if (dbManager.db) {
-        try {
-          dbManager.db.close();
-        } catch (e) {}
-        dbManager.db = null;
-      }
+      // Step 3: Close connection BEFORE deleting database
+      dbManager.close();
 
-      // Step 3: Delete IndexedDB database 'PuzzleDB' with explicit blocked/success handler
+      // Step 4: Delete IndexedDB database 'PuzzleDB'
       await new Promise((resolve) => {
         const req = indexedDB.deleteDatabase('PuzzleDB');
         req.onsuccess = () => {
@@ -307,25 +411,23 @@ export class ImageStore {
         };
         req.onerror = () => resolve();
         req.onblocked = () => {
-          console.warn('[ImageStore] IndexedDB delete blocked, proceeding...');
+          console.warn('[ImageStore] IndexedDB delete blocked, closing connection...');
+          dbManager.close();
           resolve();
         };
       });
 
-      // Step 4: Clear all Service Worker caches (CacheStorage)
+      // Step 5: Clear CacheStorage
       if ('caches' in window) {
         try {
           const keys = await caches.keys();
           for (const key of keys) {
             await caches.delete(key);
           }
-          console.log('[ImageStore] CacheStorage cleared.');
-        } catch (e) {
-          console.warn('[ImageStore] Failed to clear CacheStorage:', e);
-        }
+        } catch (e) {}
       }
 
-      // Step 5: Unregister Service Worker instances
+      // Step 6: Unregister Service Worker
       if ('serviceWorker' in navigator) {
         try {
           const regs = await navigator.serviceWorker.getRegistrations();
@@ -335,20 +437,16 @@ export class ImageStore {
         } catch (e) {}
       }
 
-      // Step 6: Complete 100% purge of localStorage, sessionStorage, and cookies
+      // Step 7: Clear localStorage & sessionStorage completely
       try {
         localStorage.clear();
         sessionStorage.clear();
-      } catch (e) {
-        console.warn('[ImageStore] LocalStorage clear error:', e);
-      }
+      } catch (e) {}
 
-      // Step 7: Apply fresh default Light Theme
       document.documentElement.setAttribute('data-theme', 'light');
-
       console.log('[ImageStore] 100% Brand new user fresh wipe complete!');
     } catch (err) {
-      console.error('[ImageStore] Error during deep clearAllDatabaseData:', err);
+      console.error('[ImageStore] Error during clearAllDatabaseData:', err);
     }
   }
 }

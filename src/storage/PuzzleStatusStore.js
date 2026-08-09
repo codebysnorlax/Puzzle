@@ -45,7 +45,24 @@ export class PuzzleStatusStore {
   }
 
   /**
-   * Mark a puzzle as quit/failed (Red Border) if not already completed
+   * Mark a puzzle as started / in-progress (1 Blue Tick, 1 Gray Tick) if not already completed
+   * @param {string} imageId 
+   */
+  static markStarted(imageId) {
+    if (!imageId) return;
+    const statuses = this.getStatuses();
+    if (statuses[imageId] !== 'completed') {
+      statuses[imageId] = 'started';
+      try {
+        localStorage.setItem(LS_STATUS_KEY, JSON.stringify(statuses));
+      } catch (e) {
+        console.warn('[PuzzleStatusStore] Failed to save started status:', e);
+      }
+    }
+  }
+
+  /**
+   * Mark a puzzle as quit/failed (2 Gray Ticks) if not already completed
    * @param {string} imageId 
    */
   static markQuit(imageId) {

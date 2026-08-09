@@ -117,27 +117,34 @@ export class Game {
     });
 
     this.isStarted = true;
+
+    // Track started status (1 Blue Tick, 1 Gray Tick)
+    if (this.config && this.config.imageId) {
+      PuzzleStatusStore.markStarted(this.config.imageId);
+    }
   }
 
   updateDockOrientation() {
     if (!this.gameView) return;
 
+    const viewportW = (this.container && this.container.clientWidth) || window.innerWidth;
+    const viewportH = (this.container && this.container.clientHeight) || window.innerHeight;
+
+    // On mobile devices or short viewports (<= 768px width OR <= 600px height), ALWAYS position docks at Top & Bottom
+    if (viewportW <= 768 || viewportH <= 600) {
+      this.gameView.setDockOrientation(true);
+      return;
+    }
+
     if (this.puzzle && this.puzzle.boardLayout) {
       const board = this.puzzle.boardLayout;
-      const viewportW = (this.container && this.container.clientWidth) || window.innerWidth;
-      const viewportH = (this.container && this.container.clientHeight) || window.innerHeight;
-
-      // Calculate actual available pixel margins on left/right vs top/bottom
       const sideSpace = (viewportW - board.width) / 2;
       const verticalSpace = (viewportH - board.height) / 2;
 
-      // If side space is under 65px (left/right docks would overlap board pieces),
-      // OR if vertical space is greater than side space, position docks at Top & Bottom (isTopBottom = true)!
       const isTopBottom = sideSpace < 65 || (verticalSpace >= 50 && verticalSpace > sideSpace);
-
       this.gameView.setDockOrientation(isTopBottom);
     } else {
-      const isTopBottom = window.innerWidth <= 768 || window.innerWidth < window.innerHeight;
+      const isTopBottom = viewportW <= 768 || viewportW < viewportH;
       this.gameView.setDockOrientation(isTopBottom);
     }
   }

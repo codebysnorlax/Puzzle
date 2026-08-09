@@ -9,7 +9,12 @@ export class PuzzleValidator {
    */
   static isPieceInCorrectSlot(piece) {
     if (!piece) return false;
-    return Math.abs(piece.x - piece.correctX) < 2 && Math.abs(piece.y - piece.correctY) < 2;
+    if (piece.currentGridRow !== undefined && piece.currentGridCol !== undefined) {
+      if (piece.currentGridRow === piece.row && piece.currentGridCol === piece.col) {
+        return true;
+      }
+    }
+    return Math.abs(piece.x - piece.correctX) <= 6 && Math.abs(piece.y - piece.correctY) <= 6;
   }
 
   /**

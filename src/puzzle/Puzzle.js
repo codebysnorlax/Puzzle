@@ -88,6 +88,15 @@ export class Puzzle {
     });
   }
 
+  getSlotCoordinates(row, col) {
+    const pieceWidth = Math.round(this.boardLayout.width / this.cols);
+    const pieceHeight = Math.round(this.boardLayout.height / this.rows);
+    return {
+      x: Math.round(this.boardLayout.x + col * pieceWidth),
+      y: Math.round(this.boardLayout.y + row * pieceHeight)
+    };
+  }
+
   checkCompletion() {
     this.isComplete = PuzzleValidator.isPuzzleComplete(this.pieces);
     return this.isComplete;

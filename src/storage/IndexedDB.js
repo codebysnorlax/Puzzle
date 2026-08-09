@@ -40,6 +40,9 @@ export class IndexedDBManager {
 
       request.onsuccess = (event) => {
         this.db = event.target.result;
+        this.db.onversionchange = () => {
+          this.close();
+        };
         resolve(this.db);
       };
 
@@ -48,6 +51,15 @@ export class IndexedDBManager {
         reject(event.target.error);
       };
     });
+  }
+
+  close() {
+    if (this.db) {
+      try {
+        this.db.close();
+      } catch (e) {}
+      this.db = null;
+    }
   }
 
   async getStore(storeName, mode = 'readonly') {

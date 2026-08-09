@@ -57,7 +57,10 @@ export class App {
   }
 
   async promptPwaInstall() {
-    if (!this.deferredInstallPrompt) return false;
+    if (!this.deferredInstallPrompt) {
+      alert('📱 Install Application:\n\nTo install this app on your mobile/desktop device:\n• Android/Chrome: Tap 3 dots Menu -> Add to Home Screen / Install App\n• iPhone/Safari: Tap Share icon -> Add to Home Screen');
+      return false;
+    }
     this.deferredInstallPrompt.prompt();
     const { outcome } = await this.deferredInstallPrompt.userChoice;
     console.log('[App] PWA install choice:', outcome);

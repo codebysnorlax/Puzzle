@@ -40,6 +40,10 @@
   --border-strong: var(--border);
 
   --pixi-bg: 0xf0eeea;
+  
+  /* RGB values for rgba() usage */
+  --modal-bg-rgb: 242, 239, 234;
+  --card-bg-rgb: 250, 248, 245;
 }
 
 /* Dark Theme Overrides */
@@ -77,6 +81,10 @@
   --border-strong: var(--border);
 
   --pixi-bg: 0x18202c;
+  
+  /* RGB values for rgba() usage */
+  --modal-bg-rgb: 30, 41, 59;
+  --card-bg-rgb: 51, 65, 85;
 }
 
 :root {

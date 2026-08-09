@@ -66,6 +66,8 @@ export class InputHandler {
     this.isDragging = true;
     this.activePiece = piece;
     this.startGridPos = { x: piece.x, y: piece.y };
+    this.startGridRow = piece.currentGridRow;
+    this.startGridCol = piece.currentGridCol;
 
     const localPos = this.getLocalPointerPos(event);
     this.dragOffset = {
@@ -142,13 +144,21 @@ export class InputHandler {
 
     if (cell && cell.targetPiece && cell.targetPiece !== draggedPiece) {
       const targetPiece = cell.targetPiece;
-      const targetGridX = cell.targetX;
-      const targetGridY = cell.targetY;
-      const sourceGridX = this.startGridPos.x;
-      const sourceGridY = this.startGridPos.y;
+      const targetSlotRow = cell.row;
+      const targetSlotCol = cell.col;
+      const sourceSlotRow = this.startGridRow !== undefined ? this.startGridRow : targetPiece.currentGridRow;
+      const sourceSlotCol = this.startGridCol !== undefined ? this.startGridCol : targetPiece.currentGridCol;
 
-      draggedPiece.setPosition(targetGridX, targetGridY);
-      targetPiece.setPosition(sourceGridX, sourceGridY);
+      const draggedCoords = this.puzzle.getSlotCoordinates ? this.puzzle.getSlotCoordinates(targetSlotRow, targetSlotCol) : { x: cell.targetX, y: cell.targetY };
+      const sourceCoords = (this.puzzle.getSlotCoordinates && sourceSlotRow !== undefined) ? this.puzzle.getSlotCoordinates(sourceSlotRow, sourceSlotCol) : this.startGridPos;
+
+      draggedPiece.currentGridRow = targetSlotRow;
+      draggedPiece.currentGridCol = targetSlotCol;
+      targetPiece.currentGridRow = sourceSlotRow;
+      targetPiece.currentGridCol = sourceSlotCol;
+
+      draggedPiece.setPosition(draggedCoords.x, draggedCoords.y);
+      targetPiece.setPosition(sourceCoords.x, sourceCoords.y);
 
       draggedPiece.placed = PuzzleValidator.isPieceInCorrectSlot(draggedPiece);
       draggedPiece.locked = draggedPiece.placed;
@@ -158,13 +168,8 @@ export class InputHandler {
 
       const targetSprite = this.renderer.getSpriteForPiece(targetPiece);
 
-      PieceAnimations.animateSnap(activeSprite, targetGridX, targetGridY, () => {
-        if (draggedPiece && draggedPiece.placed) PieceAnimations.animateLockPop(activeSprite);
-      });
-
-      PieceAnimations.animateSnap(targetSprite, sourceGridX, sourceGridY, () => {
-        if (targetPiece && targetPiece.placed) PieceAnimations.animateLockPop(targetSprite);
-      });
+      PieceAnimations.animateSnap(activeSprite, draggedCoords.x, draggedCoords.y);
+      PieceAnimations.animateSnap(targetSprite, sourceCoords.x, sourceCoords.y);
     } else {
       draggedPiece.setPosition(this.startGridPos.x, this.startGridPos.y);
       PieceAnimations.animateSnap(activeSprite, this.startGridPos.x, this.startGridPos.y);
