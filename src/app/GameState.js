@@ -34,7 +34,6 @@ export class GameStateMachine {
 
     const oldState = this._state;
     this._state = newState;
-    console.log(`[GameState] ${oldState} ──► ${newState}`);
 
     this._listeners.forEach(fn => fn(newState, oldState));
     return true;

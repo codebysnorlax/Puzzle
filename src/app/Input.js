@@ -1,5 +1,6 @@
 import { PuzzleValidator } from '../puzzle/PuzzleValidator.js';
 import { PieceAnimations } from '../animation/PieceAnimations.js';
+import { SoundEffects } from '../game/SoundEffects.js';
 
 /**
  * InputHandler — Unified Pointer Handler with Local Container Coordinate Transformation & Safe Animation Scoping
@@ -164,16 +165,16 @@ export class InputHandler {
       PieceAnimations.animateSnap(targetSprite, sourceGridX, sourceGridY, () => {
         if (targetPiece && targetPiece.placed) PieceAnimations.animateLockPop(targetSprite);
       });
-
-      console.log(`[Input] Tile Swapped: Piece ${draggedPiece.id} ◄► Piece ${targetPiece.id}`);
     } else {
       draggedPiece.setPosition(this.startGridPos.x, this.startGridPos.y);
       PieceAnimations.animateSnap(activeSprite, this.startGridPos.x, this.startGridPos.y);
     }
 
     this.activePiece = null;
+    SoundEffects.playMoveSound();
 
     if (this.puzzle.checkCompletion()) {
+      SoundEffects.playWinSound();
       if (this.onPuzzleComplete) {
         this.onPuzzleComplete();
       }

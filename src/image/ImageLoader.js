@@ -40,9 +40,9 @@ export class ImageLoader {
   }
 
   /**
-   * Validate and load user uploaded File object
-   * @param {File} file 
-   * @returns {Promise<{ img: HTMLImageElement, width: number, height: number, file: File, objectUrl: string }>}
+   * Validate and load user uploaded or cached File/Blob object
+   * @param {File|Blob} file 
+   * @returns {Promise<{ img: HTMLImageElement, width: number, height: number, file: File|Blob, objectUrl: string }>}
    */
   static loadFromFile(file) {
     return new Promise((resolve, reject) => {
@@ -50,8 +50,9 @@ export class ImageLoader {
         return reject(new Error('[ImageLoader] No file provided'));
       }
 
-      if (!file.type.startsWith('image/')) {
-        return reject(new Error(`[ImageLoader] File type '${file.type}' is not a valid image.`));
+      // Permissive check: allow HTMLImageElement to decode even if file.type is blank or generic
+      if (file.type && !file.type.startsWith('image/') && file.type !== 'application/octet-stream') {
+        console.warn(`[ImageLoader] Non-standard MIME type '${file.type}', attempting image decode anyway...`);
       }
 
       const objectUrl = URL.createObjectURL(file);

@@ -1,24 +1,36 @@
 import { SettingsStore } from '../storage/SettingsStore.js';
+import { ImageStore } from '../storage/ImageStore.js';
+import { APP_VERSION, BUILD_DATE, isStandalone } from '../app/AppVersion.js';
 
 /**
- * SettingsView — User preferences and theme modal
+ * SettingsView — User preferences, theme modal, and App Version info
  */
 export class SettingsView {
-  constructor(container, onClose) {
+  constructor(container, onClose = null, app = null) {
     this.container = container;
     this.onClose = onClose;
+    this.app = app;
 
     this.render();
   }
 
+  updatePwaInstallState(show) {
+    const pwaSection = this.element.querySelector('#settings-pwa-install-section');
+    if (pwaSection) {
+      pwaSection.style.display = show ? 'flex' : 'none';
+    }
+  }
+
   render() {
     const settings = SettingsStore.getSettings();
+    const isPwaStandalone = isStandalone();
+    const canInstall = Boolean(this.app && this.app.deferredInstallPrompt);
 
     this.element = document.createElement('div');
     this.element.className = 'modal-overlay';
 
     this.element.innerHTML = `
-      <div class="modal-content surface-card" style="padding: var(--space-6);">
+      <div class="modal-content surface-card" style="padding: var(--space-6); max-width: 480px; width: 90%;">
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-5);">
           <h2 style="font-size: 1.25rem; font-weight: 700; color: var(--text-main);">Settings</h2>
           <button class="btn btn-icon" id="btn-close-settings" title="Close Settings">
@@ -49,7 +61,7 @@ export class SettingsView {
           </div>
 
           <!-- Snap Sensitivity -->
-          <div style="display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-subtle); padding-bottom: var(--space-3);">
             <div>
               <div style="font-weight: 600; font-size: 0.9rem;">Snap Sensitivity</div>
               <div style="font-size: 0.78rem; color: var(--text-muted);">Distance threshold for snapping</div>
@@ -59,6 +71,40 @@ export class SettingsView {
               <option value="strict" ${settings.snapSensitivity === 'strict' ? 'selected' : ''}>Strict</option>
               <option value="relaxed" ${settings.snapSensitivity === 'relaxed' ? 'selected' : ''}>Relaxed</option>
             </select>
+          </div>
+
+          <!-- PWA Install Banner Option -->
+          <div id="settings-pwa-install-section" style="display: ${canInstall ? 'flex' : 'none'}; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-subtle); padding-bottom: var(--space-3);">
+            <div>
+              <div style="font-weight: 600; font-size: 0.9rem;">Install Application</div>
+              <div style="font-size: 0.78rem; color: var(--text-muted);">Install app to home screen for offline play</div>
+            </div>
+            <button class="btn btn-secondary" id="btn-pwa-install-settings" style="padding: 4px 12px; min-height: 34px; font-size: 0.8rem;">Install App</button>
+          </div>
+
+          <!-- Database Cleaner / Reset Fresh Option -->
+          <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-subtle); padding-bottom: var(--space-3);">
+            <div>
+              <div style="font-weight: 600; font-size: 0.9rem; color: #ef4444;">Reset Database</div>
+              <div style="font-size: 0.78rem; color: var(--text-muted);">Reset app from fresh (confirmation required)</div>
+            </div>
+            <button class="btn" id="btn-reset-db-settings" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 4px 12px; min-height: 34px; font-size: 0.8rem;">Reset Data</button>
+          </div>
+
+          <!-- App Version & PWA Runtime Status -->
+          <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 12px; margin-top: 4px;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.82rem; margin-bottom: 6px;">
+              <span style="color: var(--text-muted);">App Version:</span>
+              <span style="font-weight: 600; color: var(--primary-light);">v${APP_VERSION} (${BUILD_DATE})</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.82rem; margin-bottom: 6px;">
+              <span style="color: var(--text-muted);">Display Mode:</span>
+              <span style="font-weight: 500; color: var(--text-main);">${isPwaStandalone ? 'Standalone PWA App' : 'Browser Web App'}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.82rem;">
+              <span style="color: var(--text-muted);">Storage & Cache:</span>
+              <span style="font-weight: 500; color: var(--text-main);">IndexedDB Local-First</span>
+            </div>
           </div>
         </div>
 
@@ -82,6 +128,7 @@ export class SettingsView {
       darkBtn.className = 'btn btn-primary';
       lightBtn.className = 'btn btn-secondary';
       SettingsStore.applyTheme('dark');
+      if (this.app) this.app.onThemeChange('dark');
     });
 
     lightBtn.addEventListener('click', () => {
@@ -89,7 +136,28 @@ export class SettingsView {
       lightBtn.className = 'btn btn-primary';
       darkBtn.className = 'btn btn-secondary';
       SettingsStore.applyTheme('light');
+      if (this.app) this.app.onThemeChange('light');
     });
+
+    const pwaInstallSettingsBtn = this.element.querySelector('#btn-pwa-install-settings');
+    if (pwaInstallSettingsBtn) {
+      pwaInstallSettingsBtn.addEventListener('click', async () => {
+        if (this.app) {
+          await this.app.promptPwaInstall();
+        }
+      });
+    }
+
+    const resetDbBtn = this.element.querySelector('#btn-reset-db-settings');
+    if (resetDbBtn) {
+      resetDbBtn.addEventListener('click', async () => {
+        if (confirm('⚠️ ERASE ALL DATA CONFIRMATION:\n\nAre you sure you want to reset everything like a brand new user?\nThis will erase all custom images, match stats, and puzzle status tracking 100%.\n\nThis action CANNOT be undone!')) {
+          resetDbBtn.disabled = true;
+          await ImageStore.clearAllDatabaseData();
+          window.location.href = window.location.origin + window.location.pathname;
+        }
+      });
+    }
 
     const close = () => {
       const sound = this.element.querySelector('#setting-sound').checked;

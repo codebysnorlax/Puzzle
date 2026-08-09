@@ -1,181 +1,152 @@
 import { SettingsStore } from '../storage/SettingsStore.js';
 import { ImageStore } from '../storage/ImageStore.js';
+import { APP_VERSION } from '../app/AppVersion.js';
+import { escapeHtml, validateImageFile } from '../utils/security.js';
+import { PuzzleStatusStore } from '../storage/PuzzleStatusStore.js';
 
 /**
- * HomeView — Clean Modern Gallery & Sleek Minimal Navbar
- * Displays all call puzzles cleanly with local-first IndexedDB caching & modern pill navbar controls.
+ * HomeView — Clean Navbar with Radio Difficulty & IndexedDB-First WebP Gallery
  */
 export class HomeView {
-  constructor(container, onStartGame) {
+  constructor(container, onStartGame, app = null) {
     this.container = container;
     this.onStartGame = onStartGame;
+    this.app = app;
 
-    // Built-in sample images
-    this.sampleImages = [
-      { id: 'demo1', name: 'Mountain Landscape', url: './puzzles/demo.jpg', isCustom: false },
-      { id: 'demo2', name: 'Scenic Sunset', url: './puzzles/demo2.jpg', isCustom: false },
-      { id: 'snorlax', name: 'Snorlax', url: './puzzles/snorlax.png', isCustom: false },
-      { id: 'test', name: 'Vibrant Artwork', url: './puzzles/test.jpg', isCustom: false }
-    ];
-
-    // Catalog of 19 call puzzles
-    this.callPuzzles = Array.from({ length: 19 }, (_, i) => ({
-      id: `call_puzzle_${i + 1}`,
-      name: `Puzzle ${i + 1}`,
-      url: `./call/puzzle${i + 1}.png`,
-      isCustom: false,
-      isCallPuzzle: true
-    }));
-
+    this.builtinPuzzles = [];
     this.customImages = [];
-    this.cachedIds = new Set(); // Set of image IDs currently saved in IndexedDB
-
-    // Display all items directly so all call images are visible
     this.chunkSize = 12;
-    this.displayedCount = 25; // Displays sample images + all 19 call images!
-
-    this.selectedImage = this.sampleImages[0].url;
-    this.selectedImageId = this.sampleImages[0].id;
-    this.selectedMode = 'normal'; // Default: Normal Grid Swap
-    this.selectedDifficulty = 'normal'; // 'easy', 'normal', 'hard', 'expert'
+    this.displayedCount = 25;
+    this.selectedImage = './images/demo.webp';
+    this.selectedImageId = 'demo1';
+    this.selectedDifficulty = 'normal';
 
     this.render();
-    this.loadCustomAndCachedImages();
+    this.initImagesAndCaching();
   }
 
-  async loadCustomAndCachedImages() {
+  async initImagesAndCaching() {
+    // 1. Initial render with local/cached data
+    await this.refreshCatalog();
+
+    // 2. Ensure all built-in images are cached 1-by-1 into IndexedDB
+    // On Cloudflare Pages deployment, this runs on first visit and marks localStorage 'puzzles_cached' = 'true'
+    ImageStore.ensureAllCached((curr, total) => {
+      const countBadge = this.element.querySelector('#gallery-count-badge');
+      if (countBadge && localStorage.getItem('puzzles_cached') !== 'true') {
+        countBadge.textContent = `Caching Offline Puzzles (${curr}/${total})...`;
+      }
+    }).then(() => {
+      this.refreshCatalog();
+    }).catch(err => {
+      console.warn('[HomeView] Image caching error:', err);
+    });
+  }
+
+  async refreshCatalog() {
     try {
-      const records = await ImageStore.getAllImages();
-      this.customImages = records.filter(r => r.isCustom);
-      
-      // Track all cached IDs in IndexedDB
-      this.cachedIds = new Set(records.map(r => r.id));
+      this.builtinPuzzles = await ImageStore.getAllBuiltinImages();
+      this.customImages = await ImageStore.getCustomImages();
+
+      // Ensure selected image reference is valid
+      const selectedItem = [...this.builtinPuzzles, ...this.customImages].find(img => img.id === this.selectedImageId);
+      if (selectedItem) {
+        this.selectedImage = selectedItem.blob ? URL.createObjectURL(selectedItem.blob) : selectedItem.url;
+      }
 
       this.updateGalleryGrid();
     } catch (err) {
-      console.warn('[HomeView] Failed to load cached images from IndexedDB:', err);
+      console.warn('[HomeView] Catalog refresh error:', err);
+    }
+  }
+
+  updatePwaInstallState(show) {
+    const installBtn = this.element.querySelector('#btn-pwa-install-home');
+    if (installBtn) {
+      installBtn.style.display = show ? 'inline-flex' : 'none';
     }
   }
 
   render() {
     const currentTheme = SettingsStore.getSettings().theme || 'light';
+    const canInstall = Boolean(this.app && this.app.deferredInstallPrompt);
 
     this.element = document.createElement('div');
     this.element.className = 'view home-view active';
 
     this.element.innerHTML = `
-      <!-- Sleek Modern Redesigned Navbar Header -->
-      <header class="home-header">
-        <div class="nav-brand">
-          <div class="brand-icon">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>
+      <nav class="top-nav">
+        <div class="nav-inner">
+          <div class="nav-left">
+            <div class="nav-avatar">
+              <img src="https://avatars.githubusercontent.com/codebysnorlax" alt="codebysnorlax" />
+            </div>
+            <span class="nav-brand">Puzzle</span>
+            <span class="version-badge" title="App Version" style="font-size: 0.7rem; padding: 2px 6px; border-radius: var(--radius-sm); background: rgba(99, 102, 241, 0.15); color: var(--primary-light); font-weight: 600; border: 1px solid rgba(99, 102, 241, 0.3);">v${APP_VERSION}</span>
           </div>
-          <span class="home-title">Pick and Play</span>
-        </div>
 
-        <div class="nav-actions">
-          <!-- Desktop Pill Control Group -->
-          <div class="nav-actions nav-desktop-controls">
-            <!-- Mode Dropdown Pill -->
-            <div class="nav-pill-select-wrap">
-              <select class="nav-pill-select" id="nav-mode-select" title="Puzzle Mode">
-                <option value="normal" selected>Mode: Normal</option>
-                <option value="jigsaw">Mode: Jigsaw</option>
-              </select>
+          <div class="nav-center">
+            <div class="diff-radio-group">
+              <label class="diff-radio">
+                <input type="radio" name="difficulty" value="easy" />
+                <span>Easy</span>
+              </label>
+              <label class="diff-radio">
+                <input type="radio" name="difficulty" value="normal" checked />
+                <span>Medium</span>
+              </label>
+              <label class="diff-radio">
+                <input type="radio" name="difficulty" value="hard" />
+                <span>Hard</span>
+              </label>
             </div>
+          </div>
 
-            <!-- Difficulty Dropdown Pill -->
-            <div class="nav-pill-select-wrap">
-              <select class="nav-pill-select" id="nav-diff-select" title="Difficulty Level">
-                <option value="easy">Easy (9)</option>
-                <option value="normal" selected>Normal (16)</option>
-                <option value="hard">Hard (25)</option>
-                <option value="expert">Expert (36)</option>
-              </select>
-            </div>
+          <div class="nav-right">
+            <button class="nav-btn nav-btn-ghost" id="btn-pwa-install-home" title="Install Application" style="display: ${canInstall ? 'inline-flex' : 'none'}; gap: 6px; font-size: 0.8rem;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <span>Install</span>
+            </button>
 
-            <!-- Light / Dark Theme Button Pill -->
-            <button class="btn-icon" id="home-theme-toggle-single" title="Toggle Theme">
+            <button class="nav-btn nav-btn-ghost" id="btn-hard-refresh-home" title="Hard Refresh App (Clear cache & fix bugs without deleting images)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            </button>
+
+            <button class="nav-btn nav-btn-ghost" id="btn-reset-db-nav" title="Reset Database from Fresh (Clears IndexedDB & localStorage with confirmation)" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.3);">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            </button>
+
+            <button class="nav-btn nav-btn-ghost" id="home-theme-toggle-single" title="Toggle Theme">
               ${currentTheme === 'dark' ? `
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
               ` : `
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
               `}
             </button>
-          </div>
-
-          <!-- Play Now Primary Action CTA Button -->
-          <button class="btn btn-primary" id="btn-start">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-            Play Now
-          </button>
-
-          <!-- Mobile Hamburger Drawer Button -->
-          <div class="hamburger-btn-wrap">
-            <button class="btn-icon" id="btn-hamburger" title="Open Menu">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-            </button>
+            <button class="nav-btn nav-btn-solid" id="btn-start">Start Puzzle</button>
           </div>
         </div>
-      </header>
+      </nav>
 
-      <!-- Main Section: Image Gallery -->
-      <main>
+      <main class="home-main-content">
         <section class="flat-section">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-3);">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-4);">
             <h2 class="home-section-title" style="margin-bottom: 0;">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
               Choose Mystery Puzzle
             </h2>
-            <span id="gallery-count-badge" style="font-size: 0.78rem; font-weight: 600; color: var(--text-muted);">
+            <span id="gallery-count-badge" style="font-size: 0.76rem; font-weight: 600; color: var(--text-muted);">
               23 Puzzles Available
             </span>
           </div>
 
-          <div class="image-grid" id="image-grid">
-            <!-- Grid cards populated dynamically in updateGalleryGrid -->
-          </div>
+          <div class="image-grid" id="image-grid"></div>
 
-          <!-- Optional Load More Button -->
           <div id="load-more-wrap" style="display: none; justify-content: center; margin-top: var(--space-4);">
-            <button class="btn btn-secondary" id="btn-load-more">
-              Load More Puzzles
-            </button>
+            <button class="btn btn-secondary" id="btn-load-more">Load More Puzzles</button>
           </div>
         </section>
       </main>
-
-      <!-- Mobile Hamburger Drawer Overlay -->
-      <div class="mobile-drawer-overlay" id="mobile-drawer">
-        <div class="mobile-drawer-content">
-          <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-subtle); padding-bottom: var(--space-3);">
-            <span style="font-weight: 700; font-size: 1rem;">Puzzle Controls</span>
-            <button class="btn btn-icon" id="btn-close-drawer" style="width: 32px; height: 32px;">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
-          </div>
-
-          <div style="display: flex; flex-direction: column; gap: var(--space-3);">
-            <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">Puzzle Mode</label>
-            <div class="nav-pill-select-wrap">
-              <select class="nav-pill-select" id="mobile-mode-select" style="width: 100%;">
-                <option value="normal" selected>Normal (Grid Swap)</option>
-                <option value="jigsaw">Jigsaw (Interlocking)</option>
-              </select>
-            </div>
-
-            <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-top: var(--space-2);">Difficulty Level</label>
-            <div class="nav-pill-select-wrap">
-              <select class="nav-pill-select" id="mobile-diff-select" style="width: 100%;">
-                <option value="easy">Easy (9)</option>
-                <option value="normal" selected>Normal (16)</option>
-                <option value="hard">Hard (25)</option>
-                <option value="expert">Expert (36)</option>
-              </select>
-            </div>
-          </div>
-        </div>
-      </div>
     `;
 
     this.container.appendChild(this.element);
@@ -187,58 +158,70 @@ export class HomeView {
     const grid = this.element.querySelector('#image-grid');
     if (!grid) return;
 
-    // Full catalog: Samples + Call Puzzles + Custom Uploads
-    const fullCatalog = [...this.sampleImages, ...this.callPuzzles, ...this.customImages];
+    // Put custom uploaded user images FIRST at the top!
+    const fullCatalog = [...this.customImages, ...this.builtinPuzzles];
     const totalCount = fullCatalog.length;
-
-    // Slice current chunk to display
     const visibleItems = fullCatalog.slice(0, this.displayedCount);
 
-    // Update count badge text
     const countBadge = this.element.querySelector('#gallery-count-badge');
     if (countBadge) {
-      countBadge.textContent = `${visibleItems.length} Puzzles Available`;
+      const storedCount = visibleItems.filter(i => Boolean(i.blob)).length;
+      countBadge.textContent = `${visibleItems.length} Puzzles Available ${storedCount > 0 ? `• ${storedCount} Stored in DB` : ''}`;
     }
 
-    // Hide or show Load More button
     const loadMoreWrap = this.element.querySelector('#load-more-wrap');
-    if (loadMoreWrap) {
-      loadMoreWrap.style.display = this.displayedCount >= totalCount ? 'none' : 'flex';
-    }
+    if (loadMoreWrap) loadMoreWrap.style.display = this.displayedCount >= totalCount ? 'none' : 'flex';
 
     grid.innerHTML = `
+      <!-- Upload Card FIRST -->
+      <div class="image-card image-card-upload" id="upload-card">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <span style="font-size: 0.74rem; font-weight: 600;">Upload</span>
+        <input type="file" id="file-input" accept="image/jpeg,image/png,image/webp,image/gif,image/avif,image/svg+xml" style="display: none;" />
+      </div>
+
       ${visibleItems.map(img => {
-        const isSelected = (this.selectedImageId && this.selectedImageId === img.id) || (this.selectedImage === img.url || this.selectedImage === img.blob);
-        const isCached = this.cachedIds.has(img.id);
+        const isSelected = (this.selectedImageId && this.selectedImageId === img.id);
+        const displaySrc = img.blob ? URL.createObjectURL(img.blob) : img.url;
+        const isCachedLocally = Boolean(img.blob);
+        const escapedName = escapeHtml(img.name);
+
+        const status = PuzzleStatusStore.getStatus(img.id);
+        let statusClass = '';
+        if (status === 'completed') statusClass = 'status-completed';
+        else if (status === 'quit') statusClass = 'status-quit';
 
         return `
-          <div class="image-card ${isSelected ? 'selected' : ''}" data-url="${img.url}" data-id="${img.id}" data-name="${img.name}" data-is-call="${img.isCallPuzzle || false}">
-            <img src="${img.url}" alt="${img.name}" loading="lazy" />
+          <div class="image-card ${isSelected ? 'selected' : ''} ${statusClass}" data-url="${displaySrc}" data-id="${escapeHtml(img.id)}" data-name="${escapedName}">
+            <div class="image-card-skeleton"></div>
+            <img src="${displaySrc}" alt="${escapedName}" loading="lazy" onload="this.classList.add('is-loaded'); this.previousElementSibling?.classList.add('loaded');" onerror="this.previousElementSibling?.classList.add('loaded');" />
             <div class="image-card-noise-overlay"></div>
+            ${isCachedLocally ? `<div class="image-card-cached-dot ${img.isCustom ? 'custom-dot' : ''}" title="Stored Locally in IndexedDB"></div>` : ''}
+            
+            ${status === 'completed' ? `
+              <div style="position: absolute; top: 6px; left: 6px; z-index: 6; background: #10b981; color: #fff; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center;" title="Completed (Green Border)">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+            ` : ''}
 
-            <!-- Micro Green Dot Indicator for Cached Local Images -->
-            ${isCached ? `<div class="image-card-cached-dot" title="Saved locally in IndexedDB"></div>` : ''}
+            ${status === 'quit' ? `
+              <div style="position: absolute; top: 6px; left: 6px; z-index: 6; background: #ef4444; color: #fff; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center;" title="Quit / Unsolved (Red Border)">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </div>
+            ` : ''}
 
-            <!-- Clean Mystery Badge at Bottom Right -->
             <div class="image-card-mystery-badge">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
               Mystery
             </div>
-
             ${img.isCustom ? `
-              <button class="image-card-delete" data-delete-id="${img.id}" title="Delete Custom Image">
+              <button class="image-card-delete" data-delete-id="${escapeHtml(img.id)}" title="Delete">
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
               </button>
             ` : ''}
           </div>
         `;
       }).join('')}
-
-      <div class="image-card image-card-upload" id="upload-card">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        <span style="font-size: 0.78rem; font-weight: 600;">Upload</span>
-        <input type="file" id="file-input" accept="image/*" style="display: none;" />
-      </div>
     `;
 
     this.bindGalleryEvents();
@@ -248,75 +231,73 @@ export class HomeView {
     const grid = this.element.querySelector('#image-grid');
     if (!grid) return;
 
-    // Image card selection & automatic local caching
+    // Instantly hide skeleton for images already cached in browser memory
+    const gridImgs = grid.querySelectorAll('.image-card img');
+    gridImgs.forEach(img => {
+      if (img.complete && img.naturalWidth > 0) {
+        img.classList.add('is-loaded');
+        if (img.previousElementSibling && img.previousElementSibling.classList.contains('image-card-skeleton')) {
+          img.previousElementSibling.classList.add('loaded');
+        }
+      }
+    });
+
     const cards = grid.querySelectorAll('.image-card:not(.image-card-upload)');
     cards.forEach(card => {
-      card.addEventListener('click', async (e) => {
-        if (e.target.closest('.image-card-delete')) return; // Ignore delete button clicks
-
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('.image-card-delete')) return;
         grid.querySelectorAll('.image-card').forEach(c => c.classList.remove('selected'));
         card.classList.add('selected');
         
         const id = card.dataset.id;
         const url = card.dataset.url;
-        const name = card.dataset.name;
-        const isCall = card.dataset.isCall === 'true';
 
         this.selectedImageId = id;
-
-        // Check if custom image Blob
-        const customImg = this.customImages.find(c => c.id === id);
-        if (customImg) {
-          this.selectedImage = customImg.blob;
-        } else if (isCall) {
-          // Smart automatic IndexedDB local caching on selection!
-          const cached = await ImageStore.cacheRemoteImage(id, name, url);
-          this.selectedImage = cached.blob || cached.url;
-          this.cachedIds.add(id);
-          this.updateGalleryGrid(); // Render micro green dot
-        } else {
-          this.selectedImage = url;
-        }
+        this.selectedImage = url;
       });
     });
 
-    // Delete custom image button
     const deleteBtns = grid.querySelectorAll('.image-card-delete');
     deleteBtns.forEach(btn => {
       btn.addEventListener('click', async (e) => {
         e.stopPropagation();
         const id = btn.dataset.deleteId;
-        if (confirm('Delete this custom image from local storage?')) {
+        if (confirm('Delete this custom image?')) {
           await ImageStore.deleteImage(id);
           this.customImages = this.customImages.filter(img => img.id !== id);
-          this.cachedIds.delete(id);
           if (this.selectedImageId === id) {
-            this.selectedImage = this.sampleImages[0].url;
-            this.selectedImageId = this.sampleImages[0].id;
+            this.selectedImageId = 'demo1';
+            this.selectedImage = './images/demo.webp';
           }
           this.updateGalleryGrid();
         }
       });
     });
 
-    // File upload
     const uploadCard = grid.querySelector('#upload-card');
     const fileInput = grid.querySelector('#file-input');
-
     if (uploadCard && fileInput) {
       uploadCard.addEventListener('click', () => fileInput.click());
       fileInput.addEventListener('change', async (e) => {
         const file = e.target.files[0];
         if (file) {
+          // Security validation check before processing or saving
+          const validation = validateImageFile(file);
+          if (!validation.valid) {
+            alert(`Upload Failed: ${validation.error}`);
+            fileInput.value = '';
+            return;
+          }
+
           try {
-            const savedRecord = await ImageStore.saveImage(file);
-            this.customImages.push(savedRecord);
-            this.cachedIds.add(savedRecord.id);
-            this.selectedImage = savedRecord.blob;
+            const savedRecord = await ImageStore.saveImage(file, validation.sanitizedName);
+            this.customImages.unshift(savedRecord);
+            this.selectedImage = savedRecord.url;
             this.selectedImageId = savedRecord.id;
             this.updateGalleryGrid();
           } catch (err) {
-            console.error('[HomeView] Failed to save image into IndexedDB:', err);
+            console.warn('[HomeView] Save custom image failed:', err);
+            alert(`Failed to save image: ${err.message || 'Storage error'}`);
           }
         }
       });
@@ -324,19 +305,6 @@ export class HomeView {
   }
 
   bindEvents() {
-    // Scroll event listener for smooth navbar shadow
-    this.element.addEventListener('scroll', () => {
-      const header = this.element.querySelector('.home-header');
-      if (header) {
-        if (this.element.scrollTop > 15) {
-          header.classList.add('scrolled');
-        } else {
-          header.classList.remove('scrolled');
-        }
-      }
-    });
-
-    // Load More Puzzles progressive chunk button
     const btnLoadMore = this.element.querySelector('#btn-load-more');
     if (btnLoadMore) {
       btnLoadMore.addEventListener('click', () => {
@@ -345,15 +313,47 @@ export class HomeView {
       });
     }
 
-    // Single Dynamic Theme toggle button
+    // PWA Install Button Handler
+    const pwaInstallBtn = this.element.querySelector('#btn-pwa-install-home');
+    if (pwaInstallBtn) {
+      pwaInstallBtn.addEventListener('click', async () => {
+        if (this.app) {
+          await this.app.promptPwaInstall();
+        }
+      });
+    }
+
+    // Hard Refresh Button Handler
+    const hardRefreshBtn = this.element.querySelector('#btn-hard-refresh-home');
+    if (hardRefreshBtn) {
+      hardRefreshBtn.addEventListener('click', async () => {
+        if (this.app) {
+          await this.app.hardRefreshApp();
+        }
+      });
+    }
+
+    // Reset Database Navbar Button Handler
+    const resetDbNavBtn = this.element.querySelector('#btn-reset-db-nav');
+    if (resetDbNavBtn) {
+      resetDbNavBtn.addEventListener('click', async () => {
+        if (confirm('⚠️ ERASE ALL DATA CONFIRMATION:\n\nAre you sure you want to reset everything like a brand new user?\nThis will erase all custom images, match stats, and puzzle status tracking 100%.\n\nThis action CANNOT be undone!')) {
+          resetDbNavBtn.disabled = true;
+          await ImageStore.clearAllDatabaseData();
+          window.location.href = window.location.origin + window.location.pathname;
+        }
+      });
+    }
+
+    // Theme toggle
     const singleThemeBtn = this.element.querySelector('#home-theme-toggle-single');
     if (singleThemeBtn) {
       singleThemeBtn.addEventListener('click', () => {
         const current = SettingsStore.getSettings().theme || 'light';
         const nextTheme = current === 'dark' ? 'light' : 'dark';
-        
         SettingsStore.saveSettings({ theme: nextTheme });
         SettingsStore.applyTheme(nextTheme);
+        if (this.app) this.app.onThemeChange(nextTheme);
 
         singleThemeBtn.innerHTML = nextTheme === 'dark' ? `
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
@@ -363,72 +363,34 @@ export class HomeView {
       });
     }
 
-    // Mode dropdown selects
-    const desktopMode = this.element.querySelector('#nav-mode-select');
-    const mobileMode = this.element.querySelector('#mobile-mode-select');
-
-    const syncMode = (val) => {
-      this.selectedMode = val;
-      if (desktopMode) desktopMode.value = val;
-      if (mobileMode) mobileMode.value = val;
-    };
-
-    if (desktopMode) desktopMode.addEventListener('change', (e) => syncMode(e.target.value));
-    if (mobileMode) mobileMode.addEventListener('change', (e) => syncMode(e.target.value));
-
-    // Difficulty dropdown selects
-    const desktopDiff = this.element.querySelector('#nav-diff-select');
-    const mobileDiff = this.element.querySelector('#mobile-diff-select');
-
-    const syncDiff = (val) => {
-      this.selectedDifficulty = val;
-      if (desktopDiff) desktopDiff.value = val;
-      if (mobileDiff) mobileDiff.value = val;
-    };
-
-    if (desktopDiff) desktopDiff.addEventListener('change', (e) => syncDiff(e.target.value));
-    if (mobileDiff) mobileDiff.addEventListener('change', (e) => syncDiff(e.target.value));
-
-    // Mobile Hamburger Drawer
-    const btnHamburger = this.element.querySelector('#btn-hamburger');
-    const mobileDrawer = this.element.querySelector('#mobile-drawer');
-    const btnCloseDrawer = this.element.querySelector('#btn-close-drawer');
-
-    if (btnHamburger && mobileDrawer) {
-      btnHamburger.addEventListener('click', () => mobileDrawer.classList.add('active'));
-      btnCloseDrawer.addEventListener('click', () => mobileDrawer.classList.remove('active'));
-      mobileDrawer.addEventListener('click', (e) => {
-        if (e.target === mobileDrawer) mobileDrawer.classList.remove('active');
+    // Difficulty radio buttons
+    const radios = this.element.querySelectorAll('input[name="difficulty"]');
+    radios.forEach(radio => {
+      radio.addEventListener('change', (e) => {
+        this.selectedDifficulty = e.target.value;
       });
-    }
+    });
 
-    // Start puzzle button
+    // Start puzzle
     const btnStart = this.element.querySelector('#btn-start');
     btnStart.addEventListener('click', async () => {
       if (this.onStartGame) {
         let finalImage = this.selectedImage;
-
-        // If selected image is a call puzzle URL, ensure locally cached in IndexedDB before launching
-        if (typeof finalImage === 'string' && finalImage.includes('/call/')) {
-          const id = this.selectedImageId || 'call_puzzle_1';
-          const cached = await ImageStore.cacheRemoteImage(id, 'Call Puzzle', finalImage);
-          finalImage = cached.blob || cached.url;
+        const builtin = await ImageStore.getBuiltinImage(this.selectedImageId);
+        if (builtin && builtin.url) {
+          finalImage = builtin.url;
         }
 
         this.onStartGame({
           imageUrl: finalImage,
-          mode: this.selectedMode,
+          imageId: this.selectedImageId,
+          mode: 'normal',
           difficulty: this.selectedDifficulty
         });
       }
     });
   }
 
-  show() {
-    this.element.classList.add('active');
-  }
-
-  hide() {
-    this.element.classList.remove('active');
-  }
+  show() { this.element.classList.add('active'); }
+  hide() { this.element.classList.remove('active'); }
 }

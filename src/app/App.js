@@ -14,6 +14,8 @@ export class App {
     this.stateMachine = new GameStateMachine(GameStates.IDLE);
     this.pixiApp = new PixiApp();
     this.activeGame = null;
+    this.deferredInstallPrompt = null;
+    this.swRegistration = null;
     
     // Apply stored Light/Dark theme on boot
     SettingsStore.applyTheme();
@@ -26,19 +28,100 @@ export class App {
     };
 
     this.initViews();
-    this.bindStateEvents();
+    this.initPwaEvents();
+  }
+
+  initPwaEvents() {
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      this.deferredInstallPrompt = e;
+      if (this.homeView && this.homeView.updatePwaInstallState) {
+        this.homeView.updatePwaInstallState(true);
+      }
+      if (this.settingsView && this.settingsView.updatePwaInstallState) {
+        this.settingsView.updatePwaInstallState(true);
+      }
+    });
+
+    window.addEventListener('appinstalled', () => {
+      this.deferredInstallPrompt = null;
+      console.log('[App] PWA installed successfully');
+      if (this.homeView && this.homeView.updatePwaInstallState) {
+        this.homeView.updatePwaInstallState(false);
+      }
+    });
+  }
+
+  handleServiceWorkerRegistration(reg) {
+    this.swRegistration = reg;
+  }
+
+  async promptPwaInstall() {
+    if (!this.deferredInstallPrompt) return false;
+    this.deferredInstallPrompt.prompt();
+    const { outcome } = await this.deferredInstallPrompt.userChoice;
+    console.log('[App] PWA install choice:', outcome);
+    this.deferredInstallPrompt = null;
+    if (this.homeView && this.homeView.updatePwaInstallState) {
+      this.homeView.updatePwaInstallState(false);
+    }
+    return outcome === 'accepted';
+  }
+
+  showUpdateBanner() {
+    let banner = document.getElementById('pwa-update-banner');
+    if (banner) return;
+
+    banner = document.createElement('div');
+    banner.id = 'pwa-update-banner';
+    banner.className = 'surface-card';
+    banner.style.cssText = `
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 9999;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: var(--shadow-lg);
+      border: 1px solid var(--primary);
+      border-radius: var(--radius-md);
+      background: var(--bg-surface);
+      color: var(--text-main);
+      font-size: 0.88rem;
+    `;
+
+    banner.innerHTML = `
+      <span>A new app version is ready!</span>
+      <button class="btn btn-primary" id="btn-update-reload" style="padding: 4px 12px; min-height: 32px; font-size: 0.8rem;">Update Now</button>
+      <button class="btn btn-icon" id="btn-update-dismiss" style="min-height: 32px; width: 32px;" title="Dismiss">&times;</button>
+    `;
+
+    document.body.appendChild(banner);
+
+    banner.querySelector('#btn-update-reload').addEventListener('click', () => {
+      if (this.swRegistration && this.swRegistration.waiting) {
+        this.swRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
+      }
+      window.location.reload();
+    });
+
+    banner.querySelector('#btn-update-dismiss').addEventListener('click', () => {
+      banner.remove();
+    });
   }
 
   initViews() {
     // 1. Home View
-    this.homeView = new HomeView(this.container, (config) => this.startGame(config));
+    this.homeView = new HomeView(this.container, (config) => this.startGame(config), this);
 
     // 2. Game View
     this.gameView = new GameView(this.container, {
       onBackToHome: () => this.showHome(),
       onOpenSettings: () => this.settingsView.show(),
       onRestartGame: () => this.restartGame()
-    });
+    }, this);
 
     // 3. Result View Modal
     this.resultView = new ResultView(this.container, {
@@ -47,18 +130,11 @@ export class App {
     });
 
     // 4. Settings View Modal
-    this.settingsView = new SettingsView(this.container);
-  }
-
-  bindStateEvents() {
-    this.stateMachine.onChange((newState, oldState) => {
-      console.log(`[App] State changed from ${oldState} to ${newState}`);
-    });
+    this.settingsView = new SettingsView(this.container, null, this);
   }
 
   async startGame(config) {
     this.activeConfig = { ...config };
-    console.log('[App] Starting game with config:', this.activeConfig);
 
     if (this.activeGame) {
       this.activeGame.destroy();
@@ -66,8 +142,16 @@ export class App {
     }
 
     try {
-      // Process image through pipeline (resizing / decoding)
-      const processed = await ImageProcessor.processImage(this.activeConfig.imageUrl);
+      let processed;
+      const targetImg = this.activeConfig.imageUrl || './images/demo.webp';
+      
+      try {
+        processed = await ImageProcessor.processImage(targetImg);
+      } catch (imgErr) {
+        console.error('[App] Primary ImageProcessor failed, attempting fallback to demo image:', imgErr);
+        processed = await ImageProcessor.processImage('./images/demo.webp');
+      }
+
       this.activeConfig.processedImage = processed;
 
       // Update HUD display
@@ -100,19 +184,53 @@ export class App {
       });
 
       await this.activeGame.start();
+
     } catch (err) {
-      console.error('[App] Failed to load image or start game:', err);
+      console.error('[App] Critical failure during startGame pipeline:', err);
       this.stateMachine.transitionTo(GameStates.ERROR);
-      alert('Failed to start puzzle. Please select another image.');
+      this.showHome();
     }
   }
 
-  restartGame() {
-    if (this.activeConfig.imageUrl) {
-      this.startGame(this.activeConfig);
+  async restartGame() {
+    if (this.gameView) {
+      this.gameView.showPuzzleSkeleton();
+    }
+    if (this.activeConfig && this.activeConfig.imageUrl) {
+      await this.startGame(this.activeConfig);
     } else {
       this.showHome();
     }
+  }
+
+  onThemeChange(theme) {
+    if (this.pixiApp) {
+      this.pixiApp.updateTheme(theme);
+    }
+    if (this.activeGame) {
+      this.activeGame.onThemeChange(theme);
+    }
+  }
+
+  async hardRefreshApp() {
+    console.log('[App] Hard Refresh triggered: purging app shell caches and unregistering SW while keeping user images intact...');
+    try {
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (const reg of registrations) {
+          await reg.unregister();
+        }
+      }
+      if ('caches' in window) {
+        const cacheKeys = await caches.keys();
+        for (const key of cacheKeys) {
+          await caches.delete(key);
+        }
+      }
+    } catch (err) {
+      console.warn('[App] Non-fatal error during Hard Refresh:', err);
+    }
+    window.location.reload();
   }
 
   showHome() {
@@ -121,12 +239,13 @@ export class App {
       this.activeGame.destroy();
       this.activeGame = null;
     }
-    this.pixiApp.destroy();
+    if (this.pixiApp && this.pixiApp.app && this.pixiApp.app.stage) {
+      this.pixiApp.app.stage.removeChildren();
+    }
     this.gameView.hide();
     this.homeView.show();
   }
 
-  // Developer debug hook for demonstrating completion dialog in Phase 1
   triggerMockCompletion() {
     this.stateMachine.transitionTo(GameStates.SOLVED);
     this.resultView.showStats({
@@ -136,3 +255,4 @@ export class App {
     });
   }
 }
+

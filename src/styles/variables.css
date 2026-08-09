@@ -103,7 +103,7 @@
   /* Layout & Touch Constraints */
   --header-height: 60px;
   --touch-target: 44px;
-  --content-max: 1100px;
+  --content-max: 100%;
 
   /* Transitions */
   --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);

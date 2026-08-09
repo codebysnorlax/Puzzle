@@ -8,10 +8,12 @@ export class PieceRenderer {
   /**
    * Create Pixi Container containing texture sprite & border outline
    */
-  static createPieceSprite(piece, baseTexture, mode = 'normal', gridCols = 4, gridRows = 4) {
+  static createPieceSprite(piece, baseTexture, imageCanvas, mode = 'normal', gridCols = 4, gridRows = 4) {
     const container = new Container();
     container.eventMode = 'static';
     container.cursor = 'grab';
+    container.visible = true;
+    container.alpha = 1;
 
     // Position container at piece grid location
     container.x = piece.x;
@@ -20,11 +22,21 @@ export class PieceRenderer {
     const cols = piece.gridCols || gridCols || 4;
     const rows = piece.gridRows || gridRows || 4;
 
-    const frameW = baseTexture.width / cols;
-    const frameH = baseTexture.height / rows;
+    // Use exact canvas dimensions to prevent 0-width frame calculations
+    const canvasW = (imageCanvas && imageCanvas.width) || baseTexture.width || 800;
+    const canvasH = (imageCanvas && imageCanvas.height) || baseTexture.height || 600;
 
-    const origFrameX = Math.min(baseTexture.width - frameW, piece.col * frameW);
-    const origFrameY = Math.min(baseTexture.height - frameH, piece.row * frameH);
+    const frameW = canvasW / cols;
+    const frameH = canvasH / rows;
+
+    const origFrameX = Math.min(canvasW - frameW, piece.col * frameW);
+    const origFrameY = Math.min(canvasH - frameH, piece.row * frameH);
+
+    // 0. Base dark slate background tile graphic ensuring piece tile is 100% visible
+    const bgTile = new Graphics();
+    bgTile.roundRect(0, 0, piece.width, piece.height, 4);
+    bgTile.fill({ color: 0x1e293b, alpha: 0.95 });
+    container.addChild(bgTile);
 
     if (mode === 'normal') {
       // 1. Normal Mode — Rectangular Tile
@@ -33,14 +45,20 @@ export class PieceRenderer {
         frame: new Rectangle(origFrameX, origFrameY, frameW, frameH)
       });
 
+      if (croppedTexture.source) {
+        croppedTexture.source.update();
+      }
+
       const sprite = new Sprite(croppedTexture);
       sprite.width = piece.width;
       sprite.height = piece.height;
+      sprite.visible = true;
+      sprite.alpha = 1;
       container.addChild(sprite);
 
       const border = new Graphics();
-      border.rect(0, 0, piece.width, piece.height);
-      border.stroke({ width: 1, color: 0xffffff, alpha: 0.35 });
+      border.roundRect(0, 0, piece.width, piece.height, 4);
+      border.stroke({ width: 1.5, color: 0x38bdf8, alpha: 0.6 });
       container.addChild(border);
 
     } else {
@@ -50,13 +68,17 @@ export class PieceRenderer {
 
       const cropX = Math.max(0, origFrameX - marginW);
       const cropY = Math.max(0, origFrameY - marginH);
-      const cropW = Math.min(baseTexture.width - cropX, frameW + marginW * 2);
-      const cropH = Math.min(baseTexture.height - cropY, frameH + marginH * 2);
+      const cropW = Math.min(canvasW - cropX, frameW + marginW * 2);
+      const cropH = Math.min(canvasH - cropY, frameH + marginH * 2);
 
       const expandedTexture = new Texture({
         source: baseTexture.source,
         frame: new Rectangle(cropX, cropY, cropW, cropH)
       });
+
+      if (expandedTexture.source) {
+        expandedTexture.source.update();
+      }
 
       const sprite = new Sprite(expandedTexture);
       const scaleX = piece.width / frameW;
@@ -69,6 +91,8 @@ export class PieceRenderer {
       const offsetY = (origFrameY - cropY) * scaleY;
       sprite.x = -offsetX;
       sprite.y = -offsetY;
+      sprite.visible = true;
+      sprite.alpha = 1;
 
       // Bezier Curve Mask
       const mask = new Graphics();
@@ -106,7 +130,7 @@ export class PieceRenderer {
       JigsawShape.drawEdge(border, piece.width, piece.height, 0, piece.height, bottomEdge);
       JigsawShape.drawEdge(border, 0, piece.height, 0, 0, leftEdge);
       border.closePath();
-      border.stroke({ width: 1.8, color: 0xffffff, alpha: 0.5 });
+      border.stroke({ width: 1.8, color: 0x38bdf8, alpha: 0.7 });
       container.addChild(border);
     }
 

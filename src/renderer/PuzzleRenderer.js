@@ -26,18 +26,23 @@ export class PuzzleRenderer {
    * Render dark or light anti-cheat board target slot backdrop with subtle slot guidelines
    */
   renderBoardTarget(boardLayout, mode = 'normal', cols = 4, rows = 4) {
+    this.lastBoardLayout = boardLayout;
+    this.lastMode = mode;
+    this.lastCols = cols;
+    this.lastRows = rows;
+
     this.boardContainer.removeChildren();
 
     const isLight = document.documentElement.getAttribute('data-theme') === 'light';
 
     const shadow = new Graphics();
     shadow.roundRect(boardLayout.x + 4, boardLayout.y + 4, boardLayout.width, boardLayout.height, 10);
-    shadow.fill({ color: 0x000000, alpha: isLight ? 0.12 : 0.45 });
+    shadow.fill({ color: 0x000000, alpha: isLight ? 0.08 : 0.45 });
 
     // Anti-cheat surface backdrop adapting to Light/Dark theme
     const boardBackdrop = new Graphics();
     boardBackdrop.roundRect(boardLayout.x, boardLayout.y, boardLayout.width, boardLayout.height, 10);
-    boardBackdrop.fill({ color: isLight ? 0xe2e8f0 : 0x111827, alpha: 0.95 });
+    boardBackdrop.fill({ color: isLight ? 0xffffff : 0x111827, alpha: 0.95 });
     boardBackdrop.stroke({ width: 2, color: isLight ? 0xc0ccda : 0x374151, alpha: 0.8 });
 
     // Subtle slot grid guidelines
@@ -55,11 +60,20 @@ export class PuzzleRenderer {
         );
       }
     }
-    gridLines.stroke({ width: 1, color: isLight ? 0x64748b : 0xffffff, alpha: isLight ? 0.25 : 0.08 });
+    gridLines.stroke({ width: 1, color: isLight ? 0x64748b : 0xffffff, alpha: isLight ? 0.35 : 0.08 });
 
     this.boardContainer.addChild(shadow);
     this.boardContainer.addChild(boardBackdrop);
     this.boardContainer.addChild(gridLines);
+  }
+
+  updateTheme(theme, puzzle = null) {
+    if (this.lastBoardLayout) {
+      const cols = puzzle ? puzzle.cols : (this.lastCols || 4);
+      const rows = puzzle ? puzzle.rows : (this.lastRows || 4);
+      const layout = puzzle ? puzzle.boardLayout : this.lastBoardLayout;
+      this.renderBoardTarget(layout, this.lastMode || 'normal', cols, rows);
+    }
   }
 
   /**
@@ -69,12 +83,22 @@ export class PuzzleRenderer {
     this.clear();
     this.renderBoardTarget(puzzle.boardLayout, mode, puzzle.cols, puzzle.rows);
 
-    const baseTexture = Texture.from(imageCanvas);
+    let baseTexture;
+    try {
+      baseTexture = Texture.from(imageCanvas);
+      if (baseTexture && baseTexture.source && typeof baseTexture.source.update === 'function') {
+        baseTexture.source.update();
+      }
+    } catch (e) {
+      console.warn('[PuzzleRenderer] Texture creation fallback warning:', e);
+      baseTexture = Texture.from(imageCanvas);
+    }
 
-    puzzle.pieces.forEach(piece => {
+    puzzle.pieces.forEach((piece) => {
       const spriteContainer = PieceRenderer.createPieceSprite(
         piece,
         baseTexture,
+        imageCanvas,
         mode,
         puzzle.cols,
         puzzle.rows
@@ -82,94 +106,96 @@ export class PuzzleRenderer {
       this.piecesContainer.addChild(spriteContainer);
       this.pieceSpritesMap.set(piece.id, spriteContainer);
     });
+
+    // Force PixiJS Application stage render for immediate presentation
+    if (this.pixiApp && this.pixiApp.app && this.pixiApp.app.renderer) {
+      this.pixiApp.app.renderer.render(this.stage);
+    }
   }
 
-  /**
-   * Temporarily display a subtle 28% translucent reference hint overlay over board target for durationMs
-   */
   showTemporaryHint(imageCanvas, boardLayout, durationMs = 2200) {
     if (this.hintSprite) {
       this.boardContainer.removeChild(this.hintSprite);
       this.hintSprite.destroy();
       this.hintSprite = null;
     }
+    if (this.hintTimeout) {
+      clearTimeout(this.hintTimeout);
+      this.hintTimeout = null;
+    }
 
-    const hintTexture = Texture.from(imageCanvas);
-    this.hintSprite = new Sprite(hintTexture);
-    this.hintSprite.x = boardLayout.x;
-    this.hintSprite.y = boardLayout.y;
-    this.hintSprite.width = boardLayout.width;
-    this.hintSprite.height = boardLayout.height;
-    this.hintSprite.alpha = 0.28; // Subtle 28% alpha hint peek overlay
+    try {
+      const texture = Texture.from(imageCanvas);
+      const hint = new Sprite(texture);
+      hint.x = boardLayout.x;
+      hint.y = boardLayout.y;
+      hint.width = boardLayout.width;
+      hint.height = boardLayout.height;
+      hint.alpha = 0.35;
 
-    this.boardContainer.addChild(this.hintSprite);
+      this.boardContainer.addChild(hint);
+      this.hintSprite = hint;
 
-    if (this.hintTimeout) clearTimeout(this.hintTimeout);
-    this.hintTimeout = setTimeout(() => {
-      if (this.hintSprite) {
-        this.boardContainer.removeChild(this.hintSprite);
-        this.hintSprite.destroy();
-        this.hintSprite = null;
+      if (this.pixiApp && this.pixiApp.app && this.pixiApp.app.renderer) {
+        this.pixiApp.app.renderer.render(this.stage);
       }
-    }, durationMs);
+
+      this.hintTimeout = setTimeout(() => {
+        if (this.hintSprite) {
+          this.boardContainer.removeChild(this.hintSprite);
+          this.hintSprite.destroy();
+          this.hintSprite = null;
+          if (this.pixiApp && this.pixiApp.app && this.pixiApp.app.renderer) {
+            this.pixiApp.app.renderer.render(this.stage);
+          }
+        }
+      }, durationMs);
+    } catch (e) {
+      console.warn('[PuzzleRenderer] Hint overlay rendering warning:', e);
+    }
   }
 
-  /**
-   * Play pulsing victory border animation around completed puzzle
-   */
   playCompletionAnimation(boardLayout) {
-    const victoryGlow = new Graphics();
-    this.boardContainer.addChild(victoryGlow);
+    const borderEffect = new Graphics();
+    this.boardContainer.addChild(borderEffect);
 
-    let alpha = 0.4;
-    let growing = true;
-
+    let phase = 0;
     this.tickerCallback = () => {
-      if (growing) {
-        alpha += 0.02;
-        if (alpha >= 1.0) growing = false;
-      } else {
-        alpha -= 0.02;
-        if (alpha <= 0.3) growing = true;
-      }
-
-      victoryGlow.clear();
-      victoryGlow.roundRect(
-        boardLayout.x - 3,
-        boardLayout.y - 3,
-        boardLayout.width + 6,
-        boardLayout.height + 6,
-        10
+      phase += 0.08;
+      borderEffect.clear();
+      borderEffect.roundRect(
+        boardLayout.x - 4,
+        boardLayout.y - 4,
+        boardLayout.width + 8,
+        boardLayout.height + 8,
+        14
       );
-      victoryGlow.stroke({ width: 4, color: 0x10b981, alpha: alpha });
+      const alphaPulse = 0.4 + Math.sin(phase) * 0.4;
+      borderEffect.stroke({ width: 4, color: 0x10b981, alpha: alphaPulse });
     };
 
-    this.pixiApp.app.ticker.add(this.tickerCallback);
+    if (this.pixiApp && this.pixiApp.app) {
+      this.pixiApp.app.ticker.add(this.tickerCallback);
+    }
   }
 
-  /**
-   * Re-render board target and update sprite positions on viewport resize
-   */
   resize(puzzle, imageCanvas, mode = 'normal') {
-    if (!puzzle || !imageCanvas) return;
     this.renderPuzzle(puzzle, imageCanvas, mode);
   }
 
   /**
-   * Update Pixi sprite positions to match piece model state
+   * Sync piece data positions to their sprite containers on screen.
+   * Called on every pointer move during drag — must be fast.
    */
   updatePiecePositions(pieces) {
-    pieces.forEach(piece => {
+    for (let i = 0; i < pieces.length; i++) {
+      const piece = pieces[i];
       const sprite = this.pieceSpritesMap.get(piece.id);
       if (sprite) {
         sprite.x = piece.x;
         sprite.y = piece.y;
-        if (piece.locked) {
-          sprite.cursor = 'default';
-          sprite.zIndex = 0;
-        }
       }
-    });
+    }
   }
 
   getSpriteForPiece(piece) {
@@ -181,7 +207,7 @@ export class PuzzleRenderer {
       clearTimeout(this.hintTimeout);
       this.hintTimeout = null;
     }
-    if (this.tickerCallback) {
+    if (this.tickerCallback && this.pixiApp && this.pixiApp.app) {
       this.pixiApp.app.ticker.remove(this.tickerCallback);
       this.tickerCallback = null;
     }

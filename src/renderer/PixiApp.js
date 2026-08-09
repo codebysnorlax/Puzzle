@@ -2,7 +2,7 @@ import { Application } from 'pixi.js';
 
 /**
  * PixiApp — PixiJS v8 Application Lifecycle Manager
- * Handles responsive canvas binding, DPR resolution scaling, transparent theme inheritance, and clean destruction.
+ * Handles responsive canvas binding, DPR resolution scaling, theme inheritance, and clean destruction.
  */
 export class PixiApp {
   constructor() {
@@ -14,21 +14,46 @@ export class PixiApp {
   }
 
   /**
+   * Get hex background color for current theme
+   * @param {string} theme 
+   * @returns {number}
+   */
+  getThemeBackgroundColor(theme = null) {
+    const activeTheme = theme || document.documentElement.getAttribute('data-theme') || 'dark';
+    return activeTheme === 'light' ? 0xf1f5f9 : 0x0f172a;
+  }
+
+  /**
    * Initialize PixiJS Application inside target DOM element
    * @param {HTMLElement} containerElement 
    */
   async init(containerElement) {
-    if (this.isInitialized) return;
     this.container = containerElement;
 
+    if (!containerElement) {
+      console.error('[PixiApp ERROR] Null containerElement passed to PixiApp.init()!');
+      throw new Error('[PixiApp] Cannot initialize PixiJS on null containerElement');
+    }
+
+    if (this.isInitialized && this.app && this.app.renderer) {
+      if (this.app.canvas && this.app.canvas.parentNode !== containerElement) {
+        containerElement.appendChild(this.app.canvas);
+      }
+      this.app.stage.removeChildren();
+      this.updateTheme();
+      return;
+    }
+
     this.app = new Application();
+    const bgColor = this.getThemeBackgroundColor();
     
-    // PixiJS v8 async initialization protocol with 100% transparent background
+    // PixiJS v8 async initialization protocol with theme-aware background
     await this.app.init({
       resizeTo: containerElement,
       resolution: window.devicePixelRatio || 1,
       autoDensity: true,
-      backgroundAlpha: 0, // Transparent canvas background allowing CSS --bg-base theme to show through
+      backgroundColor: bgColor,
+      backgroundAlpha: 1,
       antialias: true
     });
 
@@ -38,16 +63,31 @@ export class PixiApp {
     canvas.style.left = '0';
     canvas.style.width = '100%';
     canvas.style.height = '100%';
+    canvas.style.zIndex = '1';
 
-    // Clear previous children in container if any
-    containerElement.innerHTML = '';
-    containerElement.appendChild(canvas);
+    if (canvas.parentNode !== containerElement) {
+      containerElement.appendChild(canvas);
+    }
 
     // Attach responsive ResizeObserver
     this.setupResizeObserver();
 
     this.isInitialized = true;
-    console.log('[PixiApp] PixiJS engine initialized cleanly with transparent stage background.');
+  }
+
+  /**
+   * Dynamically update background color when light/dark theme toggles
+   * @param {string} theme 
+   */
+  updateTheme(theme = null) {
+    if (!this.app || !this.app.renderer) return;
+    const bgColor = this.getThemeBackgroundColor(theme);
+    if (this.app.renderer.background) {
+      this.app.renderer.background.color = bgColor;
+    }
+    if (this.app.renderer.render && this.app.stage) {
+      this.app.renderer.render(this.app.stage);
+    }
   }
 
   setupResizeObserver() {
@@ -56,8 +96,8 @@ export class PixiApp {
       if (this.app && this.app.renderer) {
         this.app.resize();
         if (this.onResize) {
-          const width = this.container.clientWidth || window.innerWidth;
-          const height = this.container.clientHeight || window.innerHeight;
+          const width = (this.container && this.container.clientWidth) || window.innerWidth;
+          const height = (this.container && this.container.clientHeight) || window.innerHeight;
           this.onResize(width, height);
         }
       }
@@ -82,7 +122,7 @@ export class PixiApp {
         if (canvas && canvas.parentNode) {
           canvas.parentNode.removeChild(canvas);
         }
-        this.app.destroy(true, { children: true, texture: true });
+        this.app.destroy(true, { children: true });
       } catch (err) {
         console.warn('[PixiApp] Non-fatal error during destroy cleanup:', err);
       }
@@ -90,6 +130,5 @@ export class PixiApp {
     }
 
     this.isInitialized = false;
-    console.log('[PixiApp] PixiJS application instance destroyed.');
   }
 }

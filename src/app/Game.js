@@ -1,5 +1,4 @@
 import { NormalPuzzle } from '../puzzle/normal/NormalPuzzle.js';
-import { JigsawPuzzle } from '../puzzle/jigsaw/JigsawPuzzle.js';
 import { PuzzleRenderer } from '../renderer/PuzzleRenderer.js';
 import { Timer } from '../game/Timer.js';
 import { MovementTracker } from '../game/MovementTracker.js';
@@ -7,6 +6,8 @@ import { calculateSmartRating } from '../game/SmartRating.js';
 import { InputHandler } from './Input.js';
 import { GameHistory } from '../storage/GameHistory.js';
 import { GameStates } from './GameState.js';
+import { SoundEffects } from '../game/SoundEffects.js';
+import { PuzzleStatusStore } from '../storage/PuzzleStatusStore.js';
 
 /**
  * Game — Game Session Controller orchestrating Puzzle Engine, Pixi Renderer, Timer, and Input
@@ -35,12 +36,15 @@ export class Game {
   }
 
   async start() {
-    console.log('[Game] Starting active puzzle session:', this.config);
+    const viewportW = (this.container && this.container.clientWidth) || window.innerWidth;
+    const viewportH = (this.container && this.container.clientHeight) || (window.innerHeight - 48);
 
-    const viewportW = this.container.clientWidth || window.innerWidth;
-    const viewportH = this.container.clientHeight || (window.innerHeight - 48);
+    if (!this.config.processedImage || !this.config.processedImage.width) {
+      console.error('[Game ERROR] Missing processedImage in config!', this.config);
+      throw new Error('[Game] Config is missing processedImage or image dimensions');
+    }
 
-    // 1. Instantiate Puzzle Engine (Normal or Jigsaw)
+    // 1. Instantiate Normal Grid-Swap Puzzle Engine
     const puzzleOptions = {
       imageWidth: this.config.processedImage.width,
       imageHeight: this.config.processedImage.height,
@@ -50,22 +54,28 @@ export class Game {
       seed: Date.now()
     };
 
-    if (this.config.mode === 'jigsaw') {
-      this.puzzle = new JigsawPuzzle(puzzleOptions);
-    } else {
-      this.puzzle = new NormalPuzzle(puzzleOptions);
-    }
+    this.puzzle = new NormalPuzzle(puzzleOptions);
 
     // 2. Generate pieces & seeded shuffle
     this.puzzle.generate();
 
     // 3. Instantiate PuzzleRenderer & render board target and piece sprites
     this.renderer = new PuzzleRenderer(this.app.pixiApp);
+    
     await this.renderer.renderPuzzle(
       this.puzzle,
       this.config.processedImage.canvas,
-      this.config.mode
+      'normal'
     );
+
+    if (this.gameView) {
+      setTimeout(() => {
+        this.gameView.hidePuzzleSkeleton();
+      }, 200);
+    }
+
+    // Automatically set adaptive HUD dock position (Top/Bottom if side margin < 65px | Left/Right if side margin >= 65px)
+    this.updateDockOrientation();
 
     // Wire HUD navbar Peek Hint button handler
     if (this.gameView) {
@@ -109,6 +119,29 @@ export class Game {
     this.isStarted = true;
   }
 
+  updateDockOrientation() {
+    if (!this.gameView) return;
+
+    if (this.puzzle && this.puzzle.boardLayout) {
+      const board = this.puzzle.boardLayout;
+      const viewportW = (this.container && this.container.clientWidth) || window.innerWidth;
+      const viewportH = (this.container && this.container.clientHeight) || window.innerHeight;
+
+      // Calculate actual available pixel margins on left/right vs top/bottom
+      const sideSpace = (viewportW - board.width) / 2;
+      const verticalSpace = (viewportH - board.height) / 2;
+
+      // If side space is under 65px (left/right docks would overlap board pieces),
+      // OR if vertical space is greater than side space, position docks at Top & Bottom (isTopBottom = true)!
+      const isTopBottom = sideSpace < 65 || (verticalSpace >= 50 && verticalSpace > sideSpace);
+
+      this.gameView.setDockOrientation(isTopBottom);
+    } else {
+      const isTopBottom = window.innerWidth <= 768 || window.innerWidth < window.innerHeight;
+      this.gameView.setDockOrientation(isTopBottom);
+    }
+  }
+
   handlePeekHint() {
     if (!this.renderer || !this.config || !this.config.processedImage || !this.puzzle) return;
     this.renderer.showTemporaryHint(
@@ -121,9 +154,11 @@ export class Game {
   handleResize(width, height) {
     if (!this.puzzle || !this.renderer) return;
 
-    const viewportH = this.container.clientHeight || (height - 48);
+    const viewportH = (this.container && this.container.clientHeight) || (height - 48);
     this.puzzle.resize(width, viewportH);
-    this.renderer.resize(this.puzzle, this.config.processedImage.canvas, this.config.mode);
+    this.renderer.resize(this.puzzle, this.config.processedImage.canvas, 'normal');
+
+    this.updateDockOrientation();
 
     // Re-bind input events to new sprites
     if (this.inputHandler) {
@@ -143,7 +178,6 @@ export class Game {
     if (this.app.stateMachine.state === GameStates.READY) {
       this.app.stateMachine.transitionTo(GameStates.RUNNING);
       this.timer.start();
-      console.log('[Game] First piece movement detected. Timer started.');
     }
   }
 
@@ -160,9 +194,15 @@ export class Game {
       totalPieces: this.puzzle.pieces.length
     });
 
-    console.log(`[Game] 🎉 Puzzle Complete! Time: ${finalTimeStr}, Moves: ${finalMoves}, Smart Rating: ${finalRating}/100`);
-
     this.app.stateMachine.transitionTo(GameStates.SOLVED);
+
+    // Track completed status (Green Border)
+    if (this.config && this.config.imageId) {
+      PuzzleStatusStore.markCompleted(this.config.imageId);
+    }
+
+    // Play win sound effect
+    SoundEffects.playWinSound();
 
     // 1. Play victory glowing animated border on Pixi canvas
     if (this.renderer) {
@@ -178,7 +218,7 @@ export class Game {
     try {
       await GameHistory.saveMatch({
         imageName: 'Puzzle Image',
-        mode: this.config.mode,
+        mode: 'normal',
         difficulty: this.config.difficulty,
         pieceCount: this.puzzle.pieces.length,
         timeMs: elapsedMs,
@@ -192,7 +232,22 @@ export class Game {
     }
   }
 
+  onThemeChange(theme) {
+    if (this.app && this.app.pixiApp) {
+      this.app.pixiApp.updateTheme(theme);
+    }
+    if (this.renderer && this.puzzle) {
+      this.renderer.updateTheme(theme, this.puzzle);
+    }
+  }
+
   destroy() {
+    if (this.app && this.app.stateMachine && this.app.stateMachine.state !== GameStates.SOLVED) {
+      if (this.config && this.config.imageId) {
+        PuzzleStatusStore.markQuit(this.config.imageId);
+      }
+    }
+
     if (this.app && this.app.pixiApp) {
       this.app.pixiApp.onResize = null;
     }

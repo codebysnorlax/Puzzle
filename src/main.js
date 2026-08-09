@@ -15,16 +15,38 @@ function initApp() {
   if (window.__PIXELCRAFT_APP__) return;
 
   const app = new App(root);
-  console.log('[Main] PixelCraft PWA Application shell initialized.');
-  
-  // Expose app debug reference on window
   window.__PIXELCRAFT_APP__ = app;
 
-  // Register PWA Service Worker in production mode
-  if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  // Register PWA Service Worker in secure context / production mode
+  if ('serviceWorker' in navigator && (import.meta.env.PROD || window.location.protocol === 'https:' || window.location.hostname === 'localhost')) {
     navigator.serviceWorker.register('./sw.js')
-      .then(reg => console.log('[Main] ServiceWorker registered:', reg.scope))
-      .catch(err => console.warn('[Main] ServiceWorker registration failed:', err));
+      .then((reg) => {
+        console.log('[Main] ServiceWorker registered with scope:', reg.scope);
+        app.handleServiceWorkerRegistration(reg);
+
+        // Listen for new service worker installation
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          if (!newWorker) return;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              console.log('[Main] New app version available in ServiceWorker cache');
+              app.showUpdateBanner();
+            }
+          });
+        });
+      })
+      .catch((err) => {
+        console.warn('[Main] ServiceWorker registration failed:', err);
+      });
+
+    // Handle controller reload on update
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (refreshing) return;
+      refreshing = true;
+      window.location.reload();
+    });
   }
 }
 
@@ -34,3 +56,4 @@ if (document.readyState === 'loading') {
 } else {
   initApp();
 }
+

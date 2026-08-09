@@ -48,8 +48,6 @@ export class ImageProcessor {
       canvas.toBlob((b) => resolve(b), 'image/webp', 0.92);
     });
 
-    console.log(`[ImageProcessor] Processed image successfully: ${origW}x${origH} ──► ${target.width}x${target.height} (Aspect: ${target.aspectRatio.toFixed(3)})`);
-
     return {
       canvas,
       blob,

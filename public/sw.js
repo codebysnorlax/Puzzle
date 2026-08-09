@@ -1,14 +1,17 @@
-const CACHE_NAME = 'pixelcraft-pwa-v3';
+const APP_VERSION = '1.0.0';
+const CACHE_NAME = `pixelcraft-pwa-v${APP_VERSION}`;
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
-  './manifest.webmanifest'
+  './manifest.webmanifest',
+  './assets/audio/move.wav',
+  './assets/audio/win.wav'
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[ServiceWorker] Pre-caching offline application shell');
+      console.log(`[ServiceWorker] Pre-caching offline application shell & audio assets (${CACHE_NAME})`);
       return cache.addAll(ASSETS_TO_CACHE);
     })
   );
@@ -20,8 +23,8 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((keys) => {
       return Promise.all(
         keys.map((key) => {
-          if (key !== CACHE_NAME) {
-            console.log('[ServiceWorker] Purging old cache:', key);
+          if (key !== CACHE_NAME && key.startsWith('pixelcraft-pwa-')) {
+            console.log('[ServiceWorker] Purging old cache version:', key);
             return caches.delete(key);
           }
         })
@@ -29,6 +32,12 @@ self.addEventListener('activate', (event) => {
     })
   );
   self.clients.claim();
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener('fetch', (event) => {
@@ -41,7 +50,7 @@ self.addEventListener('fetch', (event) => {
                       url.pathname.endsWith('.css') ||
                       url.pathname === '/';
 
-  // Network-First for HTML/JS/CSS assets to ensure Firefox & Chrome always load the latest bundle
+  // Network-First for HTML/JS/CSS assets to ensure browser always loads the latest build bundle
   if (isCodeAsset) {
     event.respondWith(
       fetch(event.request)
@@ -59,7 +68,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Cache-First for static media assets (images, fonts, favicons)
+  // Cache-First for static media assets (images, audio, fonts, favicons)
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) return cachedResponse;

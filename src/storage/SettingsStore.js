@@ -4,7 +4,7 @@
 const SETTINGS_KEY = 'pixelcraft_pwa_settings';
 
 const DEFAULT_SETTINGS = {
-  theme: 'dark', // 'dark' | 'light'
+  theme: 'light', // 'light' | 'dark'
   sound: true,
   snapSensitivity: 'normal', // 'strict' (15px), 'normal' (25px), 'relaxed' (40px)
   lastDifficulty: 'normal',
@@ -38,9 +38,8 @@ export class SettingsStore {
   }
 
   static applyTheme(theme) {
-    const activeTheme = theme || this.getSettings().theme || 'dark';
+    const activeTheme = theme || this.getSettings().theme || 'light';
     document.documentElement.setAttribute('data-theme', activeTheme);
-    console.log(`[SettingsStore] Theme applied: ${activeTheme}`);
     return activeTheme;
   }
 
