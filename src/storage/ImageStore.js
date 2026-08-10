@@ -196,36 +196,64 @@ export class ImageStore {
     if (localStorage.getItem(LS_KEY) === 'true') return;
 
     const total = BUILTIN_CATALOG.length;
-    for (let i = 0; i < total; i++) {
-      const item = BUILTIN_CATALOG[i];
-      try {
-        const existing = await this.getImage(item.id);
-        if (existing && existing.blob && existing.blob.size > 0) {
-          if (onProgress) onProgress(i + 1, total);
-          continue; // Already cached this one
-        }
+    
+    // Step 1: Check existing status in parallel
+    const checkPromises = BUILTIN_CATALOG.map(async (item) => {
+      const existing = await this.getImage(item.id);
+      const isCached = existing && existing.blob && existing.blob.size > 0;
+      return { item, isCached };
+    });
+    const checked = await Promise.all(checkPromises);
+    const missing = checked.filter(c => !c.isCached).map(c => c.item);
 
-        // Fetch from CDN
+    if (missing.length === 0) {
+      localStorage.setItem(LS_KEY, 'true');
+      if (onProgress) onProgress(total, total);
+      return;
+    }
+
+    let cachedCount = total - missing.length;
+    if (onProgress) onProgress(cachedCount, total);
+
+    // Step 2: Fetch missing images in parallel
+    const fetchPromises = missing.map(async (item) => {
+      try {
         const res = await fetch(item.url);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         let blob = await res.blob();
-
-        // Ensure image/webp MIME
         if (!blob.type || !blob.type.startsWith('image/')) {
           blob = blob.slice(0, blob.size, 'image/webp');
         }
-
-        // Store in IndexedDB
-        const store = await dbManager.getStore('images', 'readwrite');
-        await new Promise((resolve, reject) => {
-          const req = store.put({ id: item.id, name: item.name, blob, createdAt: Date.now() });
-          req.onsuccess = () => resolve();
-          req.onerror = (e) => reject(e.target.error);
-        });
+        return { item, blob };
       } catch (err) {
         console.warn(`[ImageStore] Failed to cache ${item.id}:`, err);
+        return null;
       }
-      if (onProgress) onProgress(i + 1, total);
+    });
+
+    const fetchedResults = await Promise.all(fetchPromises);
+    const validResults = fetchedResults.filter(r => r !== null);
+
+    // Step 3: Store all in a SINGLE transaction
+    if (validResults.length > 0) {
+      const db = await dbManager.open();
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction('images', 'readwrite');
+        tx.oncomplete = () => resolve();
+        tx.onerror = (e) => reject(e.target.error);
+
+        const store = tx.objectStore('images');
+        for (const res of validResults) {
+          store.put({
+            id: res.item.id,
+            name: res.item.name,
+            blob: res.blob,
+            createdAt: Date.now()
+          });
+          cachedCount++;
+          if (onProgress) onProgress(cachedCount, total);
+        }
+      });
     }
 
     localStorage.setItem(LS_KEY, 'true');

@@ -1,5 +1,5 @@
-import { Puzzle } from '../Puzzle.js';
-import { Piece } from '../Piece.js';
+import { Puzzle } from './Puzzle.js';
+import { Piece } from './Piece.js';
 
 /**
  * NormalPuzzle — Rectangular grid tile swap engine implementation

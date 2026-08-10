@@ -45,11 +45,16 @@ export class HomeView {
     ImageStore.ensureAllCached((curr, total) => {
       const countBadge = this.element.querySelector('#gallery-count-badge');
       if (countBadge && localStorage.getItem('puzzles_cached') !== 'true') {
-        VisitorTracker.updateElementWithAnimation(countBadge, `Caching Offline Puzzles (${curr}/${total})...`);
+        countBadge.classList.add('btn-shine');
+        countBadge.textContent = `Caching Offline Puzzles (${curr}/${total})...`;
       }
     }).then(() => {
+      const countBadge = this.element.querySelector('#gallery-count-badge');
+      if (countBadge) countBadge.classList.remove('btn-shine');
       this.refreshCatalog();
     }).catch(err => {
+      const countBadge = this.element.querySelector('#gallery-count-badge');
+      if (countBadge) countBadge.classList.remove('btn-shine');
       console.warn('[HomeView] Image caching error:', err);
     });
   }
@@ -102,18 +107,14 @@ export class HomeView {
           </div>
 
           <div class="nav-center">
-            <div class="diff-radio-group">
+            <div class="diff-radio-group" data-selected="${this.selectedDifficulty === 'expert' || this.selectedDifficulty === 'hard' ? 'expert' : 'normal'}">
               <label class="diff-radio">
-                <input type="radio" name="difficulty" value="easy" />
-                <span>Easy</span>
+                <input type="radio" name="difficulty" value="normal" ${this.selectedDifficulty !== 'expert' && this.selectedDifficulty !== 'hard' ? 'checked' : ''} />
+                <span>Normal</span>
               </label>
               <label class="diff-radio">
-                <input type="radio" name="difficulty" value="normal" checked />
-                <span>Medium</span>
-              </label>
-              <label class="diff-radio">
-                <input type="radio" name="difficulty" value="hard" />
-                <span>Hard</span>
+                <input type="radio" name="difficulty" value="expert" ${this.selectedDifficulty === 'expert' || this.selectedDifficulty === 'hard' ? 'checked' : ''} />
+                <span>Expert</span>
               </label>
             </div>
           </div>
@@ -127,7 +128,7 @@ export class HomeView {
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
             </button>
 
-            <button class="nav-btn nav-btn-ghost" id="btn-reset-db-nav" title="Reset Database from Fresh (Clears IndexedDB & localStorage with confirmation)" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.3);">
+            <button class="nav-btn nav-btn-ghost nav-btn-danger" id="btn-reset-db-nav" title="Reset Database from Fresh (Clears IndexedDB & localStorage with confirmation)">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
             </button>
 
@@ -145,11 +146,7 @@ export class HomeView {
       <main class="home-main-content">
         <section class="flat-section">
           <div class="gallery-header-row">
-            <h2 class="home-section-title">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-              <span>Choose Mystery Puzzle</span>
-            </h2>
-            <span id="gallery-count-badge" class="gallery-count-badge count-animated">
+            <span id="gallery-count-badge" class="gallery-count-badge">
               23 Puzzles Available
             </span>
           </div>
@@ -174,8 +171,16 @@ export class HomeView {
     const grid = this.element.querySelector('#image-grid');
     if (!grid) return;
 
-    // ── Classify all items into 3 sections ──────────────────────────────────────
-    const allItems = [...this.customImages, ...this.builtinPuzzles, ...this.onCallPuzzles];
+    // ── Deduplicate and Classify all items into 3 sections ──────────────────────
+    const rawItems = [...this.customImages, ...this.builtinPuzzles, ...this.onCallPuzzles];
+    const seenIds = new Set();
+    const allItems = [];
+    for (const item of rawItems) {
+      if (item && item.id && !seenIds.has(item.id)) {
+        seenIds.add(item.id);
+        allItems.push(item);
+      }
+    }
 
     // Section 1: User uploads
     const uploadedItems = allItems.filter(img => img.isCustom);
@@ -204,7 +209,22 @@ export class HomeView {
     }
 
     const loadMoreBtn = this.element.querySelector('#btn-load-more');
-    if (loadMoreBtn) loadMoreBtn.style.display = 'none'; // sections handle their own display
+    if (loadMoreBtn) loadMoreBtn.style.display = 'none';
+
+    // Hide call_more_image button if all on-call puzzles have been called / loaded
+    const callMoreBtn = this.element.querySelector('#btn-call-more-puzzles');
+    if (callMoreBtn) {
+      const onCallCatalog = ImageStore.getOnCallCatalog();
+      const isCalled = localStorage.getItem('on_call_puzzles_called') === 'true';
+      const isAllLoaded = this.onCallPuzzles && this.onCallPuzzles.length >= onCallCatalog.length;
+      if (isCalled || isAllLoaded) {
+        callMoreBtn.classList.add('hidden-button');
+        callMoreBtn.style.display = 'none';
+      } else {
+        callMoreBtn.classList.remove('hidden-button');
+        callMoreBtn.style.display = 'inline-flex';
+      }
+    }
 
     // ── Card builder helper ──────────────────────────────────────────────────────
     const buildCard = (img, forceReveal = false) => {
@@ -409,6 +429,8 @@ export class HomeView {
             return;
           }
 
+          const countBadge = this.element.querySelector('#gallery-count-badge');
+          if (countBadge) countBadge.classList.add('btn-shine');
           try {
             const savedRecord = await ImageStore.saveImage(file, validation.sanitizedName);
             this.customImages.unshift(savedRecord);
@@ -418,6 +440,8 @@ export class HomeView {
           } catch (err) {
             console.warn('[HomeView] Save custom image failed:', err);
             alert(`Failed to save image: ${err.message || 'Storage error'}`);
+          } finally {
+            if (countBadge) countBadge.classList.remove('btn-shine');
           }
         }
       });
@@ -433,96 +457,65 @@ export class HomeView {
       });
     }
 
-    // "call_more_image" Button Handler (Strict DB-First, skeleton shimmer while loading)
+    // "call_more_image" Button — fetch on-call puzzles into DB then refresh grid
     const callMoreBtn = this.element.querySelector('#btn-call-more-puzzles');
     if (callMoreBtn) {
-      // If already called before, hide the button immediately (images are in DB)
-      if (localStorage.getItem('on_call_puzzles_called') === 'true') {
-        callMoreBtn.style.display = 'none';
-      }
-
       callMoreBtn.addEventListener('click', async () => {
-        callMoreBtn.disabled = true;
-        callMoreBtn.textContent = 'loading...';
+        // Prevent double-clicks / re-entry
+        if (this._onCallLoading) return;
+        
+        // Mark as called and hide button immediately (avoiding any "loading" text in button)
+        this._onCallLoading = true;
+        localStorage.setItem('on_call_puzzles_called', 'true');
+        callMoreBtn.classList.add('hidden-button');
+        callMoreBtn.style.display = 'none';
 
-        const ON_CALL_COUNT = 14;
         const grid = this.element.querySelector('#image-grid');
         const countBadge = this.element.querySelector('#gallery-count-badge');
-
-        // Helper to update the count badge live
-        const updateBadge = (loadedSoFar) => {
-          if (!countBadge) return;
-          const builtinCount = this.builtinPuzzles.length + this.customImages.length;
-          const total = builtinCount + loadedSoFar;
-          const storedCount = this.builtinPuzzles.filter(i => Boolean(i.blob)).length
-            + this.customImages.filter(i => Boolean(i.blob)).length
-            + loadedSoFar; // on-call ones just stored in DB
-          countBadge.textContent = `${total} Puzzles Available • ${storedCount} Stored in DB`;
-        };
-
-        // Show skeleton count immediately (+14 incoming)
-        updateBadge(ON_CALL_COUNT);
-
-        // 1. Immediately inject skeleton placeholder cards into the grid
-        const skeletonIds = [];
-        if (grid) {
-          for (let i = 0; i < ON_CALL_COUNT; i++) {
-            const skeletonId = `skeleton-oncall-${i}`;
-            skeletonIds.push(skeletonId);
-            const placeholder = document.createElement('div');
-            placeholder.className = 'image-card';
-            placeholder.id = skeletonId;
-            placeholder.innerHTML = `<div class="image-card-skeleton"></div>`;
-            grid.appendChild(placeholder);
-          }
-        }
+        if (countBadge) countBadge.classList.add('btn-shine');
 
         try {
-          const results = [];
-          let loadedCount = 0;
+          const catalog = ImageStore.getOnCallCatalog();
 
-          // 2. DB-first: load/cache each puzzle one-by-one, replacing its skeleton as it arrives
-          const ON_CALL_CATALOG = ImageStore.getOnCallCatalog();
-          for (let i = 0; i < ON_CALL_CATALOG.length; i++) {
-            const item = ON_CALL_CATALOG[i];
+          // Fetch each on-call image 1-by-1 and store in IndexedDB 1-by-1 (sequential loop)
+          for (const item of catalog) {
+            const dbImage = await ImageStore.getImage(item.id);
             let imgData = null;
 
-            // Always check IndexedDB first
-            const dbImage = await ImageStore.getImage(item.id);
             if (dbImage && dbImage.blob && dbImage.blob.size > 0) {
+              // Image is already cached in IndexedDB
               imgData = { ...dbImage, isCustom: false, isOnCall: true };
             } else {
-              // Fetch from CDN and cache in IndexedDB
+              // Image is not in DB: show placeholder with skeleton loading animation
+              if (grid) {
+                const placeholder = document.createElement('div');
+                placeholder.className = 'image-card';
+                placeholder.id = `placeholder-${item.id}`;
+                placeholder.innerHTML = `<div class="image-card-skeleton"></div>`;
+                grid.appendChild(placeholder);
+              }
+
+              // Fetch from CDN and store in IndexedDB (1-by-1 sequentially)
               try {
-                const fetched = await ImageStore.fetchAndCacheSingleOnCall(item);
-                if (fetched) imgData = fetched;
+                imgData = await ImageStore.fetchAndCacheSingleOnCall(item);
               } catch (e) {
-                console.warn(`[HomeView] Failed to fetch on-call puzzle ${item.id}:`, e);
+                console.warn(`[HomeView] Failed to fetch/cache on-call puzzle ${item.id}:`, e);
+                document.getElementById(`placeholder-${item.id}`)?.remove();
               }
             }
 
-            if (imgData) { results.push(imgData); loadedCount++; }
+            // Once stored, render the card (the image will load and fade the skeleton out)
+            if (imgData && grid) {
+              const displaySrc = imgData.blob ? URL.createObjectURL(imgData.blob) : imgData.url;
+              const escapedName = escapeHtml(imgData.name);
+              const escapedId = escapeHtml(imgData.id);
 
-            // Update badge count live
-            updateBadge(loadedCount);
-
-            // Replace the skeleton placeholder with the real image card
-            const skeletonEl = document.getElementById(skeletonIds[i]);
-            if (skeletonEl && grid) {
-              const displaySrc = imgData && imgData.blob
-                ? URL.createObjectURL(imgData.blob)
-                : (imgData ? imgData.url : item.url);
-              const escapedName = imgData ? imgData.name.replace(/&/g,'&amp;').replace(/"/g,'&quot;') : item.name;
-              const escapedId = (imgData ? imgData.id : item.id).replace(/&/g,'&amp;').replace(/"/g,'&quot;');
-
-              skeletonEl.outerHTML = `
+              const cardHtml = `
                 <div class="image-card" data-url="${displaySrc}" data-id="${escapedId}" data-name="${escapedName}">
                   <div class="image-card-skeleton"></div>
-                  <img src="${displaySrc}" alt="${escapedName}" loading="lazy"
-                    onload="this.classList.add('is-loaded'); this.previousElementSibling?.classList.add('loaded');"
-                    onerror="this.previousElementSibling?.classList.add('loaded');" />
+                  <img src="${displaySrc}" alt="${escapedName}" loading="lazy" onload="this.classList.add('is-loaded'); this.previousElementSibling?.classList.add('loaded');" onerror="this.previousElementSibling?.classList.add('loaded');" />
                   <div class="image-card-noise-overlay"></div>
-                  ${imgData && imgData.blob ? `<div class="image-card-cached-dot" title="Stored in IndexedDB"></div>` : ''}
+                  <div class="image-card-cached-dot" title="Stored Locally in IndexedDB"></div>
                   <div class="image-card-mystery-badge">
                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                     Mystery
@@ -533,27 +526,32 @@ export class HomeView {
                   </button>
                 </div>
               `;
+
+              const placeholderEl = document.getElementById(`placeholder-${item.id}`);
+              if (placeholderEl) {
+                placeholderEl.outerHTML = cardHtml;
+              } else {
+                // If it was already in DB (or if placeholder element wasn't found), append it to the grid
+                // Avoid duplicating if it somehow got rendered
+                if (!grid.querySelector(`[data-id="${escapedId}"]`)) {
+                  const cardWrapper = document.createElement('div');
+                  cardWrapper.innerHTML = cardHtml.trim();
+                  const cardElement = cardWrapper.firstChild;
+                  grid.appendChild(cardElement);
+                }
+              }
             }
           }
 
-          localStorage.setItem('on_call_puzzles_called', 'true');
-          this.onCallPuzzles = results;
-          this.displayedCount += results.length;
-
-          // Final badge update with accurate stored count
-          updateBadge(results.length);
-
-          // Re-bind gallery events for new start buttons
-          this.bindGalleryEvents();
-
-          // Remove button entirely
-          callMoreBtn.remove();
+          // Refresh the full catalog from DB to guarantee correct order, category division, and deduplication
+          await this.refreshCatalog();
         } catch (err) {
           console.warn('[HomeView] Failed to call on-demand puzzles:', err);
-          // Remove any remaining skeletons on failure
-          skeletonIds.forEach(id => document.getElementById(id)?.remove());
-          callMoreBtn.textContent = 'call_more_image';
-          callMoreBtn.disabled = false;
+        } finally {
+          if (countBadge) countBadge.classList.remove('btn-shine');
+          callMoreBtn.classList.add('hidden-button');
+          callMoreBtn.style.display = 'none';
+          this._onCallLoading = false;
         }
       });
     }
@@ -582,10 +580,10 @@ export class HomeView {
     const resetDbNavBtn = this.element.querySelector('#btn-reset-db-nav');
     if (resetDbNavBtn) {
       resetDbNavBtn.addEventListener('click', async () => {
-        if (confirm('⚠️ ERASE ALL DATA CONFIRMATION:\n\nAre you sure you want to reset everything like a brand new user?\nThis will erase all custom images, match stats, and puzzle status tracking 100%.\n\nThis action CANNOT be undone!')) {
+        if (confirm('ERASE ALL DATA CONFIRMATION:\n\nAre you sure you want to reset everything like a brand new user?\nThis will erase all custom images, match stats, and puzzle status tracking 100%.\n\nThis action CANNOT be undone!')) {
           resetDbNavBtn.disabled = true;
           await ImageStore.clearAllDatabaseData();
-          alert('✅ Reset Complete! The app will now reload.');
+          alert('Reset Complete! The app will now reload.');
           window.location.reload();
         }
       });
@@ -611,9 +609,11 @@ export class HomeView {
 
     // Difficulty radio buttons
     const radios = this.element.querySelectorAll('input[name="difficulty"]');
+    const group = this.element.querySelector('.diff-radio-group');
     radios.forEach(radio => {
       radio.addEventListener('change', (e) => {
         this.selectedDifficulty = e.target.value;
+        if (group) group.setAttribute('data-selected', e.target.value);
       });
     });
   }

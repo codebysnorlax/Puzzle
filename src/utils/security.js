@@ -100,18 +100,3 @@ export function validateImageFile(file) {
     sanitizedName
   };
 }
-
-/**
- * Validates if a string is a safe URL (http, https, blob, or data URL).
- * @param {string} urlString
- * @returns {boolean}
- */
-export function isValidUrl(urlString) {
-  if (typeof urlString !== 'string') return false;
-  try {
-    const parsed = new URL(urlString, window.location.href);
-    return ['http:', 'https:', 'blob:', 'data:'].includes(parsed.protocol);
-  } catch (e) {
-    return false;
-  }
-}

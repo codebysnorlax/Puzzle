@@ -6,21 +6,6 @@
 const VISITOR_ID_KEY = 'pixelcraft_visitor_id_v3';
 const LOCAL_STATS_KEY = 'pixelcraft_visitor_stats_v3';
 
-/**
- * Simple hash function to create consistent hash from string
- * @param {string} str 
- * @returns {string}
- */
-function simpleHash(str) {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32-bit integer
-  }
-  return Math.abs(hash).toString(36);
-}
-
 export class VisitorTracker {
   /**
    * Format numbers to compact strings (e.g. 1000 -> "1k", 1500 -> "1.5k", 1000000 -> "1M")

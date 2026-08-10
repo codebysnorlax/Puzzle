@@ -6,11 +6,10 @@ export class PuzzleGenerator {
    * Target piece counts per difficulty level
    */
   static DIFFICULTY_PIECE_COUNTS = {
-    easy: 9,      // ~3x3
-    normal: 16,   // ~4x4
-    hard: 25,     // ~5x5
-    expert: 36,   // ~6x6
-    extreme: 64   // ~8x8
+    normal: 16,   // ~4x4 grid (16 pieces)
+    hard: 49,     // ~7x7 grid (49 pieces)
+    expert: 49,   // ~7x7 grid (49 pieces - Expert difficulty)
+    extreme: 64   // ~8x8 grid
   };
 
   /**

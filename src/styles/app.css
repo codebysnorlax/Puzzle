@@ -44,7 +44,7 @@
   border-radius: var(--radius-md);
   padding: var(--space-5);
 }
-.flat-section { padding: var(--space-3) 0; }
+/* .flat-section { padding: var(--space-3) 0; } */
 
 /* ── Generic Buttons ── */
 .btn {
@@ -72,7 +72,7 @@
    TOP NAV — Full-width solid bar, no blur, no float.
    ══════════════════════════════════════════════════════════════ */
 /* ══════════════════════════════════════════════════════════════
-   TOP NAV — Sticky navbar with unified 32px height buttons
+   TOP NAV — Sticky navbar with dedicated design tokens
    ══════════════════════════════════════════════════════════════ */
 .top-nav {
   position: sticky;
@@ -82,11 +82,11 @@
   width: 100%;
   max-width: 100%;
   height: 52px;
-  background: var(--bg-surface);
-  border-bottom: 1px solid var(--border-strong);
+  background: var(--nav-bg);
+  border-bottom: 0.5px solid var(--nav-border-color);
   flex-shrink: 0;
   z-index: 100;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
   box-sizing: border-box;
 }
 
@@ -103,33 +103,32 @@
   overflow: hidden;
 }
 
-/* Left: Avatar + Brand */
+/* Left: Avatar + Brand + Compact Eye Visitor Badge */
 .nav-left {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   flex-shrink: 0;
 }
 
 .nav-avatar {
-  width: 30px !important;
-  height: 30px !important;
-  min-width: 30px !important;
-  min-height: 30px !important;
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  min-height: 28px !important;
   border-radius: 50% !important;
   overflow: hidden;
   flex-shrink: 0;
-  border: 1.5px solid var(--border-strong);
+  border: 1px solid var(--border-subtle);
   box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: transform var(--transition-fast), border-color var(--transition-fast);
+  transition: border-color 0.2s ease;
 }
 
 .nav-avatar:hover {
-  transform: scale(1.08);
   border-color: var(--primary);
 }
 
@@ -142,36 +141,36 @@
 }
 
 .nav-brand {
-  font-size: 0.88rem;
+  font-size: 0.85rem;
   font-weight: 700;
   color: var(--text-main);
   letter-spacing: -0.01em;
   white-space: nowrap;
 }
 
+/* Space-Saving Seamless Eye Badge */
 .nav-visitor-badge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 2px 7px;
-  border-radius: var(--radius-pill);
-  background: var(--bg-hover);
-  border: 1px solid var(--border-subtle);
-  color: var(--text-main);
-  font-size: 0.72rem;
-  font-weight: 700;
+  gap: 3px;
+  padding: 0 4px;
+  background: transparent;
+  border: none;
+  color: var(--nav-badge-color);
+  font-size: 0.68rem;
+  font-weight: 600;
   white-space: nowrap;
   user-select: none;
 }
 
 .nav-visitor-badge svg {
   stroke: var(--primary);
-  width: 13px;
-  height: 13px;
+  width: 12px;
+  height: 12px;
   flex-shrink: 0;
 }
 
-/* Center: Difficulty Radio Group Pill */
+/* Center: Difficulty Radio Group Pill (2-Option Slider) */
 .nav-center {
   display: flex;
   align-items: center;
@@ -179,19 +178,42 @@
 }
 
 .diff-radio-group {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 2px;
   padding: 2px;
-  height: 32px;
-  border: 1px solid var(--border-subtle);
+  height: 30px;
+  width: 148px;
+  background: var(--nav-switch-bg);
+  border: 0.5px solid var(--nav-switch-border);
   border-radius: 9999px;
-  overflow: hidden;
-  background: var(--bg-hover);
   box-sizing: border-box;
 }
 
+/* Smooth springy sliding active pill */
+.diff-radio-group::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  left: 2px;
+  width: calc(50% - 2px);
+  background: var(--nav-switch-slider);
+  border-radius: 9999px;
+  transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  z-index: 1;
+}
+
+.diff-radio-group[data-selected="expert"]::before,
+.diff-radio-group[data-selected="hard"]::before {
+  transform: translateX(100%);
+}
+
 .diff-radio {
+  position: relative;
+  z-index: 2;
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -210,24 +232,17 @@
 }
 
 .diff-radio span {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 26px;
-  padding: 0 14px;
-  font-size: 0.76rem;
+  font-size: 0.72rem;
   font-weight: 600;
+  font-family: "Poppins", sans-serif;
   color: var(--text-muted);
   white-space: nowrap;
-  border-radius: 9999px;
   user-select: none;
-  transition: background var(--transition-fast), color var(--transition-fast);
+  transition: color 0.2s ease;
 }
 
 .diff-radio input[type="radio"]:checked + span {
-  background: var(--primary);
   color: #ffffff;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
 }
 
 [data-theme="dark"] .diff-radio input[type="radio"]:checked + span {
@@ -239,7 +254,7 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 4px;
   flex-shrink: 0;
 }
 
@@ -251,31 +266,139 @@
   cursor: pointer;
   font-family: inherit;
   box-sizing: border-box;
-  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
 }
 
-/* Circular Ghost Buttons (32px) */
+/* Clean, borderless navbar icon buttons with Shine hover animation */
 .nav-btn-ghost {
-  width: 32px !important;
-  height: 32px !important;
-  min-width: 32px !important;
-  min-height: 32px !important;
-  border-radius: 50% !important;
-  background: var(--bg-hover);
-  border: 1px solid var(--border-subtle);
-  color: var(--text-muted);
+  position: relative;
+  overflow: hidden;
+  width: var(--nav-btn-size) !important;
+  height: var(--nav-btn-size) !important;
+  min-width: var(--nav-btn-size) !important;
+  min-height: var(--nav-btn-size) !important;
+  border-radius: var(--nav-btn-radius) !important;
+  background: var(--nav-btn-bg);
+  border: none !important;
+  color: var(--nav-btn-color);
   padding: 0 !important;
   flex-shrink: 0;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
   aspect-ratio: 1 / 1;
+  transition: color 0.2s ease, background 0.2s ease;
+}
+
+.nav-btn-ghost::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -150%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    60deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.4) 50%,
+    transparent 70%
+  );
+  opacity: 0;
+  pointer-events: none;
+}
+
+.nav-btn-ghost:hover::after {
+  opacity: 1;
+  animation: btnShine 0.75s ease forwards;
 }
 
 .nav-btn-ghost:hover {
-  color: var(--text-main);
-  border-color: var(--border-strong);
-  background: var(--bg-surface);
+  color: var(--nav-btn-hover-color);
+  background: var(--nav-btn-hover-bg);
+}
+
+.nav-btn-ghost.nav-btn-danger:hover {
+  color: var(--danger);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+/* Call More Puzzles Button (Transparent BG, Thin 0.4px Border) */
+#load-more-wrap {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  margin: var(--space-4) auto var(--space-6) auto !important;
+  padding: 0 0 var(--space-4) 0 !important;
+  position: relative !important;
+  z-index: 10 !important;
+  box-sizing: border-box !important;
+}
+
+#btn-call-more-puzzles {
+  display: inline-flex;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  padding: 4px 16px !important;
+  height: 30px !important;
+  min-height: 30px !important;
+  font-size: 0.72rem !important;
+  font-weight: 500 !important;
+  font-family: "Poppins", sans-serif !important;
+  border-radius: 9999px !important;
+  background: transparent !important;
+  color: var(--text-main) !important;
+  border: 0.4px solid var(--border-strong) !important;
+  cursor: pointer !important;
+  position: relative !important;
+  overflow: hidden !important;
+  white-space: nowrap !important;
+  box-shadow: none !important;
+  box-sizing: border-box !important;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+.hidden-button {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+#btn-call-more-puzzles::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -150%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    60deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.4) 50%,
+    transparent 70%
+  );
+  opacity: 0;
+  pointer-events: none;
+}
+
+#btn-call-more-puzzles:hover::after {
+  opacity: 1;
+  animation: btnShine 0.75s ease forwards;
+}
+
+#btn-call-more-puzzles:hover {
+  border-color: var(--primary) !important;
+  color: var(--primary) !important;
+  background: rgba(0, 0, 0, 0.04) !important;
+}
+
+[data-theme="dark"] #btn-call-more-puzzles:hover {
+  background: rgba(255, 255, 255, 0.06) !important;
 }
 
 /* Start Puzzle Button (Pill 32px) */
@@ -474,7 +597,7 @@
   scroll-behavior: smooth;
 }
 .home-main-content {
-  padding: var(--space-4) var(--space-6);
+  padding: 0 var(--space-6) var(--space-4);
   max-width: 100%;
   width: 100%;
   box-sizing: border-box;
@@ -482,54 +605,94 @@
 .gallery-header-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: var(--space-4);
+  justify-content: center;
+  position: relative;
+  min-height: auto;
+  margin: 8px;
+  padding: 0;
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
 }
 
-.home-section-title {
-  font-size: 0.9rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  color: var(--text-main);
-  white-space: nowrap;
-  flex-shrink: 0;
-  margin-bottom: 0;
-}
-
-.home-section-title span {
-  white-space: nowrap;
-}
-
 .gallery-count-badge {
-  font-size: 0.76rem;
-  font-weight: 600;
+  font-size: 0.6rem;
+  line-height: 0;
+  font-weight: 100;
+  font-style: italic;
+  font-family: "Poppins", sans-serif;
   color: var(--text-muted);
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  flex-shrink: 0;
-}
-
-/* Number Update Animation */
-@keyframes numberPulse {
-  0% { transform: scale(1); opacity: 0.7; }
-  50% { transform: scale(1.16); opacity: 1; color: var(--primary); }
-  100% { transform: scale(1); opacity: 1; }
-}
-
-.count-animated {
+  text-align: center;
   display: inline-block;
+  line-height: 1.1;
+  margin: 0;
+  padding: 0;
   transition: color var(--transition-fast);
 }
 
-.count-animated.updating {
-  animation: numberPulse 0.45s ease-in-out;
+/* From Uiverse.io by neerajbaniwal - active when images are being stored in DB */ 
+.gallery-count-badge.btn-shine {
+  color: #fff;
+  background: linear-gradient(to right, #94a3b8 0%, #ffffff 20%, #38bdf8 35%, #ffffff 50%, #94a3b8 70%);
+  background-size: 200% 100%;
+  background-position: 200% 0;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shine 2.5s infinite linear;
+  animation-fill-mode: forwards;
+  -webkit-text-size-adjust: none;
+  font-weight: 500;
+  font-size: 0.72rem;
+  font-family: "Poppins", sans-serif;
+  text-decoration: none;
+  white-space: nowrap;
+  text-align: center;
+  display: inline-block;
+  line-height: 1.1;
+  margin: 0;
+  padding: 0;
+}
+
+[data-theme="light"] .gallery-count-badge.btn-shine {
+  background: linear-gradient(to right, #334155 0%, #000000 20%, #2563eb 35%, #000000 50%, #334155 70%);
+  background-size: 200% 100%;
+  background-position: 200% 0;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+@-moz-keyframes shine {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+@-webkit-keyframes shine {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+@-o-keyframes shine {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+@keyframes shine {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 /* Image Grid — Fluid 100% Auto-Fill */
@@ -1017,6 +1180,7 @@
     padding: var(--space-3) var(--space-4);
     width: 100%;
     max-width: 100%;
+    padding-top: 0px;
     box-sizing: border-box;
   }
   .hud-dock-layout-portrait .hud-dock-control { left: 8px; }
@@ -1028,26 +1192,40 @@
 }
 
 @media (max-width: 640px) {
+  .top-nav {
+    height: 48px;
+  }
   .home-main-content {
     padding: var(--space-3) var(--space-3);
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
+    padding-top: 0px;
   }
   .nav-inner {
-    padding: 0 8px;
+    padding: 0 6px;
     gap: 4px;
     max-width: 100%;
     box-sizing: border-box;
   }
-  .nav-left { gap: 6px; }
-  .nav-right { gap: 4px; }
-  #btn-pwa-install-home span { display: none; }
+  .nav-left { gap: 4px; }
+  .nav-right { gap: 2px; }
+  .nav-avatar {
+    width: 24px !important;
+    height: 24px !important;
+    min-width: 24px !important;
+    min-height: 24px !important;
+  }
+  .nav-brand { font-size: 0.8rem; }
   .nav-btn-ghost {
     width: 28px !important; height: 28px !important;
     min-width: 28px !important; min-height: 28px !important;
   }
-  .diff-radio span { padding: 2px 8px; font-size: 0.7rem; }
+  .diff-radio-group {
+    width: 130px;
+    height: 28px;
+  }
+  .diff-radio span { font-size: 0.68rem; }
   .image-grid {
     grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
     gap: var(--space-2);
@@ -1055,37 +1233,27 @@
     max-width: 100%;
     box-sizing: border-box;
   }
-  .home-section-title {
-    font-size: 0.78rem;
-    gap: 4px;
-  }
-  .home-section-title svg {
-    width: 14px;
-    height: 14px;
-  }
-  .gallery-count-badge {
-    font-size: 0.68rem;
-  }
+
   .nav-visitor-badge {
-    padding: 1px 5px;
-    font-size: 0.66rem;
+    padding: 0 2px;
+    font-size: 0.64rem;
   }
 }
 
 @media (max-width: 420px) {
   .nav-brand { display: none; }
-  .diff-radio span { padding: 2px 6px; font-size: 0.68rem; }
+  .nav-left { gap: 3px; }
+  .nav-right { gap: 1px; }
+  .diff-radio-group {
+    width: 118px;
+    height: 26px;
+  }
+  .diff-radio span { font-size: 0.65rem; }
   .image-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: var(--space-2);
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
-  }
-  .home-section-title {
-    font-size: 0.72rem;
-  }
-  .gallery-count-badge {
-    font-size: 0.64rem;
   }
 }

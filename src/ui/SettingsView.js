@@ -178,10 +178,10 @@ export class SettingsView {
     const resetDbBtn = this.element.querySelector('#btn-reset-db-settings');
     if (resetDbBtn) {
       resetDbBtn.addEventListener('click', async () => {
-        if (confirm('⚠️ ERASE ALL DATA CONFIRMATION:\n\nAre you sure you want to reset everything like a brand new user?\nThis will erase all custom images, match stats, and puzzle status tracking 100%.\n\nThis action CANNOT be undone!')) {
+        if (confirm('ERASE ALL DATA CONFIRMATION:\n\nAre you sure you want to reset everything like a brand new user?\nThis will erase all custom images, match stats, and puzzle status tracking 100%.\n\nThis action CANNOT be undone!')) {
           resetDbBtn.disabled = true;
           await ImageStore.clearAllDatabaseData();
-          alert('✅ Reset Complete! The app will now reload.');
+          alert('Reset Complete! The app will now reload.');
           window.location.reload();
         }
       });

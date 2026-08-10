@@ -1,4 +1,4 @@
-import { NormalPuzzle } from '../puzzle/normal/NormalPuzzle.js';
+import { NormalPuzzle } from '../puzzle/NormalPuzzle.js';
 import { PuzzleRenderer } from '../renderer/PuzzleRenderer.js';
 import { Timer } from '../game/Timer.js';
 import { MovementTracker } from '../game/MovementTracker.js';

@@ -44,6 +44,22 @@
   /* RGB values for rgba() usage */
   --modal-bg-rgb: 242, 239, 234;
   --card-bg-rgb: 250, 248, 245;
+
+  /* Dedicated Navbar Design Variables */
+  --nav-bg:             var(--bg-surface);
+  --nav-border-color:   var(--border-subtle);
+  --nav-btn-size:       32px;
+  --nav-btn-radius:     50%;
+  --nav-btn-bg:         transparent;
+  --nav-btn-border:     transparent;
+  --nav-btn-color:      var(--text-muted);
+  --nav-btn-hover-bg:   rgba(0, 0, 0, 0.06);
+  --nav-btn-hover-color: var(--text-main);
+  --nav-switch-bg:      var(--bg-hover);
+  --nav-switch-border:  var(--border-subtle);
+  --nav-switch-slider:  var(--primary);
+  --nav-badge-bg:       transparent;
+  --nav-badge-color:    var(--text-dim);
 }
 
 /* Dark Theme Overrides */
@@ -85,6 +101,20 @@
   /* RGB values for rgba() usage */
   --modal-bg-rgb: 30, 41, 59;
   --card-bg-rgb: 51, 65, 85;
+
+  /* Dedicated Navbar Design Variables (Dark Theme) */
+  --nav-bg:             var(--bg-surface);
+  --nav-border-color:   rgba(255, 255, 255, 0.1);
+  --nav-btn-bg:         transparent;
+  --nav-btn-border:     transparent;
+  --nav-btn-color:      var(--text-muted);
+  --nav-btn-hover-bg:   rgba(255, 255, 255, 0.08);
+  --nav-btn-hover-color: var(--text-main);
+  --nav-switch-bg:      var(--bg-hover);
+  --nav-switch-border:  var(--border-subtle);
+  --nav-switch-slider:  var(--primary);
+  --nav-badge-bg:       transparent;
+  --nav-badge-color:    var(--text-dim);
 }
 
 :root {
