@@ -20,7 +20,7 @@ export class HomeView {
     this.chunkSize = 12;
     this.displayedCount = 25;
     this.selectedImage = './images/demo.webp';
-    this.selectedImageId = 'demo1';
+    this.selectedImageId = localStorage.getItem('last_played_image_id') || 'demo1';
     this.selectedDifficulty = 'normal';
 
     this.render();
@@ -326,6 +326,7 @@ export class HomeView {
   async launchGameForPuzzle(id, url) {
     if (this.onStartGame) {
       PuzzleStatusStore.markStarted(id);
+      localStorage.setItem('last_played_image_id', id);
       let finalImage = url;
 
       // STRICT DB-FIRST: Always check IndexedDB first for existing blob!
@@ -408,6 +409,7 @@ export class HomeView {
           if (this.selectedImageId === id) {
             this.selectedImageId = 'demo1';
             this.selectedImage = './images/demo.webp';
+            localStorage.setItem('last_played_image_id', 'demo1');
           }
           this.updateGalleryGrid();
         }
