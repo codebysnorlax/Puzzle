@@ -59,7 +59,7 @@ export class App {
   async promptPwaInstall() {
     if (!this.deferredInstallPrompt) {
       alert(
-        "📱 Install Application:\n\nTo install this app on your mobile/desktop device:\n• Android/Chrome: Tap 3 dots Menu -> Add to Home Screen / Install App\n• iPhone/Safari: Tap Share icon -> Add to Home Screen",
+        "📱 Install Application:\n\nTo install this app on your mobile/desktop device:\n• Android/Chrome: Tap 3 dots Menu -> Add to Home Screen / Install App\n• iPhone/Safari: Tap Share icon -> Add to Home Screen\n• Desktop/Chrome: Click 'Install' in the address bar"
       );
       return false;
     }
@@ -281,14 +281,5 @@ export class App {
     }
     this.gameView.hide();
     this.homeView.show();
-  }
-
-  triggerMockCompletion() {
-    this.stateMachine.transitionTo(GameStates.SOLVED);
-    this.resultView.showStats({
-      timeStr: "01:42",
-      moves: 18,
-      distanceStr: "1,240 px",
-    });
   }
 }

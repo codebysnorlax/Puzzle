@@ -103,13 +103,7 @@ export class Game {
     });
 
     this.movementTracker = new MovementTracker(({ moveCount, totalDistance }) => {
-      const currentRating = calculateSmartRating({
-        moveCount,
-        totalDistance,
-        timeSeconds: this.timer ? this.timer.getElapsedSeconds() : 0,
-        totalPieces: this.puzzle ? this.puzzle.pieces.length : 25
-      });
-
+      const currentRating = this._calculateCurrentRating();
       this.gameView.updateHUD({
         moves: moveCount,
         rating: currentRating
@@ -133,6 +127,19 @@ export class Game {
     if (this.config && this.config.imageId) {
       PuzzleStatusStore.markStarted(this.config.imageId);
     }
+  }
+
+  /**
+   * Calculate current game rating based on moves, distance, time, and piece count.
+   * Extracted to eliminate code duplication across undo/redo/normal gameplay.
+   */
+  _calculateCurrentRating() {
+    return calculateSmartRating({
+      moveCount: this.movementTracker.moveCount,
+      totalDistance: Math.round(this.movementTracker.totalDistance),
+      timeSeconds: this.timer ? this.timer.getElapsedSeconds() : 0,
+      totalPieces: this.puzzle ? this.puzzle.pieces.length : 25
+    });
   }
 
   updateDockOrientation() {
@@ -215,12 +222,7 @@ export class Game {
     if (this.movementTracker) {
       this.movementTracker.moveCount = Math.max(0, this.movementTracker.moveCount - 1);
       // Trigger stat recalculation
-      const currentRating = calculateSmartRating({
-        moveCount: this.movementTracker.moveCount,
-        totalDistance: Math.round(this.movementTracker.totalDistance),
-        timeSeconds: this.timer ? this.timer.getElapsedSeconds() : 0,
-        totalPieces: this.puzzle ? this.puzzle.pieces.length : 25
-      });
+      const currentRating = this._calculateCurrentRating();
       this.gameView.updateHUD({
         moves: this.movementTracker.moveCount,
         rating: currentRating
@@ -241,12 +243,7 @@ export class Game {
     if (this.movementTracker) {
       this.movementTracker.moveCount += 1;
       // Trigger stat recalculation
-      const currentRating = calculateSmartRating({
-        moveCount: this.movementTracker.moveCount,
-        totalDistance: Math.round(this.movementTracker.totalDistance),
-        timeSeconds: this.timer ? this.timer.getElapsedSeconds() : 0,
-        totalPieces: this.puzzle ? this.puzzle.pieces.length : 25
-      });
+      const currentRating = this._calculateCurrentRating();
       this.gameView.updateHUD({
         moves: this.movementTracker.moveCount,
         rating: currentRating
