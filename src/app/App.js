@@ -1,12 +1,12 @@
-import { GameStates, GameStateMachine } from './GameState.js';
-import { HomeView } from '../ui/HomeView.js';
-import { GameView } from '../ui/GameView.js';
-import { ResultView } from '../ui/ResultView.js';
-import { SettingsView } from '../ui/SettingsView.js';
-import { PixiApp } from '../renderer/PixiApp.js';
-import { ImageProcessor } from '../image/ImageProcessor.js';
-import { Game } from './Game.js';
-import { SettingsStore } from '../storage/SettingsStore.js';
+import { GameStates, GameStateMachine } from "./GameState.js";
+import { HomeView } from "../ui/HomeView.js";
+import { GameView } from "../ui/GameView.js";
+import { ResultView } from "../ui/ResultView.js";
+import { SettingsView } from "../ui/SettingsView.js";
+import { PixiApp } from "../renderer/PixiApp.js";
+import { ImageProcessor } from "../image/ImageProcessor.js";
+import { Game } from "./Game.js";
+import { SettingsStore } from "../storage/SettingsStore.js";
 
 export class App {
   constructor(rootContainer) {
@@ -16,15 +16,15 @@ export class App {
     this.activeGame = null;
     this.deferredInstallPrompt = null;
     this.swRegistration = null;
-    
+
     // Apply stored Light/Dark theme on boot
     SettingsStore.applyTheme();
 
     this.activeConfig = {
       imageUrl: null,
-      mode: 'normal',
-      difficulty: 'normal',
-      processedImage: null
+      mode: "normal",
+      difficulty: "normal",
+      processedImage: null,
     };
 
     this.initViews();
@@ -32,7 +32,7 @@ export class App {
   }
 
   initPwaEvents() {
-    window.addEventListener('beforeinstallprompt', (e) => {
+    window.addEventListener("beforeinstallprompt", (e) => {
       e.preventDefault();
       this.deferredInstallPrompt = e;
       if (this.homeView && this.homeView.updatePwaInstallState) {
@@ -43,9 +43,9 @@ export class App {
       }
     });
 
-    window.addEventListener('appinstalled', () => {
+    window.addEventListener("appinstalled", () => {
       this.deferredInstallPrompt = null;
-      console.log('[App] PWA installed successfully');
+      console.log("[App] PWA installed successfully");
       if (this.homeView && this.homeView.updatePwaInstallState) {
         this.homeView.updatePwaInstallState(false);
       }
@@ -58,26 +58,28 @@ export class App {
 
   async promptPwaInstall() {
     if (!this.deferredInstallPrompt) {
-      alert('📱 Install Application:\n\nTo install this app on your mobile/desktop device:\n• Android/Chrome: Tap 3 dots Menu -> Add to Home Screen / Install App\n• iPhone/Safari: Tap Share icon -> Add to Home Screen');
+      alert(
+        "📱 Install Application:\n\nTo install this app on your mobile/desktop device:\n• Android/Chrome: Tap 3 dots Menu -> Add to Home Screen / Install App\n• iPhone/Safari: Tap Share icon -> Add to Home Screen",
+      );
       return false;
     }
     this.deferredInstallPrompt.prompt();
     const { outcome } = await this.deferredInstallPrompt.userChoice;
-    console.log('[App] PWA install choice:', outcome);
+    console.log("[App] PWA install choice:", outcome);
     this.deferredInstallPrompt = null;
     if (this.homeView && this.homeView.updatePwaInstallState) {
       this.homeView.updatePwaInstallState(false);
     }
-    return outcome === 'accepted';
+    return outcome === "accepted";
   }
 
   showUpdateBanner() {
-    let banner = document.getElementById('pwa-update-banner');
+    let banner = document.getElementById("pwa-update-banner");
     if (banner) return;
 
-    banner = document.createElement('div');
-    banner.id = 'pwa-update-banner';
-    banner.className = 'surface-card';
+    banner = document.createElement("div");
+    banner.id = "pwa-update-banner";
+    banner.className = "surface-card";
     banner.style.cssText = `
       position: fixed;
       bottom: 20px;
@@ -103,33 +105,43 @@ export class App {
 
     document.body.appendChild(banner);
 
-    banner.querySelector('#btn-update-reload').addEventListener('click', () => {
+    banner.querySelector("#btn-update-reload").addEventListener("click", () => {
       if (this.swRegistration && this.swRegistration.waiting) {
-        this.swRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
+        this.swRegistration.waiting.postMessage({ type: "SKIP_WAITING" });
       }
       window.location.reload();
     });
 
-    banner.querySelector('#btn-update-dismiss').addEventListener('click', () => {
-      banner.remove();
-    });
+    banner
+      .querySelector("#btn-update-dismiss")
+      .addEventListener("click", () => {
+        banner.remove();
+      });
   }
 
   initViews() {
     // 1. Home View
-    this.homeView = new HomeView(this.container, (config) => this.startGame(config), this);
+    this.homeView = new HomeView(
+      this.container,
+      (config) => this.startGame(config),
+      this,
+    );
 
     // 2. Game View
-    this.gameView = new GameView(this.container, {
-      onBackToHome: () => this.showHome(),
-      onOpenSettings: () => this.settingsView.show(),
-      onRestartGame: () => this.restartGame()
-    }, this);
+    this.gameView = new GameView(
+      this.container,
+      {
+        onBackToHome: () => this.showHome(),
+        onOpenSettings: () => this.settingsView.show(),
+        onRestartGame: () => this.restartGame(),
+      },
+      this,
+    );
 
     // 3. Result View Modal
     this.resultView = new ResultView(this.container, {
       onPlayAgain: () => this.restartGame(),
-      onChooseImage: () => this.showHome()
+      onChooseImage: () => this.showHome(),
     });
 
     // 4. Settings View Modal
@@ -146,13 +158,16 @@ export class App {
 
     try {
       let processed;
-      const targetImg = this.activeConfig.imageUrl || './images/demo.webp';
-      
+      const targetImg = this.activeConfig.imageUrl || "./images/demo.webp";
+
       try {
         processed = await ImageProcessor.processImage(targetImg);
       } catch (imgErr) {
-        console.error('[App] Primary ImageProcessor failed, attempting fallback to demo image:', imgErr);
-        processed = await ImageProcessor.processImage('./images/demo.webp');
+        console.error(
+          "[App] Primary ImageProcessor failed, attempting fallback to demo image:",
+          imgErr,
+        );
+        processed = await ImageProcessor.processImage("./images/demo.webp");
       }
 
       this.activeConfig.processedImage = processed;
@@ -161,9 +176,9 @@ export class App {
       this.gameView.updateHUD({
         mode: this.activeConfig.mode,
         difficulty: this.activeConfig.difficulty,
-        timeStr: '00:00',
+        timeStr: "00:00",
         moves: 0,
-        imageUrl: this.activeConfig.imageUrl
+        imageUrl: this.activeConfig.imageUrl,
       });
 
       // View switch: Home -> Game
@@ -183,13 +198,12 @@ export class App {
         config: this.activeConfig,
         containerElement: container,
         gameView: this.gameView,
-        resultView: this.resultView
+        resultView: this.resultView,
       });
 
       await this.activeGame.start();
-
     } catch (err) {
-      console.error('[App] Critical failure during startGame pipeline:', err);
+      console.error("[App] Critical failure during startGame pipeline:", err);
       this.stateMachine.transitionTo(GameStates.ERROR);
       this.showHome();
     }
@@ -213,25 +227,45 @@ export class App {
     if (this.activeGame) {
       this.activeGame.onThemeChange(theme);
     }
+    if (
+      this.homeView &&
+      typeof this.homeView.updateThemeButton === "function"
+    ) {
+      this.homeView.updateThemeButton(theme);
+    }
+    if (
+      this.gameView &&
+      typeof this.gameView.updateThemeButton === "function"
+    ) {
+      this.gameView.updateThemeButton(theme);
+    }
+    if (
+      this.settingsView &&
+      typeof this.settingsView.refreshThemeSelection === "function"
+    ) {
+      this.settingsView.refreshThemeSelection();
+    }
   }
 
   async hardRefreshApp() {
-    console.log('[App] Hard Refresh triggered: purging app shell caches and unregistering SW while keeping user images intact...');
+    console.log(
+      "[App] Hard Refresh triggered: purging app shell caches and unregistering SW while keeping user images intact...",
+    );
     try {
-      if ('serviceWorker' in navigator) {
+      if ("serviceWorker" in navigator) {
         const registrations = await navigator.serviceWorker.getRegistrations();
         for (const reg of registrations) {
           await reg.unregister();
         }
       }
-      if ('caches' in window) {
+      if ("caches" in window) {
         const cacheKeys = await caches.keys();
         for (const key of cacheKeys) {
           await caches.delete(key);
         }
       }
     } catch (err) {
-      console.warn('[App] Non-fatal error during Hard Refresh:', err);
+      console.warn("[App] Non-fatal error during Hard Refresh:", err);
     }
     window.location.reload();
   }
@@ -252,10 +286,9 @@ export class App {
   triggerMockCompletion() {
     this.stateMachine.transitionTo(GameStates.SOLVED);
     this.resultView.showStats({
-      timeStr: '01:42',
+      timeStr: "01:42",
       moves: 18,
-      distanceStr: '1,240 px'
+      distanceStr: "1,240 px",
     });
   }
 }
-

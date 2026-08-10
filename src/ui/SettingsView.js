@@ -1,7 +1,8 @@
-import { SettingsStore } from '../storage/SettingsStore.js';
-import { ImageStore } from '../storage/ImageStore.js';
-import { APP_VERSION, BUILD_DATE, isStandalone } from '../app/AppVersion.js';
-import { VisitorTracker } from '../services/VisitorTracker.js';
+import { SettingsStore } from "../storage/SettingsStore.js";
+import { ImageStore } from "../storage/ImageStore.js";
+import { dbManager } from "../storage/IndexedDB.js";
+import { APP_VERSION, BUILD_DATE, isStandalone } from "../app/AppVersion.js";
+import { VisitorTracker } from "../services/VisitorTracker.js";
 
 /**
  * SettingsView — User preferences, theme modal, and App Version info
@@ -16,9 +17,11 @@ export class SettingsView {
   }
 
   updatePwaInstallState(show) {
-    const pwaSection = this.element.querySelector('#settings-pwa-install-section');
+    const pwaSection = this.element.querySelector(
+      "#settings-pwa-install-section",
+    );
     if (pwaSection) {
-      pwaSection.style.display = show ? 'flex' : 'none';
+      pwaSection.style.display = show ? "flex" : "none";
     }
   }
 
@@ -27,195 +30,271 @@ export class SettingsView {
     const isPwaStandalone = isStandalone();
     const canInstall = Boolean(this.app && this.app.deferredInstallPrompt);
 
-    this.element = document.createElement('div');
-    this.element.className = 'modal-overlay';
+    this.element = document.createElement("div");
+    this.element.className = "modal-overlay";
 
     this.element.innerHTML = `
-      <div class="modal-content surface-card settings-modal" style="padding: var(--space-4); max-width: 440px; width: 92%; max-height: 92vh; overflow-y: auto; background: rgba(var(--modal-bg-rgb), 0.95); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);">
+      <div class="modal-content surface-card settings-modal">
         <!-- Header -->
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-3); position: sticky; top: 0; z-index: 10; background: inherit; padding-bottom: var(--space-2);">
-          <h2 style="font-size: 1.1rem; font-weight: 700; color: var(--text-main); margin: 0;">Settings</h2>
-          <button class="btn btn-icon settings-close-btn" id="btn-close-settings" title="Close Settings" style="width: 28px; height: 28px; min-width: 28px; border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center; background: var(--bg-hover); border: 1px solid var(--border-subtle);">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px dashed var(--border-subtle);">
+          <h2 style="font-size: 0.95rem; font-weight: 700; color: var(--text-main); margin: 0;">Settings</h2>
+          <button class="settings-close-btn" id="btn-close-settings" title="Close Settings" style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; background: transparent; border: none; cursor: pointer; color: var(--text-muted);">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
 
-        <div style="display: flex; flex-direction: column; gap: var(--space-3);">
-          <!-- Theme Preference -->
-          <div class="settings-row">
-            <div class="settings-label">
-              <div style="font-weight: 600; font-size: 0.85rem;">Appearance</div>
-              <div style="font-size: 0.72rem; color: var(--text-muted);">Theme preference</div>
-            </div>
-            <div style="display: flex; gap: 4px;">
-              <button class="btn btn-secondary settings-theme-btn ${settings.theme === 'dark' ? 'btn-primary' : ''}" id="btn-theme-dark" style="padding: 4px 10px; height: 30px; font-size: 0.75rem;">Dark</button>
-              <button class="btn btn-secondary settings-theme-btn ${settings.theme === 'light' ? 'btn-primary' : ''}" id="btn-theme-light" style="padding: 4px 10px; height: 30px; font-size: 0.75rem;">Light</button>
-            </div>
-          </div>
-
+        <div style="display: flex; flex-direction: column; gap: 8px;">
           <!-- Sound Preference -->
           <div class="settings-row">
             <div class="settings-label">
-              <div style="font-weight: 600; font-size: 0.85rem;">Sound Effects</div>
-              <div style="font-size: 0.72rem; color: var(--text-muted);">Tile snap & completion audio</div>
+              <div>Sound Effects</div>
+              <div>Tile snap & completion audio</div>
             </div>
-            <input type="checkbox" id="setting-sound" ${settings.sound ? 'checked' : ''} style="width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer;" />
+            <input type="checkbox" id="setting-sound" ${settings.sound ? "checked" : ""} style="width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer;" />
           </div>
 
           <!-- Snap Sensitivity -->
           <div class="settings-row">
             <div class="settings-label">
-              <div style="font-weight: 600; font-size: 0.85rem;">Snap Sensitivity</div>
-              <div style="font-size: 0.72rem; color: var(--text-muted);">Distance threshold</div>
+              <div>Snap Sensitivity</div>
+              <div>Distance threshold</div>
             </div>
-            <select id="setting-snap" style="background: var(--bg-surface); color: var(--text-main); padding: 4px 8px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); font-size: 0.8rem; height: 30px; cursor: pointer;">
-              <option value="normal" ${settings.snapSensitivity === 'normal' ? 'selected' : ''}>Normal</option>
-              <option value="strict" ${settings.snapSensitivity === 'strict' ? 'selected' : ''}>Strict</option>
-              <option value="relaxed" ${settings.snapSensitivity === 'relaxed' ? 'selected' : ''}>Relaxed</option>
+            <select id="setting-snap" style="background: var(--bg-hover); color: var(--text-main); padding: 2px 6px; border-radius: var(--radius-sm); border: 1px dashed var(--border-subtle); font-size: 0.72rem; height: 24px; cursor: pointer;">
+              <option value="normal" ${settings.snapSensitivity === "normal" ? "selected" : ""}>Normal</option>
+              <option value="strict" ${settings.snapSensitivity === "strict" ? "selected" : ""}>Strict</option>
+              <option value="relaxed" ${settings.snapSensitivity === "relaxed" ? "selected" : ""}>Relaxed</option>
             </select>
           </div>
 
           <!-- PWA Install -->
-          <div id="settings-pwa-install-section" class="settings-row" style="display: ${canInstall ? 'flex' : 'none'};">
+          <div id="settings-pwa-install-section" class="settings-row" style="display: ${canInstall ? "flex" : "none"};">
             <div class="settings-label">
-              <div style="font-weight: 600; font-size: 0.85rem;">Install App</div>
-              <div style="font-size: 0.72rem; color: var(--text-muted);">Offline play</div>
+              <div>Install App</div>
+              <div>Offline play</div>
             </div>
-            <button class="btn btn-secondary" id="btn-pwa-install-settings" style="padding: 4px 10px; height: 30px; font-size: 0.75rem;">Install</button>
+            <button class="btn btn-secondary" id="btn-pwa-install-settings" style="padding: 2px 8px; height: 24px; font-size: 0.72rem;">Install</button>
           </div>
 
           <!-- Reset Database -->
           <div class="settings-row">
             <div class="settings-label">
-              <div style="font-weight: 600; font-size: 0.85rem; color: #ef4444;">Reset Database</div>
-              <div style="font-size: 0.72rem; color: var(--text-muted);">Erase all data</div>
+              <div style="color: #ef4444 !important;">Reset Database</div>
+              <div>Erase all data</div>
             </div>
-            <button class="btn" id="btn-reset-db-settings" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 4px 10px; height: 30px; font-size: 0.75rem;">Reset</button>
+            <button class="btn btn-sm btn-danger" id="btn-reset-db-settings" style="background: transparent; color: #ef4444; border: none; padding: 0;">Reset</button>
           </div>
 
-          <!-- Divider -->
-          <div style="height: 1px; background: var(--border-subtle); margin: var(--space-2) 0;"></div>
-
-          <!-- Visitor Analytics -->
-          <div class="settings-info-card" style="background: rgba(var(--card-bg-rgb), 0.5); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: var(--space-3);">
-            <div style="font-weight: 700; font-size: 0.8rem; margin-bottom: var(--space-2); color: var(--text-main); display: flex; align-items: center; gap: 5px;">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          <!-- Visitor Analytics & App Version in Compact Dashed Boxes -->
+          <div class="settings-info-card">
+            <div style="font-weight: 700; font-size: 0.75rem; margin-bottom: 6px; color: var(--text-main); display: flex; align-items: center; gap: 4px;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
               Visitor Analytics
             </div>
-            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.76rem; margin-bottom: 5px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; margin-bottom: 4px;">
               <span style="color: var(--text-muted); display: inline-flex; align-items: center; gap: 4px;">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                 Unique:
               </span>
               <span id="settings-unique-count" class="count-animated" style="font-weight: 700; color: var(--primary);">...</span>
             </div>
-            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.76rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem;">
               <span style="color: var(--text-muted); display: inline-flex; align-items: center; gap: 4px;">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
                 Total Visits:
               </span>
               <span id="settings-total-count" class="count-animated" style="font-weight: 700; color: var(--text-main);">...</span>
             </div>
           </div>
 
-          <!-- App Version -->
-          <div class="settings-info-card" style="background: rgba(var(--card-bg-rgb), 0.3); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: var(--space-3);">
-            <div style="display: flex; justify-content: space-between; font-size: 0.76rem; margin-bottom: 5px;">
+          <div class="settings-info-card">
+            <div style="display: flex; justify-content: space-between; font-size: 0.72rem; margin-bottom: 4px;">
               <span style="color: var(--text-muted);">Version:</span>
               <span style="font-weight: 600; color: var(--primary);">v${APP_VERSION}</span>
             </div>
-            <div style="display: flex; justify-content: space-between; font-size: 0.76rem; margin-bottom: 5px;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.72rem; margin-bottom: 4px;">
               <span style="color: var(--text-muted);">Display:</span>
-              <span style="font-weight: 500; color: var(--text-main);">${isPwaStandalone ? 'PWA' : 'Browser'}</span>
+              <span style="font-weight: 500; color: var(--text-main);">${isPwaStandalone ? "PWA" : "Browser"}</span>
             </div>
-            <div style="display: flex; justify-content: space-between; font-size: 0.76rem;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.72rem; margin-bottom: 4px;">
               <span style="color: var(--text-muted);">Storage:</span>
               <span style="font-weight: 500; color: var(--text-main);">IndexedDB</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.72rem;">
+              <span style="color: var(--text-muted);">DB usage:</span>
+              <span id="settings-db-usage" style="font-weight: 500; color: var(--text-main);">Calculating...</span>
             </div>
           </div>
         </div>
 
-        <div style="margin-top: var(--space-4); display: flex; justify-content: flex-end; gap: var(--space-2);">
-          <button class="btn btn-primary" id="btn-save-settings" style="padding: 6px 16px; height: 32px; font-size: 0.8rem;">Save & Close</button>
+        <div style="margin-top: 12px; display: flex; justify-content: flex-end; gap: var(--space-2);">
+          <button class="btn btn-primary" id="btn-save-settings" style="padding: 4px 12px; height: 28px; font-size: 0.75rem;">Save & Close</button>
         </div>
       </div>
     `;
 
     this.container.appendChild(this.element);
-    this.selectedTheme = settings.theme || 'dark';
     this.bindEvents();
   }
 
   bindEvents() {
-    const darkBtn = this.element.querySelector('#btn-theme-dark');
-    const lightBtn = this.element.querySelector('#btn-theme-light');
+    const pwaInstallSettingsBtn = this.element.querySelector(
+      "#btn-pwa-install-settings",
+    );
+    const resetDbBtn = this.element.querySelector("#btn-reset-db-settings");
 
-    darkBtn.addEventListener('click', () => {
-      this.selectedTheme = 'dark';
-      darkBtn.className = 'btn btn-primary';
-      lightBtn.className = 'btn btn-secondary';
-      SettingsStore.applyTheme('dark');
-      if (this.app) this.app.onThemeChange('dark');
-    });
-
-    lightBtn.addEventListener('click', () => {
-      this.selectedTheme = 'light';
-      lightBtn.className = 'btn btn-primary';
-      darkBtn.className = 'btn btn-secondary';
-      SettingsStore.applyTheme('light');
-      if (this.app) this.app.onThemeChange('light');
-    });
-
-    const pwaInstallSettingsBtn = this.element.querySelector('#btn-pwa-install-settings');
     if (pwaInstallSettingsBtn) {
-      pwaInstallSettingsBtn.addEventListener('click', async () => {
-        if (this.app) {
-          await this.app.promptPwaInstall();
+      pwaInstallSettingsBtn.addEventListener("click", async () => {
+        if (this.app && this.app.deferredInstallPrompt) {
+          this.app.deferredInstallPrompt.prompt();
+          this.app.deferredInstallPrompt = null;
+          this.updatePwaInstallState(false);
         }
       });
     }
 
-    const resetDbBtn = this.element.querySelector('#btn-reset-db-settings');
     if (resetDbBtn) {
-      resetDbBtn.addEventListener('click', async () => {
-        if (confirm('ERASE ALL DATA CONFIRMATION:\n\nAre you sure you want to reset everything like a brand new user?\nThis will erase all custom images, match stats, and puzzle status tracking 100%.\n\nThis action CANNOT be undone!')) {
-          resetDbBtn.disabled = true;
+      resetDbBtn.addEventListener("click", async () => {
+        resetDbBtn.disabled = true;
+        const confirmReset = window.confirm(
+          "Reset all game data? This will clear saved images and stats.",
+        );
+        if (confirmReset) {
           await ImageStore.clearAllDatabaseData();
-          alert('Reset Complete! The app will now reload.');
+          alert("Reset Complete! The app will now reload.");
           window.location.reload();
         }
+        resetDbBtn.disabled = false;
       });
     }
 
     const close = () => {
-      const sound = this.element.querySelector('#setting-sound').checked;
-      const snap = this.element.querySelector('#setting-snap').value;
+      const sound = this.element.querySelector("#setting-sound").checked;
+      const snap = this.element.querySelector("#setting-snap").value;
 
       SettingsStore.saveSettings({
-        theme: this.selectedTheme,
         sound,
-        snapSensitivity: snap
+        snapSensitivity: snap,
       });
 
       this.hide();
       if (this.onClose) this.onClose();
     };
 
-    this.element.querySelector('#btn-close-settings').addEventListener('click', close);
-    this.element.querySelector('#btn-save-settings').addEventListener('click', close);
+    this.element
+      .querySelector("#btn-close-settings")
+      .addEventListener("click", close);
+    this.element
+      .querySelector("#btn-save-settings")
+      .addEventListener("click", close);
   }
 
   show() {
-    this.element.classList.add('active');
-    VisitorTracker.recordAndGetStats().then(stats => {
-      const uEl = this.element.querySelector('#settings-unique-count');
-      const tEl = this.element.querySelector('#settings-total-count');
-      if (uEl) VisitorTracker.updateElementWithAnimation(uEl, stats.uniqueFormatted);
-      if (tEl) VisitorTracker.updateElementWithAnimation(tEl, stats.totalFormatted);
-    }).catch(e => {});
+    this.element.classList.add("active");
+    VisitorTracker.recordAndGetStats()
+      .then((stats) => {
+        const uEl = this.element.querySelector("#settings-unique-count");
+        const tEl = this.element.querySelector("#settings-total-count");
+        if (uEl)
+          VisitorTracker.updateElementWithAnimation(uEl, stats.uniqueFormatted);
+        if (tEl)
+          VisitorTracker.updateElementWithAnimation(tEl, stats.totalFormatted);
+      })
+      .catch(() => {});
+
+    this.updateDbUsage();
+  }
+
+  async updateDbUsage() {
+    const el = this.element.querySelector("#settings-db-usage");
+    if (!el) return;
+
+    el.textContent = "Calculating...";
+
+    if (navigator.storage && typeof navigator.storage.estimate === "function") {
+      try {
+        const { usage, quota } = await navigator.storage.estimate();
+        if (typeof usage === "number") {
+          const used = this.formatBytes(usage);
+          const cap =
+            typeof quota === "number" ? this.formatBytes(quota) : null;
+          el.textContent = cap ? `${used} / ${cap}` : `${used}`;
+          return;
+        }
+      } catch (err) {
+        console.warn("[SettingsView] storage estimate failed", err);
+      }
+    }
+
+    const fallback = await this.estimateIndexedDbUsage();
+    if (fallback) {
+      el.textContent = fallback;
+    } else {
+      el.textContent = "Unavailable";
+    }
+  }
+
+  async estimateIndexedDbUsage() {
+    try {
+      const db = await dbManager.open();
+      if (!db || !db.objectStoreNames.length) return null;
+
+      let totalBytes = 0;
+      const stores = Array.from(db.objectStoreNames);
+
+      for (const storeName of stores) {
+        const tx = db.transaction(storeName, "readonly");
+        const store = tx.objectStore(storeName);
+        const records = await new Promise((resolve, reject) => {
+          const req = store.getAll();
+          req.onsuccess = () => resolve(req.result || []);
+          req.onerror = (e) => reject(e.target.error);
+        });
+
+        for (const record of records) {
+          for (const value of Object.values(record)) {
+            if (value instanceof Blob) {
+              totalBytes += value.size;
+            } else if (value instanceof ArrayBuffer) {
+              totalBytes += value.byteLength;
+            } else if (ArrayBuffer.isView(value)) {
+              totalBytes += value.byteLength;
+            } else if (typeof value === "string") {
+              totalBytes += value.length * 2;
+            } else if (
+              typeof value === "number" ||
+              typeof value === "boolean"
+            ) {
+              totalBytes += 8;
+            } else if (value && typeof value === "object") {
+              try {
+                const serialized = JSON.stringify(value);
+                totalBytes += serialized ? serialized.length * 2 : 0;
+              } catch (e) {}
+            }
+          }
+        }
+      }
+
+      return this.formatBytes(totalBytes);
+    } catch (err) {
+      console.warn("[SettingsView] fallback IndexedDB usage failed", err);
+      return null;
+    }
+  }
+
+  formatBytes(bytes) {
+    if (typeof bytes !== "number" || Number.isNaN(bytes)) return "0 B";
+    const units = ["B", "KB", "MB", "GB"];
+    let value = bytes;
+    let unitIndex = 0;
+    while (value >= 1024 && unitIndex < units.length - 1) {
+      value /= 1024;
+      unitIndex += 1;
+    }
+    return `${value.toFixed(1)} ${units[unitIndex]}`;
   }
 
   hide() {
-    this.element.classList.remove('active');
+    this.element.classList.remove("active");
   }
 }

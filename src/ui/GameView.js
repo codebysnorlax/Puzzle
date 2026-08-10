@@ -1,11 +1,15 @@
-import { SettingsStore } from '../storage/SettingsStore.js';
+import { SettingsStore } from "../storage/SettingsStore.js";
 
 /**
  * GameView — Active gameplay container with Dynamic Adaptive HUD Docks
  * (Landscape -> Top & Bottom horizontal docks | Portrait/Square -> Left & Right vertical docks)
  */
 export class GameView {
-  constructor(container, { onBackToHome, onOpenSettings, onRestartGame, onPeekHint, onUndo, onRedo }, app = null) {
+  constructor(
+    container,
+    { onBackToHome, onOpenSettings, onRestartGame, onPeekHint, onUndo, onRedo },
+    app = null,
+  ) {
     this.container = container;
     this.onBackToHome = onBackToHome;
     this.onOpenSettings = onOpenSettings;
@@ -20,10 +24,10 @@ export class GameView {
   }
 
   render() {
-    const currentTheme = SettingsStore.getSettings().theme || 'light';
+    const currentTheme = SettingsStore.getSettings().theme || "light";
 
-    this.element = document.createElement('div');
-    this.element.className = 'view game-view hud-dock-layout-portrait';
+    this.element = document.createElement("div");
+    this.element.className = "view game-view hud-dock-layout-portrait";
 
     this.element.innerHTML = `
       <div id="mobile-hud-bar">
@@ -42,11 +46,15 @@ export class GameView {
 
           <!-- Theme Toggle -->
           <button class="hud-v-btn" id="hud-theme-toggle-single" title="Toggle Theme">
-            ${currentTheme === 'dark' ? `
+            ${
+              currentTheme === "dark"
+                ? `
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-            ` : `
+            `
+                : `
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-            `}
+            `
+            }
           </button>
 
           <!-- Restart Puzzle -->
@@ -120,22 +128,24 @@ export class GameView {
     if (!this.element) return;
 
     if (isLandscape) {
-      this.element.classList.remove('hud-dock-layout-portrait');
-      this.element.classList.add('hud-dock-layout-landscape');
+      this.element.classList.remove("hud-dock-layout-portrait");
+      this.element.classList.add("hud-dock-layout-landscape");
     } else {
-      this.element.classList.remove('hud-dock-layout-landscape');
-      this.element.classList.add('hud-dock-layout-portrait');
+      this.element.classList.remove("hud-dock-layout-landscape");
+      this.element.classList.add("hud-dock-layout-portrait");
     }
   }
 
   bindEvents() {
-    const singleThemeBtn = this.element.querySelector('#hud-theme-toggle-single');
+    const singleThemeBtn = this.element.querySelector(
+      "#hud-theme-toggle-single",
+    );
 
     if (singleThemeBtn) {
-      singleThemeBtn.addEventListener('click', () => {
-        const current = SettingsStore.getSettings().theme || 'light';
-        const nextTheme = current === 'dark' ? 'light' : 'dark';
-        
+      singleThemeBtn.addEventListener("click", () => {
+        const current = SettingsStore.getSettings().theme || "light";
+        const nextTheme = current === "dark" ? "light" : "dark";
+
         SettingsStore.saveSettings({ theme: nextTheme });
         SettingsStore.applyTheme(nextTheme);
 
@@ -143,61 +153,70 @@ export class GameView {
           this.app.onThemeChange(nextTheme);
         }
 
-        singleThemeBtn.innerHTML = nextTheme === 'dark' ? `
+        singleThemeBtn.innerHTML =
+          nextTheme === "dark"
+            ? `
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-        ` : `
+        `
+            : `
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
         `;
       });
     }
 
-    const undoBtn = this.element.querySelector('#hud-btn-undo');
+    const undoBtn = this.element.querySelector("#hud-btn-undo");
     if (undoBtn) {
-      undoBtn.addEventListener('click', () => {
+      undoBtn.addEventListener("click", () => {
         if (this.onUndo) this.onUndo();
       });
     }
 
-    const redoBtn = this.element.querySelector('#hud-btn-redo');
+    const redoBtn = this.element.querySelector("#hud-btn-redo");
     if (redoBtn) {
-      redoBtn.addEventListener('click', () => {
+      redoBtn.addEventListener("click", () => {
         if (this.onRedo) this.onRedo();
       });
     }
 
-    this.element.querySelector('#hud-btn-back').addEventListener('click', () => {
-      if (this.onBackToHome) this.onBackToHome();
-    });
+    this.element
+      .querySelector("#hud-btn-back")
+      .addEventListener("click", () => {
+        if (this.onBackToHome) this.onBackToHome();
+      });
 
-    const hintBtn = this.element.querySelector('#hud-btn-hint');
+    const hintBtn = this.element.querySelector("#hud-btn-hint");
     if (hintBtn) {
-      hintBtn.addEventListener('click', () => {
+      hintBtn.addEventListener("click", () => {
         if (this.onPeekHint) this.onPeekHint();
       });
     }
 
-    this.element.querySelector('#hud-btn-restart').addEventListener('click', () => {
-      this.hideCompletionState();
-      if (this.onRestartGame) this.onRestartGame();
-    });
+    this.element
+      .querySelector("#hud-btn-restart")
+      .addEventListener("click", () => {
+        this.hideCompletionState();
+        if (this.onRestartGame) this.onRestartGame();
+      });
 
-    this.element.querySelector('#hud-btn-settings').addEventListener('click', () => {
-      if (this.onOpenSettings) this.onOpenSettings();
-    });
+    this.element
+      .querySelector("#hud-btn-settings")
+      .addEventListener("click", () => {
+        if (this.onOpenSettings) this.onOpenSettings();
+      });
 
     // Solved floating bar actions
-    const solvedRestart = this.element.querySelector('#solved-btn-restart');
-    const solvedHome = this.element.querySelector('#solved-btn-home');
+    const solvedRestart = this.element.querySelector("#solved-btn-restart");
+    const solvedHome = this.element.querySelector("#solved-btn-home");
 
     if (solvedRestart) {
-      solvedRestart.addEventListener('click', () => {
+      solvedRestart.addEventListener("click", () => {
         this.hideCompletionState();
         if (this.onRestartGame) this.onRestartGame();
       });
     }
 
     if (solvedHome) {
-      solvedHome.addEventListener('click', () => {
+      solvedHome.addEventListener("click", () => {
         this.hideCompletionState();
         if (this.onBackToHome) this.onBackToHome();
       });
@@ -208,28 +227,28 @@ export class GameView {
     if (!this.element) return;
 
     if (mode && difficulty) {
-      const badge = this.element.querySelector('#hud-mode-badge');
+      const badge = this.element.querySelector("#hud-mode-badge");
       if (badge) {
         badge.textContent = mode.toLowerCase();
       }
     }
     if (timeStr !== undefined) {
-      const timer = this.element.querySelector('#hud-timer');
+      const timer = this.element.querySelector("#hud-timer");
       if (timer) timer.textContent = timeStr;
     }
     if (moves !== undefined) {
-      const movesEl = this.element.querySelector('#hud-moves');
+      const movesEl = this.element.querySelector("#hud-moves");
       if (movesEl) movesEl.textContent = `${moves}m`;
     }
     if (rating !== undefined) {
-      const ratingEl = this.element.querySelector('#hud-rating');
+      const ratingEl = this.element.querySelector("#hud-rating");
       if (ratingEl) ratingEl.textContent = `${rating}`;
     }
   }
 
   updateUndoRedo(canUndo, canRedo) {
-    const undoBtn = this.element.querySelector('#hud-btn-undo');
-    const redoBtn = this.element.querySelector('#hud-btn-redo');
+    const undoBtn = this.element.querySelector("#hud-btn-undo");
+    const redoBtn = this.element.querySelector("#hud-btn-redo");
     if (undoBtn) undoBtn.disabled = !canUndo;
     if (redoBtn) redoBtn.disabled = !canRedo;
   }
@@ -237,56 +256,72 @@ export class GameView {
   showCompletionState({ rating = 100 }) {
     if (!this.element) return;
 
-    const badge = this.element.querySelector('#hud-mode-badge');
+    const badge = this.element.querySelector("#hud-mode-badge");
     if (badge) {
       badge.textContent = `✓${rating}`;
-      badge.style.background = 'var(--success)';
-      badge.style.color = '#ffffff';
+      badge.style.background = "var(--success)";
+      badge.style.color = "#ffffff";
     }
 
-    const floatingBar = this.element.querySelector('#solved-floating-bar');
-    const floatingText = this.element.querySelector('#solved-floating-text');
+    const floatingBar = this.element.querySelector("#solved-floating-bar");
+    const floatingText = this.element.querySelector("#solved-floating-text");
     if (floatingBar && floatingText) {
       floatingText.textContent = `🎉 Solved! (${rating}/100)`;
-      floatingBar.style.display = 'block';
+      floatingBar.style.display = "block";
     }
   }
 
   hideCompletionState() {
     if (!this.element) return;
 
-    const badge = this.element.querySelector('#hud-mode-badge');
+    const badge = this.element.querySelector("#hud-mode-badge");
     if (badge) {
-      badge.style.background = '';
-      badge.style.color = '';
+      badge.style.background = "";
+      badge.style.color = "";
     }
 
-    const floatingBar = this.element.querySelector('#solved-floating-bar');
-    if (floatingBar) floatingBar.style.display = 'none';
+    const floatingBar = this.element.querySelector("#solved-floating-bar");
+    if (floatingBar) floatingBar.style.display = "none";
   }
 
   showPuzzleSkeleton() {
     if (!this.element) return;
-    const skeleton = this.element.querySelector('#puzzle-area-skeleton');
-    if (skeleton) skeleton.classList.remove('loaded');
+    const skeleton = this.element.querySelector("#puzzle-area-skeleton");
+    if (skeleton) skeleton.classList.remove("loaded");
   }
 
   hidePuzzleSkeleton() {
     if (!this.element) return;
-    const skeleton = this.element.querySelector('#puzzle-area-skeleton');
-    if (skeleton) skeleton.classList.add('loaded');
+    const skeleton = this.element.querySelector("#puzzle-area-skeleton");
+    if (skeleton) skeleton.classList.add("loaded");
   }
 
   getCanvasContainer() {
-    return this.element.querySelector('#puzzle-canvas-container');
+    return this.element.querySelector("#puzzle-canvas-container");
   }
 
   show() {
     this.showPuzzleSkeleton();
-    this.element.classList.add('active');
+    this.element.classList.add("active");
+    this.updateThemeButton(SettingsStore.getSettings().theme || "light");
   }
 
   hide() {
-    this.element.classList.remove('active');
+    this.element.classList.remove("active");
+  }
+
+  updateThemeButton(theme) {
+    const singleThemeBtn = this.element.querySelector(
+      "#hud-theme-toggle-single",
+    );
+    if (!singleThemeBtn) return;
+    singleThemeBtn.innerHTML =
+      theme === "dark"
+        ? `
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+    `
+        : `
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    `;
   }
 }
