@@ -161,5 +161,3 @@ async function cleanupLevel(levelBundleKey: string) {
 
 ---
 
-> [!TIP]
-> **Would you like help setting up the AssetPack configuration or refactoring the drag-and-drop piece engine with PixiJS v8 RenderLayer?**
