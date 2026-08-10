@@ -6,13 +6,14 @@ import { SoundEffects } from '../game/SoundEffects.js';
  * InputHandler — Unified Pointer Handler with Local Container Coordinate Transformation & Safe Animation Scoping
  */
 export class InputHandler {
-  constructor({ puzzle, puzzleRenderer, timer, movementTracker, onPuzzleComplete, onFirstMovement }) {
+  constructor({ puzzle, puzzleRenderer, timer, movementTracker, onPuzzleComplete, onFirstMovement, onSwap }) {
     this.puzzle = puzzle;
     this.renderer = puzzleRenderer;
     this.timer = timer;
     this.movementTracker = movementTracker;
     this.onPuzzleComplete = onPuzzleComplete;
     this.onFirstMovement = onFirstMovement;
+    this.onSwap = onSwap;
 
     this.activePiece = null;
     this.startGridPos = { x: 0, y: 0 };
@@ -149,6 +150,16 @@ export class InputHandler {
       const sourceSlotRow = this.startGridRow !== undefined ? this.startGridRow : targetPiece.currentGridRow;
       const sourceSlotCol = this.startGridCol !== undefined ? this.startGridCol : targetPiece.currentGridCol;
 
+      // Record swap history for undo/redo before changing positions
+      if (this.onSwap) {
+        this.onSwap(
+          draggedPiece,
+          targetPiece,
+          { row: sourceSlotRow, col: sourceSlotCol },
+          { row: targetSlotRow, col: targetSlotCol }
+        );
+      }
+
       const draggedCoords = this.puzzle.getSlotCoordinates ? this.puzzle.getSlotCoordinates(targetSlotRow, targetSlotCol) : { x: cell.targetX, y: cell.targetY };
       const sourceCoords = (this.puzzle.getSlotCoordinates && sourceSlotRow !== undefined) ? this.puzzle.getSlotCoordinates(sourceSlotRow, sourceSlotCol) : this.startGridPos;
 
@@ -170,13 +181,15 @@ export class InputHandler {
 
       PieceAnimations.animateSnap(activeSprite, draggedCoords.x, draggedCoords.y);
       PieceAnimations.animateSnap(targetSprite, sourceCoords.x, sourceCoords.y);
+      
+      // Play sound ONLY when successfully swapped
+      SoundEffects.playMoveSound();
     } else {
       draggedPiece.setPosition(this.startGridPos.x, this.startGridPos.y);
       PieceAnimations.animateSnap(activeSprite, this.startGridPos.x, this.startGridPos.y);
     }
 
     this.activePiece = null;
-    SoundEffects.playMoveSound();
 
     if (this.puzzle.checkCompletion()) {
       SoundEffects.playWinSound();

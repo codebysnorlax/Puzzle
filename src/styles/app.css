@@ -425,15 +425,77 @@
 /* ══════════════════════════════════════════════════════════════
    GAME VIEW — ADAPTIVE GAMEPLAY HUD DOCKS
    ══════════════════════════════════════════════════════════════ */
-.hud-dock {
+/* Universal Top HUD bar (Gameplay View Header) */
+#mobile-hud-bar {
   position: absolute;
-  z-index: 100;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 52px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: transparent !important;
+  border-bottom: 0.5px solid var(--border-subtle) !important;
+  z-index: 150;
   pointer-events: auto;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-strong);
+  box-sizing: border-box;
+}
+
+.hud-undo-redo-bar {
+  position: absolute;
+  top: 56px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  z-index: 140;
+  pointer-events: auto;
+  padding: 2px 8px;
+  background: transparent;
+  box-sizing: border-box;
+}
+
+.hud-undo-redo-bar .hud-v-btn {
+  background: transparent !important;
+  color: var(--text-main) !important;
+  border: 0.4px solid var(--border-subtle) !important;
+  transition: background-color 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+}
+
+.hud-undo-redo-bar .hud-v-btn:hover:not(:disabled) {
+  background: var(--bg-hover) !important;
+  border-color: var(--border-strong) !important;
+}
+
+.hud-undo-redo-bar .hud-v-btn:disabled {
+  opacity: 0.3 !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+}
+
+@media (max-width: 768px) {
+  .hud-undo-redo-bar {
+    top: 46px;
+    gap: 12px;
+  }
+}
+
+.hud-dock {
+  position: static !important;
+  transform: none !important;
+  flex-direction: row !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  gap: 8px !important;
   display: flex;
   align-items: center;
   color: var(--text-main);
+  pointer-events: auto;
 }
 
 /* Protected circular HUD buttons */
@@ -444,149 +506,95 @@
   min-height: 32px !important;
   aspect-ratio: 1 / 1;
   border-radius: 50% !important;
-  background: transparent;
-  border: 1px solid transparent;
-  color: var(--text-muted);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  background: transparent !important;
+  border: none !important;
+  color: var(--text-main) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   cursor: pointer;
   flex-shrink: 0;
   box-sizing: border-box;
   padding: 0 !important;
+  transition: background-color 0.2s ease;
 }
 .hud-v-btn:hover {
-  background: var(--bg-hover);
-  color: var(--text-main);
+  background: var(--bg-hover) !important;
 }
 .hud-v-btn.brand-accent {
-  background: var(--primary);
-  color: #fff !important;
+  background: transparent !important;
+  color: var(--text-main) !important;
 }
-[data-theme="dark"] .hud-v-btn.brand-accent { color: #0f172a !important; }
-
-/* Portrait: Left & Right vertical docks */
-.hud-dock-layout-portrait .hud-dock {
-  top: 50%;
-  transform: translateY(-50%);
-  flex-direction: column;
-  border-radius: var(--radius-full);
-  padding: 8px 6px;
-  gap: 8px;
-}
-.hud-dock-layout-portrait .hud-dock-control { left: 16px; right: auto; }
-.hud-dock-layout-portrait .hud-dock-tracker { right: 16px; left: auto; padding: 10px 8px; }
-.hud-dock-layout-portrait .hud-v-badge {
-  font-size: 0.68rem; font-weight: 700; color: var(--text-main);
-  text-transform: lowercase; writing-mode: vertical-lr;
-  letter-spacing: 0.05em; padding: 4px 2px;
-}
-.hud-dock-layout-portrait .hud-v-divider {
-  width: 16px; height: 1px; background: var(--border-subtle); margin: 1px 0;
-}
-.hud-dock-layout-portrait .hud-v-stat {
-  display: flex; flex-direction: column; align-items: center; gap: 3px;
-  font-size: 0.7rem; font-weight: 700; color: var(--text-main); white-space: nowrap;
+.hud-v-btn.brand-accent:hover {
+  background: var(--bg-hover) !important;
 }
 
-/* Landscape: Top & Bottom horizontal docks */
-.hud-dock-layout-landscape .hud-dock {
-  left: 50%;
-  transform: translateX(-50%);
-  flex-direction: row;
-  border-radius: var(--radius-pill);
-  padding: 6px 14px;
-  gap: 10px;
-}
-.hud-dock-layout-landscape .hud-dock-control { top: 14px; bottom: auto; }
-.hud-dock-layout-landscape .hud-dock-tracker { bottom: 14px; top: auto; }
-.hud-dock-layout-landscape .hud-v-badge {
-  font-size: 0.75rem; font-weight: 700; color: var(--text-main);
-  text-transform: lowercase; writing-mode: horizontal-tb;
-  letter-spacing: 0.03em; padding: 0 4px;
-}
-.hud-dock-layout-landscape .hud-v-divider {
-  width: 1px; height: 16px; background: var(--border-subtle); margin: 0 2px;
-}
-.hud-dock-layout-landscape .hud-v-stat {
-  display: flex; flex-direction: row; align-items: center; gap: 5px;
-  font-size: 0.76rem; font-weight: 700; color: var(--text-main); white-space: nowrap;
-}
-.hud-v-stat svg { stroke: var(--text-muted); width: 12px; height: 12px; }
-
-/* Desktop: wrapper is invisible, docks are absolutely positioned as usual */
-#mobile-hud-bar {
-  display: contents; /* children become direct children of game-view, no layout impact */
+.hud-v-badge {
+  font-size: 0.76rem !important;
+  font-weight: 500 !important;
+  color: var(--text-main) !important;
+  text-transform: lowercase !important;
+  writing-mode: horizontal-tb !important;
+  letter-spacing: 0.03em !important;
+  padding: 0 4px !important;
+  font-family: "Poppins", sans-serif !important;
+  display: flex !important;
+  align-items: center !important;
+  height: auto !important;
+  line-height: normal !important;
 }
 
-/* Responsive Mobile — flex top bar */
-@media (max-width: 768px), (max-height: 600px) {
-  /* The wrapper becomes the full-width flex top bar */
-  #mobile-hud-bar {
-    position: absolute;
-    top: 8px;
-    left: 8px;
-    right: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 6px;
-    z-index: 150;
-    pointer-events: none;
+.hud-v-divider {
+  width: 1px !important;
+  height: 16px !important;
+  background: var(--border-subtle) !important;
+  margin: 0 4px !important;
+}
+
+.hud-v-stat {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 6px !important;
+  font-size: 0.78rem !important;
+  font-weight: 500 !important;
+  color: var(--text-main) !important;
+  white-space: nowrap !important;
+  font-family: "Poppins", sans-serif !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+  font-variant-numeric: tabular-nums !important;
+  font-feature-settings: "tnum" !important;
+}
+
+#hud-timer {
+  min-width: 42px !important;
+  display: inline-block !important;
+  text-align: left !important;
+}
+
+@media (max-width: 768px) {
+  #hud-timer {
+    min-width: 34px !important;
   }
-  /* Both docks become flex children — no absolute positioning */
-  #mobile-hud-bar .hud-dock {
-    position: static !important;
-    top: auto !important;
-    left: auto !important;
-    right: auto !important;
-    bottom: auto !important;
-    transform: none !important;
-    flex-direction: row !important;
-    border-radius: var(--radius-pill) !important;
-    padding: 4px 10px !important;
-    gap: 6px !important;
-    box-sizing: border-box !important;
-    top: 8px !important;
-    bottom: auto !important;
-    transform: none !important;
-  }
-  /* Control dock: anchored left */
-  .hud-dock-control {
-    left: 8px !important;
-    right: auto !important;
-    /* Stretch to fill left half minus a small gap for tracker */
-    max-width: calc(60vw - 12px) !important;
-  }
-  /* Tracker dock: anchored right */
-  .hud-dock-tracker {
-    top: 8px !important;
-    bottom: auto !important;
-    left: auto !important;
-    right: 8px !important;
-    transform: none !important;
-  }
-  .hud-v-btn {
-    width: 28px !important;
-    height: 28px !important;
-    min-width: 28px !important;
-    min-height: 28px !important;
-  }
-  .hud-v-badge {
-    font-size: 0.68rem !important;
-    writing-mode: horizontal-tb !important;
-    padding: 0 4px !important;
-  }
-  .hud-v-divider {
-    width: 1px !important;
-    height: 14px !important;
-    margin: 0 2px !important;
-  }
-  .hud-v-stat {
-    flex-direction: row !important;
-    gap: 4px !important;
-    font-size: 0.7rem !important;
-  }
+}
+
+/* Make SVGs perfectly visible */
+.hud-v-btn svg {
+  width: 16px !important;
+  height: 16px !important;
+  stroke: currentColor !important;
+  stroke-width: 2.2 !important;
+  fill: none !important;
+}
+.hud-v-stat svg {
+  width: 14px !important;
+  height: 14px !important;
+  stroke: currentColor !important;
+  stroke-width: 2.2 !important;
+  fill: none !important;
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -1007,23 +1015,16 @@
 }
 #puzzle-canvas-container {
   flex: 1; position: relative; overflow: hidden;
-  width: 100%; height: 100%; min-height: 100vh;
+  width: 100%; height: 100%;
   background: var(--bg-base);
   padding-bottom: 0;
 }
 
 /* Mobile & Tablet: Add bottom spacing to prevent UI cutoff */
 @media (max-width: 1024px) {
-  #puzzle-canvas-container {
-    padding-bottom: 60px;
-  }
 }
 
 @media (max-width: 768px) {
-  #puzzle-canvas-container {
-    padding-bottom: 80px;
-  }
-  
   .game-view {
     height: 100dvh; /* Use dynamic viewport height on mobile */
   }
@@ -1237,6 +1238,43 @@
   .nav-visitor-badge {
     padding: 0 2px;
     font-size: 0.64rem;
+  }
+
+  /* Make Game HUD compact on mobile to prevent overflow */
+  #mobile-hud-bar {
+    height: 44px !important;
+    padding: 0 8px !important;
+  }
+  #mobile-hud-bar .hud-dock {
+    gap: 4px !important;
+  }
+  #mobile-hud-bar .hud-v-btn {
+    width: 26px !important;
+    height: 26px !important;
+    min-width: 26px !important;
+    min-height: 26px !important;
+  }
+  #mobile-hud-bar .hud-v-btn svg {
+    width: 13px !important;
+    height: 13px !important;
+    stroke-width: 2.2 !important;
+  }
+  #mobile-hud-bar .hud-v-badge {
+    font-size: 0.65rem !important;
+    padding: 0 2px !important;
+  }
+  #mobile-hud-bar .hud-v-divider {
+    height: 12px !important;
+    margin: 0 2px !important;
+  }
+  #mobile-hud-bar .hud-v-stat {
+    gap: 3px !important;
+    font-size: 0.68rem !important;
+  }
+  #mobile-hud-bar .hud-v-stat svg {
+    width: 11px !important;
+    height: 11px !important;
+    stroke-width: 2.2 !important;
   }
 }
 

@@ -5,12 +5,14 @@ import { SettingsStore } from '../storage/SettingsStore.js';
  * (Landscape -> Top & Bottom horizontal docks | Portrait/Square -> Left & Right vertical docks)
  */
 export class GameView {
-  constructor(container, { onBackToHome, onOpenSettings, onRestartGame, onPeekHint }, app = null) {
+  constructor(container, { onBackToHome, onOpenSettings, onRestartGame, onPeekHint, onUndo, onRedo }, app = null) {
     this.container = container;
     this.onBackToHome = onBackToHome;
     this.onOpenSettings = onOpenSettings;
     this.onRestartGame = onRestartGame;
     this.onPeekHint = onPeekHint;
+    this.onUndo = onUndo;
+    this.onRedo = onRedo;
     this.app = app;
 
     this.isLandscape = false;
@@ -31,14 +33,6 @@ export class GameView {
           <button class="hud-v-btn brand-accent" id="hud-btn-back" title="Back to Gallery">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
           </button>
-
-          <div class="hud-v-divider"></div>
-
-          <!-- Mode / Grid Badge -->
-          <div class="hud-v-badge" id="hud-mode-badge" title="Mode">
-            normal
-          </div>
-
           <div class="hud-v-divider"></div>
 
           <!-- Peek Reference Hint -->
@@ -89,6 +83,16 @@ export class GameView {
             <span id="hud-rating">100</span>
           </div>
         </div>
+      </div>
+
+      <!-- Undo / Redo buttons placed just above the puzzle -->
+      <div class="hud-undo-redo-bar" id="hud-undo-redo-bar">
+        <button class="hud-v-btn" id="hud-btn-undo" title="Undo Swap" disabled>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
+        </button>
+        <button class="hud-v-btn" id="hud-btn-redo" title="Redo Swap" disabled>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"/></svg>
+        </button>
       </div>
 
       <!-- Pixi Canvas Target Viewport -->
@@ -144,6 +148,20 @@ export class GameView {
         ` : `
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
         `;
+      });
+    }
+
+    const undoBtn = this.element.querySelector('#hud-btn-undo');
+    if (undoBtn) {
+      undoBtn.addEventListener('click', () => {
+        if (this.onUndo) this.onUndo();
+      });
+    }
+
+    const redoBtn = this.element.querySelector('#hud-btn-redo');
+    if (redoBtn) {
+      redoBtn.addEventListener('click', () => {
+        if (this.onRedo) this.onRedo();
       });
     }
 
@@ -207,6 +225,13 @@ export class GameView {
       const ratingEl = this.element.querySelector('#hud-rating');
       if (ratingEl) ratingEl.textContent = `${rating}`;
     }
+  }
+
+  updateUndoRedo(canUndo, canRedo) {
+    const undoBtn = this.element.querySelector('#hud-btn-undo');
+    const redoBtn = this.element.querySelector('#hud-btn-redo');
+    if (undoBtn) undoBtn.disabled = !canUndo;
+    if (redoBtn) redoBtn.disabled = !canRedo;
   }
 
   showCompletionState({ rating = 100 }) {

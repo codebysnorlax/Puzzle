@@ -8,6 +8,8 @@ import { GameHistory } from '../storage/GameHistory.js';
 import { GameStates } from './GameState.js';
 import { SoundEffects } from '../game/SoundEffects.js';
 import { PuzzleStatusStore } from '../storage/PuzzleStatusStore.js';
+import { PieceAnimations } from '../animation/PieceAnimations.js';
+import { PuzzleValidator } from '../puzzle/PuzzleValidator.js';
 
 /**
  * Game — Game Session Controller orchestrating Puzzle Engine, Pixi Renderer, Timer, and Input
@@ -33,6 +35,8 @@ export class Game {
     this.inputHandler = null;
 
     this.isStarted = false;
+    this.undoStack = [];
+    this.redoStack = [];
   }
 
   async start() {
@@ -74,12 +78,18 @@ export class Game {
       }, 200);
     }
 
+    this.undoStack = [];
+    this.redoStack = [];
+
     // Automatically set adaptive HUD dock position (Top/Bottom if side margin < 65px | Left/Right if side margin >= 65px)
     this.updateDockOrientation();
 
     // Wire HUD navbar Peek Hint button handler
     if (this.gameView) {
       this.gameView.onPeekHint = () => this.handlePeekHint();
+      this.gameView.onUndo = () => this.undo();
+      this.gameView.onRedo = () => this.redo();
+      this.gameView.updateUndoRedo(false, false);
     }
 
     // 4. Attach responsive resize callback
@@ -97,7 +107,7 @@ export class Game {
         moveCount,
         totalDistance,
         timeSeconds: this.timer ? this.timer.getElapsedSeconds() : 0,
-        totalPieces: this.puzzle ? this.puzzle.pieces.length : 16
+        totalPieces: this.puzzle ? this.puzzle.pieces.length : 25
       });
 
       this.gameView.updateHUD({
@@ -113,7 +123,8 @@ export class Game {
       timer: this.timer,
       movementTracker: this.movementTracker,
       onFirstMovement: () => this.handleFirstMovement(),
-      onPuzzleComplete: () => this.handlePuzzleCompletion()
+      onPuzzleComplete: () => this.handlePuzzleCompletion(),
+      onSwap: (pieceA, pieceB, gridA, gridB) => this.recordSwap(pieceA, pieceB, gridA, gridB)
     });
 
     this.isStarted = true;
@@ -176,8 +187,115 @@ export class Game {
         timer: this.timer,
         movementTracker: this.movementTracker,
         onFirstMovement: () => this.handleFirstMovement(),
-        onPuzzleComplete: () => this.handlePuzzleCompletion()
+        onPuzzleComplete: () => this.handlePuzzleCompletion(),
+        onSwap: (pieceA, pieceB, gridA, gridB) => this.recordSwap(pieceA, pieceB, gridA, gridB)
       });
+    }
+  }
+
+  recordSwap(pieceA, pieceB, gridA, gridB) {
+    this.undoStack.push({
+      pieceAId: pieceA.id,
+      pieceBId: pieceB.id,
+      gridA: { ...gridA },
+      gridB: { ...gridB }
+    });
+    this.redoStack = []; // Clear redo stack on new moves
+    this.updateUndoRedoButtons();
+  }
+
+  undo() {
+    if (this.undoStack.length === 0) return;
+    const move = this.undoStack.pop();
+    this.redoStack.push(move);
+
+    // Swap A back to slot A, B back to slot B
+    this.executeSwap(move.pieceAId, move.pieceBId, move.gridA, move.gridB);
+
+    if (this.movementTracker) {
+      this.movementTracker.moveCount = Math.max(0, this.movementTracker.moveCount - 1);
+      // Trigger stat recalculation
+      const currentRating = calculateSmartRating({
+        moveCount: this.movementTracker.moveCount,
+        totalDistance: Math.round(this.movementTracker.totalDistance),
+        timeSeconds: this.timer ? this.timer.getElapsedSeconds() : 0,
+        totalPieces: this.puzzle ? this.puzzle.pieces.length : 25
+      });
+      this.gameView.updateHUD({
+        moves: this.movementTracker.moveCount,
+        rating: currentRating
+      });
+    }
+
+    this.updateUndoRedoButtons();
+  }
+
+  redo() {
+    if (this.redoStack.length === 0) return;
+    const move = this.redoStack.pop();
+    this.undoStack.push(move);
+
+    // Swap A back to slot B, B back to slot A (executing the swap again)
+    this.executeSwap(move.pieceAId, move.pieceBId, move.gridB, move.gridA);
+
+    if (this.movementTracker) {
+      this.movementTracker.moveCount += 1;
+      // Trigger stat recalculation
+      const currentRating = calculateSmartRating({
+        moveCount: this.movementTracker.moveCount,
+        totalDistance: Math.round(this.movementTracker.totalDistance),
+        timeSeconds: this.timer ? this.timer.getElapsedSeconds() : 0,
+        totalPieces: this.puzzle ? this.puzzle.pieces.length : 25
+      });
+      this.gameView.updateHUD({
+        moves: this.movementTracker.moveCount,
+        rating: currentRating
+      });
+    }
+
+    this.updateUndoRedoButtons();
+  }
+
+  executeSwap(pieceAId, pieceBId, gridSlotA, gridSlotB) {
+    const pieceA = this.puzzle.pieces.find(p => p.id === pieceAId);
+    const pieceB = this.puzzle.pieces.find(p => p.id === pieceBId);
+
+    if (pieceA && pieceB) {
+      pieceA.currentGridRow = gridSlotA.row;
+      pieceA.currentGridCol = gridSlotA.col;
+      pieceB.currentGridRow = gridSlotB.row;
+      pieceB.currentGridCol = gridSlotB.col;
+
+      const coordsA = this.puzzle.getSlotCoordinates(gridSlotA.row, gridSlotA.col);
+      const coordsB = this.puzzle.getSlotCoordinates(gridSlotB.row, gridSlotB.col);
+
+      pieceA.setPosition(coordsA.x, coordsA.y);
+      pieceB.setPosition(coordsB.x, coordsB.y);
+
+      pieceA.placed = PuzzleValidator.isPieceInCorrectSlot(pieceA);
+      pieceA.locked = pieceA.placed;
+      pieceB.placed = PuzzleValidator.isPieceInCorrectSlot(pieceB);
+      pieceB.locked = pieceB.placed;
+
+      const spriteA = this.renderer.getSpriteForPiece(pieceA);
+      const spriteB = this.renderer.getSpriteForPiece(pieceB);
+
+      if (spriteA) PieceAnimations.animateSnap(spriteA, coordsA.x, coordsA.y);
+      if (spriteB) PieceAnimations.animateSnap(spriteB, coordsB.x, coordsB.y);
+
+      // Play swap sound
+      SoundEffects.playMoveSound();
+
+      if (this.puzzle.checkCompletion()) {
+        SoundEffects.playWinSound();
+        this.handlePuzzleCompletion();
+      }
+    }
+  }
+
+  updateUndoRedoButtons() {
+    if (this.gameView) {
+      this.gameView.updateUndoRedo(this.undoStack.length > 0, this.redoStack.length > 0);
     }
   }
 
