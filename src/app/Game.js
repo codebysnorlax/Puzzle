@@ -10,6 +10,7 @@ import { SoundEffects } from '../game/SoundEffects.js';
 import { PuzzleStatusStore } from '../storage/PuzzleStatusStore.js';
 import { PieceAnimations } from '../animation/PieceAnimations.js';
 import { PuzzleValidator } from '../puzzle/PuzzleValidator.js';
+import { SettingsStore } from '../storage/SettingsStore.js';
 
 /**
  * Game — Game Session Controller orchestrating Puzzle Engine, Pixi Renderer, Timer, and Input
@@ -41,9 +42,12 @@ export class Game {
     // Inactivity / Game Assistant variables
     this.lastActivityTime = 0;
     this.lastToastTime = 0;
+    this.inactivityStreak = 0;
     this.inactivityInterval = null;
+    this.shownMessageHistory = [];
     this.resetActivityListener = () => {
       this.lastActivityTime = Date.now();
+      this.inactivityStreak = 0;
     };
   }
 
@@ -126,7 +130,8 @@ export class Game {
       movementTracker: this.movementTracker,
       onFirstMovement: () => this.handleFirstMovement(),
       onPuzzleComplete: () => this.handlePuzzleCompletion(),
-      onSwap: (pieceA, pieceB, gridA, gridB) => this.recordSwap(pieceA, pieceB, gridA, gridB)
+      onSwap: (pieceA, pieceB, gridA, gridB) => this.recordSwap(pieceA, pieceB, gridA, gridB),
+      onNearMiss: () => this.handleNearMiss()
     });
 
     this.isStarted = true;
@@ -203,7 +208,8 @@ export class Game {
         movementTracker: this.movementTracker,
         onFirstMovement: () => this.handleFirstMovement(),
         onPuzzleComplete: () => this.handlePuzzleCompletion(),
-        onSwap: (pieceA, pieceB, gridA, gridB) => this.recordSwap(pieceA, pieceB, gridA, gridB)
+        onSwap: (pieceA, pieceB, gridA, gridB) => this.recordSwap(pieceA, pieceB, gridA, gridB),
+        onNearMiss: () => this.handleNearMiss()
       });
     }
   }
@@ -409,47 +415,178 @@ export class Game {
     this.isStarted = false;
   }
 
-  triggerInactivityToast() {
+  handleNearMiss() {
+    if (this.app.stateMachine.state !== GameStates.RUNNING) return;
+    this.triggerNearMissToast();
+  }
+
+  triggerNearMissToast() {
+    const settings = SettingsStore.getSettings();
+    if (settings.assistantToasts === false) return;
+
     const now = Date.now();
-    // 20-second cooldown to keep it balanced and not spam the user
-    if (this.lastToastTime && (now - this.lastToastTime) < 20000) {
+    // 8-12 seconds cooldown (exactly 10s)
+    if (this.lastToastTime && (now - this.lastToastTime) < 10000) {
+      return;
+    }
+
+    const list = [
+      "Bro you looked right at it.",
+      "It’s literally right there.",
+      "I watched you skip over it three times.",
+      "You walked past the answer like it was invisible."
+    ];
+    const message = this._selectUniqueMessage(list);
+
+    this.lastToastTime = now;
+    this.lastActivityTime = now;
+    this.inactivityStreak = 0; // Reset streak since they interacted (even if a near miss)
+
+    if (this.gameView && this.gameView.showToast) {
+      this.gameView.showToast({
+        title: "Roast",
+        description: `${message}\n(You can disable this in Settings)`,
+        type: "info"
+      });
+    }
+  }
+
+  triggerInactivityToast() {
+    const settings = SettingsStore.getSettings();
+    if (settings.assistantToasts === false) return;
+
+    const now = Date.now();
+    // Cooldown check (exactly 10 seconds)
+    if (this.lastToastTime && (now - this.lastToastTime) < 10000) {
       return;
     }
 
     const unsolvedCount = this.puzzle ? this.puzzle.pieces.filter(p => !p.locked).length : 0;
     if (unsolvedCount === 0) return;
 
+    this.inactivityStreak = (this.inactivityStreak || 0) + 1;
+
     let message = "";
-    
-    const generalRemarks = [
-      "Did you fall asleep? 😴",
-      "My grandma solves puzzles faster than this! 👵",
-      "Are you stuck on a 4x4 grid? 🧩",
-      "Clicking around aimlessly won't solve it!",
-      "Are we playing, or are we just staring at the screen?",
-      "Is this too hard for you? Maybe try a simpler one. 😂",
-      "Hello? Anyone home? 📞",
-      "You're not gonna complete it at this rate..."
-    ];
+    let toastTitle = "Assistant";
+    let toastType = "info";
 
-    const nearEndRemarks = [
-      "Only 2 pieces left! Don't mess it up now!",
-      "Just 2 pieces left... surely you can finish this?",
-      "Why did you stop? The finish line is right there!"
-    ];
-
-    if (unsolvedCount === 2) {
-      message = nearEndRemarks[Math.floor(Math.random() * nearEndRemarks.length)];
-    } else {
-      message = generalRemarks[Math.floor(Math.random() * generalRemarks.length)];
+    // 1. Close state (<= 3 pieces remaining)
+    if (unsolvedCount <= 3) {
+      toastTitle = "Hint";
+      toastType = "warning";
+      const isRoast = Math.random() < 0.4; // 40% soft roast, 60% warning
+      if (isRoast) {
+        const list = [
+          "Don’t choke now.",
+          "One more second and you would’ve got it.",
+          "You were so close it hurt."
+        ];
+        message = this._selectUniqueMessage(list);
+      } else {
+        const list = [
+          "You’re right on top of it.",
+          "Don’t look away now."
+        ];
+        message = this._selectUniqueMessage(list);
+      }
+    }
+    // 2. Stuck State Escalation (idle for consecutive checks)
+    else if (this.inactivityStreak >= 2) {
+      toastTitle = "Stuck?";
+      toastType = "warning";
+      if (this.inactivityStreak === 2) {
+        // Mild stuck messages
+        const list = [
+          "Still nothing?",
+          "Maybe step back for a second."
+        ];
+        message = this._selectUniqueMessage(list);
+      } else if (this.inactivityStreak === 3) {
+        // Medium stuck messages
+        const list = [
+          "You’ve been on this one too long.",
+          "The picture isn’t changing. You are."
+        ];
+        message = this._selectUniqueMessage(list);
+      } else {
+        // Third+ stuck message -> Supportive or deep stuck message
+        const list = [
+          "It’s not that deep… but also it is.",
+          "One more look. You’ve got this.",
+          "You’re doing better than you think.",
+          "It’s supposed to feel messy. You’re fine."
+        ];
+        message = this._selectUniqueMessage(list);
+        toastTitle = "Support";
+        toastType = "info";
+      }
+    }
+    // 3. General Inactivity (First idle warn)
+    else {
+      const isSupportive = Math.random() < 0.3; // 30% supportive, 70% teasing roasts
+      if (isSupportive) {
+        toastTitle = "Support";
+        toastType = "info";
+        const list = [
+          "You’re doing better than you think.",
+          "Keep going, you’re close.",
+          "Most people give up here.",
+          "You already found the hard ones.",
+          "One more look. You’ve got this.",
+          "It’s supposed to feel messy. You’re fine."
+        ];
+        message = this._selectUniqueMessage(list);
+      } else {
+        toastTitle = "Roast";
+        toastType = "info";
+        const list = [
+          "Bro you looked right at it.",
+          "It’s literally right there.",
+          "You’re gonna hate yourself when you see it.",
+          "I watched you skip over it three times.",
+          "That one is not even trying to hide.",
+          "You’re making this harder than it needs to be.",
+          "The thing is staring at you.",
+          "You almost had it and then just… left.",
+          "This is getting sad.",
+          "You’re circling the same empty spot again.",
+          "It’s not moving. You are.",
+          "Okay that one was kind of obvious.",
+          "You walked past the answer like it was invisible.",
+          "I need you to look harder.",
+          "That detail has been waiting for you."
+        ];
+        message = this._selectUniqueMessage(list);
+      }
     }
 
     this.lastToastTime = now;
-    this.lastActivityTime = now; // Reset activity timer to avoid immediate refire
+    this.lastActivityTime = now; // Shift activity base to prevent immediate refiring
 
     if (this.gameView && this.gameView.showToast) {
-      this.gameView.showToast(message);
+      this.gameView.showToast({
+        title: toastTitle,
+        description: `${message}\n(You can disable this in Settings)`,
+        type: toastType
+      });
     }
+  }
+
+  _selectUniqueMessage(list) {
+    if (!this.shownMessageHistory) {
+      this.shownMessageHistory = [];
+    }
+    // Try to filter out recently shown messages (history capacity: last 4 messages)
+    let candidates = list.filter(msg => !this.shownMessageHistory.includes(msg));
+    if (candidates.length === 0) {
+      candidates = list;
+    }
+    const selected = candidates[Math.floor(Math.random() * candidates.length)];
+    this.shownMessageHistory.push(selected);
+    if (this.shownMessageHistory.length > 4) {
+      this.shownMessageHistory.shift();
+    }
+    return selected;
   }
 
   cleanupInactivityTracker() {

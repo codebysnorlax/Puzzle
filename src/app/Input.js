@@ -6,7 +6,7 @@ import { SoundEffects } from '../game/SoundEffects.js';
  * InputHandler — Unified Pointer Handler with Local Container Coordinate Transformation & Safe Animation Scoping
  */
 export class InputHandler {
-  constructor({ puzzle, puzzleRenderer, timer, movementTracker, onPuzzleComplete, onFirstMovement, onSwap }) {
+  constructor({ puzzle, puzzleRenderer, timer, movementTracker, onPuzzleComplete, onFirstMovement, onSwap, onNearMiss }) {
     this.puzzle = puzzle;
     this.renderer = puzzleRenderer;
     this.timer = timer;
@@ -14,12 +14,14 @@ export class InputHandler {
     this.onPuzzleComplete = onPuzzleComplete;
     this.onFirstMovement = onFirstMovement;
     this.onSwap = onSwap;
+    this.onNearMiss = onNearMiss;
 
     this.activePiece = null;
     this.startGridPos = { x: 0, y: 0 };
     this.dragOffset = { x: 0, y: 0 };
     this.isDragging = false;
     this.hoveredPiece = null;
+    this.hoveredCorrectSlotDuringDrag = false;
 
     this.bindEvents();
   }
@@ -77,6 +79,7 @@ export class InputHandler {
     };
 
     spriteContainer.zIndex = 1000;
+    this.hoveredCorrectSlotDuringDrag = false;
     this.movementTracker.recordDragStart(localPos.rawX, localPos.rawY);
   }
 
@@ -100,6 +103,12 @@ export class InputHandler {
 
     // Check hovered target cell
     const cell = this.getGridCellAtPointer(localPos.x, localPos.y);
+
+    // Near miss detection: check if they hovered the piece over its correct slot
+    if (cell && cell.row === this.activePiece.row && cell.col === this.activePiece.col) {
+      this.hoveredCorrectSlotDuringDrag = true;
+    }
+
     const targetCandidate = (cell && cell.targetPiece !== this.activePiece) ? cell.targetPiece : null;
 
     if (targetCandidate !== this.hoveredPiece) {
@@ -173,6 +182,12 @@ export class InputHandler {
 
       draggedPiece.placed = PuzzleValidator.isPieceInCorrectSlot(draggedPiece);
       draggedPiece.locked = draggedPiece.placed;
+
+      if (!draggedPiece.placed && this.hoveredCorrectSlotDuringDrag) {
+        if (this.onNearMiss) {
+          this.onNearMiss();
+        }
+      }
 
       targetPiece.placed = PuzzleValidator.isPieceInCorrectSlot(targetPiece);
       targetPiece.locked = targetPiece.placed;

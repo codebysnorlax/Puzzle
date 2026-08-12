@@ -1560,6 +1560,7 @@
   line-height: 1.15rem;
   color: var(--text-muted);
   word-break: break-word;
+  white-space: pre-line;
 }
 
 /* Dismiss Close Button */

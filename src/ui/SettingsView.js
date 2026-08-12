@@ -53,6 +53,15 @@ export class SettingsView {
             <input type="checkbox" id="setting-sound" ${settings.sound ? "checked" : ""} style="width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer;" />
           </div>
 
+          <!-- Game Assistant Toasts -->
+          <div class="settings-row">
+            <div class="settings-label">
+              <div>Game Assistant</div>
+              <div>Roasts, tips & idle warnings</div>
+            </div>
+            <input type="checkbox" id="setting-assistant" ${settings.assistantToasts !== false ? "checked" : ""} style="width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer;" />
+          </div>
+
           <!-- Snap Sensitivity -->
           <div class="settings-row">
             <div class="settings-label">
@@ -170,10 +179,12 @@ export class SettingsView {
     const close = () => {
       const sound = this.element.querySelector("#setting-sound").checked;
       const snap = this.element.querySelector("#setting-snap").value;
+      const assistantToasts = this.element.querySelector("#setting-assistant").checked;
 
       SettingsStore.saveSettings({
         sound,
         snapSensitivity: snap,
+        assistantToasts,
       });
 
       this.hide();
