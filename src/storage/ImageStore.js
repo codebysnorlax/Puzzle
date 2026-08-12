@@ -36,6 +36,14 @@ const CHAOS_CATALOG = Array.from({ length: 19 }, (_, i) => ({
   isChaos: true
 }));
 
+/** Calm Catalog — Extra 17 puzzles loaded on demand in the Calm Tab */
+const CALM_CATALOG = Array.from({ length: 17 }, (_, i) => ({
+  id: `calm_${i + 1}`,
+  name: `Calm Puzzle ${i + 1}`,
+  url: `./assets/calm/calm${i + 1}.webp`,
+  isCalm: true
+}));
+
 const LS_KEY = 'puzzles_cached';
 const activeObjectUrls = new Set();
 
@@ -135,6 +143,56 @@ export class ImageStore {
     const cached = await this.getImage(item.id);
     if (cached) return { ...cached, isCustom: false, isChaos: true };
     return { id: item.id, name: item.name, url: item.url, blob, isCustom: false, isChaos: true };
+  }
+
+  /**
+   * Get Calm catalog definition.
+   */
+  static getCalmCatalog() {
+    return CALM_CATALOG;
+  }
+
+  /**
+   * Get all Calm puzzles that are ALREADY stored in IndexedDB.
+   */
+  static async getCalmPuzzlesFromDB() {
+    const results = [];
+    for (const item of CALM_CATALOG) {
+      const cached = await this.getImage(item.id);
+      if (cached && cached.blob && cached.blob.size > 0) {
+        results.push({ ...cached, isCustom: false, isCalm: true });
+      }
+    }
+    return results;
+  }
+
+  /**
+   * Fetch and cache a SINGLE Calm puzzle item. DB-first.
+   */
+  static async fetchAndCacheSingleCalm(item) {
+    const existing = await this.getImage(item.id);
+    if (existing && existing.blob && existing.blob.size > 0) {
+      return { ...existing, isCustom: false, isCalm: true };
+    }
+
+    const res = await fetch(item.url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    let blob = await res.blob();
+
+    if (!blob.type || !blob.type.startsWith('image/')) {
+      blob = blob.slice(0, blob.size, 'image/webp');
+    }
+
+    const store = await dbManager.getStore('images', 'readwrite');
+    await new Promise((resolve, reject) => {
+      const req = store.put({ id: item.id, name: item.name, blob, createdAt: Date.now() });
+      req.onsuccess = () => resolve();
+      req.onerror = (e) => reject(e.target.error);
+    });
+
+    const cached = await this.getImage(item.id);
+    if (cached) return { ...cached, isCustom: false, isCalm: true };
+    return { id: item.id, name: item.name, url: item.url, blob, isCustom: false, isCalm: true };
   }
 
   /**

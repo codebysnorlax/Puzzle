@@ -29,6 +29,17 @@ export class App {
 
     this.initViews();
     this.initPwaEvents();
+
+    // Confirm reload if game is in progress
+    window.addEventListener("beforeunload", (e) => {
+      const isGameActive = [GameStates.READY, GameStates.RUNNING, GameStates.PAUSED].includes(
+        this.stateMachine.state
+      );
+      if (isGameActive) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    });
   }
 
   initPwaEvents() {
@@ -208,6 +219,16 @@ export class App {
   }
 
   async restartGame() {
+    const isGameActive = [GameStates.READY, GameStates.RUNNING, GameStates.PAUSED].includes(
+      this.stateMachine.state
+    );
+    if (isGameActive) {
+      const confirmRestart = window.confirm("Are you sure you want to restart the puzzle? All current progress will be lost.");
+      if (!confirmRestart) {
+        return;
+      }
+    }
+
     if (this.gameView) {
       this.gameView.showPuzzleSkeleton();
     }

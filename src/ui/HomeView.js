@@ -6,6 +6,37 @@ import { PuzzleStatusStore } from "../storage/PuzzleStatusStore.js";
 import { VisitorTracker } from "../services/VisitorTracker.js";
 
 /**
+ * Generates a deterministic 3-digit ID from a string ID,
+ * ensuring that all 3 digits are unique.
+ * @param {string} originalId
+ * @returns {string}
+ */
+function getDeterministic3DigitId(originalId) {
+  if (!originalId) return "123";
+  let hash = 0;
+  for (let i = 0; i < originalId.length; i++) {
+    hash = originalId.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  hash = Math.abs(hash);
+
+  const digits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+  // Pick first digit (1-9 to avoid leading zero)
+  const firstIdx = (hash % 9) + 1;
+  const firstDigit = digits.splice(firstIdx, 1)[0];
+
+  // Pick second digit (0-9 excluding first)
+  const secondIdx = (hash >> 3) % 9;
+  const secondDigit = digits.splice(secondIdx, 1)[0];
+
+  // Pick third digit (0-9 excluding first and second)
+  const thirdIdx = (hash >> 6) % 8;
+  const thirdDigit = digits.splice(thirdIdx, 1)[0];
+
+  return `${firstDigit}${secondDigit}${thirdDigit}`;
+}
+
+/**
  * HomeView — Clean Navbar with Radio Difficulty & IndexedDB-First WebP Gallery
  */
 export class HomeView {
@@ -19,6 +50,7 @@ export class HomeView {
     this.onCallPuzzles = [];
     this.activeTab = "library";
     this._chaosLoading = false;
+    this._calmLoading = false;
     this.chunkSize = 12;
     this.displayedCount = 25;
     this.selectedImage = "./images/demo.webp";
@@ -170,6 +202,7 @@ export class HomeView {
             <div class="gallery-tabs">
               <button class="gallery-tab-btn active" id="gallery-tab-library">Library</button>
               <button class="gallery-tab-btn" id="gallery-tab-chaos">Chaos</button>
+              <button class="gallery-tab-btn" id="gallery-tab-calm">Calm</button>
             </div>
             <span id="gallery-count-badge" class="gallery-count-badge">
               23 Puzzles Available
@@ -198,6 +231,87 @@ export class HomeView {
 
     const countBadge = this.element.querySelector("#gallery-count-badge");
     const callMoreBtn = this.element.querySelector("#btn-call-more-puzzles");
+
+    if (this.activeTab === "calm") {
+      if (callMoreBtn) callMoreBtn.style.display = "none";
+
+      ImageStore.getCalmPuzzlesFromDB().then(async (cachedCalm) => {
+        const calmCatalog = ImageStore.getCalmCatalog();
+        
+        if (countBadge) {
+          countBadge.textContent = `${calmCatalog.length} Calm Puzzles Available • ${cachedCalm.length} Stored in DB`;
+        }
+
+        grid.innerHTML = "";
+        
+        for (const item of calmCatalog) {
+          const cached = cachedCalm.find(c => c.id === item.id);
+          const isCachedLocally = Boolean(cached);
+          const displaySrc = cached ? URL.createObjectURL(cached.blob) : item.url;
+          const escapedName = escapeHtml(item.name);
+          const escapedId = escapeHtml(item.id);
+          const status = PuzzleStatusStore.getStatus(item.id);
+
+          let statusClass = "";
+          if (status === "completed") statusClass = "status-completed";
+          else if (status === "started") statusClass = "status-started";
+          else if (status === "quit") statusClass = "status-quit";
+
+          const cardHtml = `
+            <div class="image-card ${statusClass} ${status === 'completed' ? 'card-revealed' : ''}" data-url="${displaySrc}" data-id="${escapedId}" data-name="${escapedName}">
+              <div class="image-card-skeleton ${isCachedLocally ? 'loaded' : ''}"></div>
+              <img src="${displaySrc}" alt="${escapedName}" class="${isCachedLocally ? 'is-loaded' : ''}" loading="lazy" onload="this.classList.add('is-loaded'); this.previousElementSibling?.classList.add('loaded');" onerror="this.previousElementSibling?.classList.add('loaded');" />
+              <div class="image-card-id-badge">ID: ${getDeterministic3DigitId(item.id)}</div>
+              ${status !== 'completed' ? `<div class="image-card-noise-overlay"></div>` : ""}
+              ${isCachedLocally ? `<div class="image-card-cached-dot" title="Stored Locally in IndexedDB"></div>` : ""}
+
+              ${status ? `
+                <div class="image-card-status-badge" title="${status === 'completed' ? 'Finished' : status === 'started' ? 'In Progress' : 'Unfinished'}">
+                  <svg width="18" height="14" viewBox="0 0 22 14" fill="none">
+                    <path d="M1.5 7.5L5.5 11.5L13.5 2.5" stroke="${status === 'completed' || status === 'started' ? '#38bdf8' : '#94a3b8'}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M8.5 7.5L12.5 11.5L20.5 2.5" stroke="${status === 'completed' ? '#38bdf8' : '#94a3b8'}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </div>
+              ` : ""}
+
+              ${status !== 'completed' ? `
+                <div class="image-card-mystery-badge">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  Mystery
+                </div>
+              ` : ""}
+
+              <button class="image-card-start-btn" data-start-id="${escapedId}" title="Start Puzzle">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                <span>Start</span>
+              </button>
+            </div>
+          `;
+
+          const cardWrapper = document.createElement("div");
+          cardWrapper.innerHTML = cardHtml.trim();
+          const cardElement = cardWrapper.firstChild;
+          grid.appendChild(cardElement);
+        }
+
+        // Append "More Coming Soon" card at the end of the Calm grid
+        const moreComingCardHtml = `
+          <div class="image-card more-coming-card">
+            <div class="more-coming-content">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              <span>More Coming Soon</span>
+            </div>
+          </div>
+        `;
+        const moreComingWrapper = document.createElement("div");
+        moreComingWrapper.innerHTML = moreComingCardHtml.trim();
+        grid.appendChild(moreComingWrapper.firstChild);
+
+        this.bindGalleryEvents();
+        this.progressiveCacheCalmPuzzles(cachedCalm);
+      });
+      return;
+    }
 
     if (this.activeTab === "chaos") {
       if (callMoreBtn) callMoreBtn.style.display = "none";
@@ -228,6 +342,7 @@ export class HomeView {
             <div class="image-card ${statusClass} ${status === 'completed' ? 'card-revealed' : ''}" data-url="${displaySrc}" data-id="${escapedId}" data-name="${escapedName}">
               <div class="image-card-skeleton ${isCachedLocally ? 'loaded' : ''}"></div>
               <img src="${displaySrc}" alt="${escapedName}" class="${isCachedLocally ? 'is-loaded' : ''}" loading="lazy" onload="this.classList.add('is-loaded'); this.previousElementSibling?.classList.add('loaded');" onerror="this.previousElementSibling?.classList.add('loaded');" />
+              <div class="image-card-id-badge">ID: ${getDeterministic3DigitId(item.id)}</div>
               ${status !== 'completed' ? `<div class="image-card-noise-overlay"></div>` : ""}
               ${isCachedLocally ? `<div class="image-card-cached-dot" title="Stored Locally in IndexedDB"></div>` : ""}
 
@@ -346,6 +461,7 @@ export class HomeView {
         <div class="image-card ${isSelected ? "selected" : ""} ${statusClass} ${isRevealed ? "card-revealed" : ""}" data-url="${displaySrc}" data-id="${escapeHtml(img.id)}" data-name="${escapedName}">
           <div class="image-card-skeleton"></div>
           <img src="${displaySrc}" alt="${escapedName}" loading="lazy" onload="this.classList.add('is-loaded'); this.previousElementSibling?.classList.add('loaded');" onerror="this.previousElementSibling?.classList.add('loaded');" />
+          <div class="image-card-id-badge">ID: ${getDeterministic3DigitId(img.id)}</div>
           ${!isRevealed ? `<div class="image-card-noise-overlay"></div>` : ""}
           ${isCachedLocally ? `<div class="image-card-cached-dot ${img.isCustom ? "custom-dot" : ""}" title="Stored Locally in IndexedDB"></div>` : ""}
 
@@ -578,12 +694,16 @@ export class HomeView {
   bindEvents() {
     const libTab = this.element.querySelector("#gallery-tab-library");
     const chaosTab = this.element.querySelector("#gallery-tab-chaos");
+    const calmTab = this.element.querySelector("#gallery-tab-calm");
 
     if (libTab) {
       libTab.addEventListener("click", () => this.switchToTab("library"));
     }
     if (chaosTab) {
       chaosTab.addEventListener("click", () => this.switchToTab("chaos"));
+    }
+    if (calmTab) {
+      calmTab.addEventListener("click", () => this.switchToTab("calm"));
     }
 
     const btnLoadMore = this.element.querySelector("#btn-load-more");
@@ -656,6 +776,7 @@ export class HomeView {
                 <div class="image-card" data-url="${displaySrc}" data-id="${escapedId}" data-name="${escapedName}">
                   <div class="image-card-skeleton"></div>
                   <img src="${displaySrc}" alt="${escapedName}" loading="lazy" onload="this.classList.add('is-loaded'); this.previousElementSibling?.classList.add('loaded');" onerror="this.previousElementSibling?.classList.add('loaded');" />
+                  <div class="image-card-id-badge">ID: ${getDeterministic3DigitId(imgData.id)}</div>
                   <div class="image-card-noise-overlay"></div>
                   <div class="image-card-cached-dot" title="Stored Locally in IndexedDB"></div>
                   <div class="image-card-mystery-badge">
@@ -782,8 +903,10 @@ export class HomeView {
 
     const libTab = this.element.querySelector("#gallery-tab-library");
     const chaosTab = this.element.querySelector("#gallery-tab-chaos");
+    const calmTab = this.element.querySelector("#gallery-tab-calm");
     if (libTab) libTab.classList.toggle("active", tabId === "library");
     if (chaosTab) chaosTab.classList.toggle("active", tabId === "chaos");
+    if (calmTab) calmTab.classList.toggle("active", tabId === "calm");
 
     this.updateGalleryGrid();
   }
@@ -835,6 +958,56 @@ export class HomeView {
       }
     } finally {
       this._chaosLoading = false;
+    }
+  }
+
+  async progressiveCacheCalmPuzzles(cachedCalm) {
+    if (this._calmLoading) return;
+    this._calmLoading = true;
+
+    try {
+      const calmCatalog = ImageStore.getCalmCatalog();
+      const grid = this.element.querySelector("#image-grid");
+
+      for (const item of calmCatalog) {
+        if (this.activeTab !== 'calm') break;
+
+        const isAlreadyCached = cachedCalm.some(c => c.id === item.id);
+        if (isAlreadyCached) continue;
+
+        try {
+          const cachedItem = await ImageStore.fetchAndCacheSingleCalm(item);
+          if (cachedItem && grid) {
+            const cardEl = grid.querySelector(`[data-id="${item.id}"]`);
+            if (cardEl) {
+              const imgEl = cardEl.querySelector("img");
+              if (imgEl && cachedItem.blob) {
+                const url = URL.createObjectURL(cachedItem.blob);
+                imgEl.src = url;
+                cardEl.setAttribute("data-url", url);
+
+                const dotContainer = cardEl.querySelector(".image-card-cached-dot");
+                if (!dotContainer) {
+                  const dot = document.createElement("div");
+                  dot.className = "image-card-cached-dot";
+                  dot.title = "Stored Locally in IndexedDB";
+                  cardEl.appendChild(dot);
+                }
+              }
+            }
+          }
+        } catch (e) {
+          console.warn(`[HomeView] Failed to progressively cache calm image ${item.id}:`, e);
+        }
+      }
+
+      const currentCached = await ImageStore.getCalmPuzzlesFromDB();
+      const countBadge = this.element.querySelector("#gallery-count-badge");
+      if (countBadge && this.activeTab === 'calm') {
+        countBadge.textContent = `${calmCatalog.length} Calm Puzzles Available • ${currentCached.length} Stored in DB`;
+      }
+    } finally {
+      this._calmLoading = false;
     }
   }
 
