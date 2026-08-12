@@ -964,7 +964,7 @@
 .image-card-noise-overlay {
   position: absolute;
   inset: 0;
-  background-image: url("./images/dark-noise.png");
+  background-image: url("/images/dark-noise.png");
   background-repeat: repeat;
   opacity: 0.35;
   mix-blend-mode: overlay;
