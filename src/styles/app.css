@@ -1476,9 +1476,9 @@
 .premium-toast {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
-  padding: 8px 12px;
-  border-radius: 10px;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 8px;
   background: rgba(var(--modal-bg-rgb), 0.85);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -1490,12 +1490,12 @@
   transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1), opacity 200ms ease;
   opacity: 0;
   transform: translateY(8px);
-  width: 260px;
+  width: 230px;
   max-width: 100%;
   box-shadow: 
     0 1px 2px rgba(0, 0, 0, 0.05),
-    0 4px 12px rgba(0, 0, 0, 0.06),
-    0 8px 16px rgba(0, 0, 0, 0.04);
+    0 3px 8px rgba(0, 0, 0, 0.06),
+    0 6px 12px rgba(0, 0, 0, 0.04);
 }
 
 .premium-toast.visible {
@@ -1513,7 +1513,7 @@
     width: auto;
   }
   .premium-toast {
-    width: 260px;
+    width: 230px;
   }
 }
 
@@ -1522,14 +1522,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding-top: 2px;
+  padding-top: 1px;
   flex-shrink: 0;
 }
 
 .toast-layout-center {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
   flex-grow: 1;
   min-width: 0; /* Ensures overflow text ellipsis works if needed */
 }
@@ -1543,8 +1543,8 @@
 
 /* Icons & Colors */
 .toast-type-icon {
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
   stroke-width: 2.2px;
 }
 
@@ -1555,16 +1555,16 @@
 
 /* Typography */
 .toast-title {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  line-height: 1.15rem;
+  line-height: 1.1rem;
   color: var(--text-main);
 }
 
 .toast-description {
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 400;
-  line-height: 1.05rem;
+  line-height: 0.95rem;
   color: var(--text-muted);
   word-break: break-word;
   white-space: pre-line;
@@ -1585,6 +1585,11 @@
   transition: background var(--transition-fast), color var(--transition-fast);
 }
 
+.toast-dismiss-btn svg {
+  width: 10px;
+  height: 10px;
+}
+
 .toast-dismiss-btn:hover {
   background: rgba(0, 0, 0, 0.05);
   color: var(--text-main);
@@ -1597,15 +1602,15 @@
 /* Dynamic Action Buttons */
 .toast-actions {
   display: flex;
-  gap: 6px;
-  margin-top: 6px;
+  gap: 5px;
+  margin-top: 5px;
   width: 100%;
 }
 
 .toast-action-btn {
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   font-weight: 600;
-  padding: 4px 8px;
+  padding: 3px 6px;
   border-radius: 4px;
   cursor: pointer;
   transition: all var(--transition-fast);

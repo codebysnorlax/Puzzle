@@ -140,6 +140,7 @@ export class Game {
     });
 
     this.isStarted = true;
+    this.showWelcomeToast();
 
     // Track started status (1 Blue Tick, 1 Gray Tick)
     if (this.config && this.config.imageId) {
@@ -323,7 +324,6 @@ export class Game {
       // Start inactivity tracking
       this.lastActivityTime = Date.now();
       window.addEventListener('pointerdown', this.resetActivityListener);
-      window.addEventListener('pointermove', this.resetActivityListener);
 
       this.inactivityInterval = setInterval(() => {
         if (this.app.stateMachine.state !== GameStates.RUNNING) return;
@@ -625,6 +625,20 @@ export class Game {
     return selected;
   }
 
+  showWelcomeToast() {
+    const settings = SettingsStore.getSettings();
+    if (settings.assistantToasts === false) return;
+
+    if (this.gameView && this.gameView.showToast) {
+      this.gameView.showToast({
+        title: "Welcome",
+        description: "Welcome to PixelCraft! Drag and swap pieces to solve the puzzle.\n(You can disable this in Settings)",
+        type: "success",
+        autoDismiss: true
+      });
+    }
+  }
+
   cleanupInactivityTracker() {
     if (this.inactivityInterval) {
       clearInterval(this.inactivityInterval);
@@ -635,6 +649,5 @@ export class Game {
       this.pendingToastTimeout = null;
     }
     window.removeEventListener('pointerdown', this.resetActivityListener);
-    window.removeEventListener('pointermove', this.resetActivityListener);
   }
 }
