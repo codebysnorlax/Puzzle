@@ -95,12 +95,13 @@ export class HomeView {
   updatePwaInstallState(show) {
     const installBtn = this.element.querySelector("#btn-pwa-install-home");
     if (installBtn) {
-      installBtn.style.display = "inline-flex";
+      installBtn.style.display = show ? "inline-flex" : "none";
     }
   }
 
   render() {
     const currentTheme = SettingsStore.getSettings().theme || "light";
+    const canInstall = Boolean(this.app && this.app.deferredInstallPrompt);
 
     this.element = document.createElement("div");
     this.element.className = "view home-view active";
@@ -134,7 +135,7 @@ export class HomeView {
           </div>
 
           <div class="nav-right">
-            <button class="nav-btn nav-btn-ghost" id="btn-pwa-install-home" title="Download / Install Application">
+            <button class="nav-btn nav-btn-ghost" id="btn-pwa-install-home" title="Download / Install Application" style="display: ${canInstall ? "inline-flex" : "none"};">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="1" x2="12" y2="3"/></svg>
             </button>
 

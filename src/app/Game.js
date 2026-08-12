@@ -37,6 +37,14 @@ export class Game {
     this.isStarted = false;
     this.undoStack = [];
     this.redoStack = [];
+
+    // Inactivity / Game Assistant variables
+    this.lastActivityTime = 0;
+    this.lastToastTime = 0;
+    this.inactivityInterval = null;
+    this.resetActivityListener = () => {
+      this.lastActivityTime = Date.now();
+    };
   }
 
   async start() {
@@ -300,11 +308,25 @@ export class Game {
     if (this.app.stateMachine.state === GameStates.READY) {
       this.app.stateMachine.transitionTo(GameStates.RUNNING);
       this.timer.start();
+
+      // Start inactivity tracking
+      this.lastActivityTime = Date.now();
+      window.addEventListener('pointerdown', this.resetActivityListener);
+      window.addEventListener('pointermove', this.resetActivityListener);
+
+      this.inactivityInterval = setInterval(() => {
+        if (this.app.stateMachine.state !== GameStates.RUNNING) return;
+        const idleTime = (Date.now() - this.lastActivityTime) / 1000;
+        if (idleTime >= 6.5) { // 6.5 seconds trigger
+          this.triggerInactivityToast();
+        }
+      }, 1000);
     }
   }
 
   async handlePuzzleCompletion() {
     const elapsedMs = this.timer.stop();
+    this.cleanupInactivityTracker();
     const finalTimeStr = this.timer.getFormattedTime();
     const finalMoves = this.movementTracker.moveCount;
     const finalDistance = Math.round(this.movementTracker.totalDistance);
@@ -364,6 +386,7 @@ export class Game {
   }
 
   destroy() {
+    this.cleanupInactivityTracker();
     if (this.app && this.app.stateMachine && this.app.stateMachine.state !== GameStates.SOLVED) {
       if (this.config && this.config.imageId) {
         PuzzleStatusStore.markQuit(this.config.imageId);
@@ -384,5 +407,57 @@ export class Game {
     this.movementTracker = null;
     this.inputHandler = null;
     this.isStarted = false;
+  }
+
+  triggerInactivityToast() {
+    const now = Date.now();
+    // 20-second cooldown to keep it balanced and not spam the user
+    if (this.lastToastTime && (now - this.lastToastTime) < 20000) {
+      return;
+    }
+
+    const unsolvedCount = this.puzzle ? this.puzzle.pieces.filter(p => !p.locked).length : 0;
+    if (unsolvedCount === 0) return;
+
+    let message = "";
+    
+    const generalRemarks = [
+      "Did you fall asleep? 😴",
+      "My grandma solves puzzles faster than this! 👵",
+      "Are you stuck on a 4x4 grid? 🧩",
+      "Clicking around aimlessly won't solve it!",
+      "Are we playing, or are we just staring at the screen?",
+      "Is this too hard for you? Maybe try a simpler one. 😂",
+      "Hello? Anyone home? 📞",
+      "You're not gonna complete it at this rate..."
+    ];
+
+    const nearEndRemarks = [
+      "Only 2 pieces left! Don't mess it up now!",
+      "Just 2 pieces left... surely you can finish this?",
+      "Why did you stop? The finish line is right there!"
+    ];
+
+    if (unsolvedCount === 2) {
+      message = nearEndRemarks[Math.floor(Math.random() * nearEndRemarks.length)];
+    } else {
+      message = generalRemarks[Math.floor(Math.random() * generalRemarks.length)];
+    }
+
+    this.lastToastTime = now;
+    this.lastActivityTime = now; // Reset activity timer to avoid immediate refire
+
+    if (this.gameView && this.gameView.showToast) {
+      this.gameView.showToast(message);
+    }
+  }
+
+  cleanupInactivityTracker() {
+    if (this.inactivityInterval) {
+      clearInterval(this.inactivityInterval);
+      this.inactivityInterval = null;
+    }
+    window.removeEventListener('pointerdown', this.resetActivityListener);
+    window.removeEventListener('pointermove', this.resetActivityListener);
   }
 }

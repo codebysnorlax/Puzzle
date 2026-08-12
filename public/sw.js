@@ -5,7 +5,8 @@ const ASSETS_TO_CACHE = [
   './index.html',
   './manifest.webmanifest',
   './assets/audio/move.wav',
-  './assets/audio/win.wav'
+  './assets/audio/win.wav',
+  './assets/audio/showTost.wav'
 ];
 
 self.addEventListener('install', (event) => {

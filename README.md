@@ -1,8 +1,8 @@
 # PUZZLE.engine
-`live demo expire on : march 2027`
 
 > A data-aware, offline-first jigsaw experience built with PixiJS and IndexedDB.
 
+`live demo expire on : march 2027`
  touch this: [puzzle.snorlax.online](https://puzzle.snorlax.online) 
 
 ---

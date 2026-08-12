@@ -53,6 +53,26 @@ class SoundEffectsManager {
       console.warn('[SoundEffects] playWinSound failed:', e);
     }
   }
+
+  /**
+   * Play showTost.wav sound effect on toast notification trigger
+   */
+  playToastSound() {
+    if (!this.isSoundEnabled()) return;
+    try {
+      if (!this.toastAudio) {
+        this.toastAudio = new Audio('./assets/audio/showTost.wav');
+        this.toastAudio.preload = 'auto';
+      }
+      const sound = this.toastAudio.cloneNode();
+      sound.volume = 0.6;
+      sound.play().catch((err) => {
+        // Suppress autoplay policy errors
+      });
+    } catch (e) {
+      console.warn('[SoundEffects] playToastSound failed:', e);
+    }
+  }
 }
 
 export const SoundEffects = new SoundEffectsManager();

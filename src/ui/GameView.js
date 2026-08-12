@@ -1,4 +1,5 @@
 import { SettingsStore } from "../storage/SettingsStore.js";
+import { SoundEffects } from "../game/SoundEffects.js";
 
 /**
  * GameView — Active gameplay container with Dynamic Adaptive HUD Docks
@@ -109,11 +110,13 @@ export class GameView {
         <div class="puzzle-area-skeleton" id="puzzle-area-skeleton"></div>
 
         <!-- Non-Blocking Solved Action Bar -->
-        <div id="solved-floating-bar" style="display: none; position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 160; width: max-content; max-width: 90vw;">
-          <div style="background: var(--bg-surface); border: 1px solid var(--border-strong); border-radius: var(--radius-pill); padding: 0.5rem 1.2rem; display: flex; align-items: center; gap: var(--space-3); box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);">
-            <span id="solved-floating-text" style="font-weight: 700; color: var(--success); font-size: 0.85rem; white-space: nowrap;">🎉 Solved! (95/100)</span>
-            <button class="btn btn-primary" id="solved-btn-restart" style="min-height: 30px; padding: 0 var(--space-3); font-size: 0.78rem;">Play Again</button>
-            <button class="btn btn-secondary" id="solved-btn-home" style="min-height: 30px; padding: 0 var(--space-3); font-size: 0.78rem;">Gallery</button>
+        <div id="solved-floating-bar" class="solved-floating-bar">
+          <div class="solved-floating-content">
+            <span id="solved-floating-text" class="solved-floating-text">🎉 Solved! (95/100)</span>
+            <div class="solved-floating-actions">
+              <button class="btn btn-primary" id="solved-btn-restart">Play Again</button>
+              <button class="btn btn-secondary" id="solved-btn-home">Gallery</button>
+            </div>
           </div>
         </div>
       </div>
@@ -268,6 +271,9 @@ export class GameView {
     if (floatingBar && floatingText) {
       floatingText.textContent = `🎉 Solved! (${rating}/100)`;
       floatingBar.style.display = "block";
+      requestAnimationFrame(() => {
+        floatingBar.classList.add("visible");
+      });
     }
   }
 
@@ -281,7 +287,39 @@ export class GameView {
     }
 
     const floatingBar = this.element.querySelector("#solved-floating-bar");
-    if (floatingBar) floatingBar.style.display = "none";
+    if (floatingBar) {
+      floatingBar.classList.remove("visible");
+      floatingBar.style.display = "none";
+    }
+  }
+
+  /**
+   * Display a game assistant/rage-bait toast notification with sound
+   */
+  showToast(message) {
+    SoundEffects.playToastSound();
+
+    const toast = document.createElement("div");
+    toast.className = "game-toast";
+    toast.innerHTML = `
+      <div class="toast-content">
+        <span class="toast-icon">💡</span>
+        <span class="toast-text">${message}</span>
+      </div>
+    `;
+
+    document.body.appendChild(toast);
+
+    requestAnimationFrame(() => {
+      toast.classList.add("visible");
+    });
+
+    setTimeout(() => {
+      toast.classList.remove("visible");
+      toast.addEventListener("transitionend", () => {
+        toast.remove();
+      });
+    }, 4000);
   }
 
   showPuzzleSkeleton() {

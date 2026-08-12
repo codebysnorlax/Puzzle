@@ -58,9 +58,7 @@ export class App {
 
   async promptPwaInstall() {
     if (!this.deferredInstallPrompt) {
-      alert(
-        "📱 Install Application:\n\nTo install this app on your mobile/desktop device:\n• Android/Chrome: Tap 3 dots Menu -> Add to Home Screen / Install App\n• iPhone/Safari: Tap Share icon -> Add to Home Screen\n• Desktop/Chrome: Click 'Install' in the address bar"
-      );
+      console.warn("[App] promptPwaInstall called but no deferredInstallPrompt is available");
       return false;
     }
     this.deferredInstallPrompt.prompt();

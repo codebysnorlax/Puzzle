@@ -161,17 +161,50 @@ export class PuzzleRenderer {
 
     let phase = 0;
     this.tickerCallback = () => {
-      phase += 0.08;
+      phase += 0.005; // Smooth crawling speed
       borderEffect.clear();
-      borderEffect.roundRect(
-        boardLayout.x - 4,
-        boardLayout.y - 4,
-        boardLayout.width + 8,
-        boardLayout.height + 8,
-        14
-      );
-      const alphaPulse = 0.4 + Math.sin(phase) * 0.4;
-      borderEffect.stroke({ width: 4, color: 0x10b981, alpha: alphaPulse });
+
+      const rx = boardLayout.x - 4;
+      const ry = boardLayout.y - 4;
+      const rw = boardLayout.width + 8;
+      const rh = boardLayout.height + 8;
+      const P = 2 * (rw + rh);
+      const wormLength = P * 0.15; // 15% of perimeter
+      const N = 30; // Segments for smooth border rendering
+
+      const colors = [0x4285f4, 0xea4335, 0xfbbc05, 0x34a853]; // Google colors (Blue, Red, Yellow, Green)
+
+      // Helper function to resolve coordinate along rectangle perimeter
+      const getPointOnRect = (x, y, w, h, d) => {
+        d = ((d % P) + P) % P;
+        if (d <= w) {
+          return { x: x + d, y: y };
+        } else if (d <= w + h) {
+          return { x: x + w, y: y + (d - w) };
+        } else if (d <= 2 * w + h) {
+          return { x: x + w - (d - (w + h)), y: y + h };
+        } else {
+          return { x: x, y: y + h - (d - (2 * w + h)) };
+        }
+      };
+
+      for (let i = 0; i < colors.length; i++) {
+        const startD = phase * P + (i * 0.25 * P);
+        const color = colors[i];
+        const pStart = getPointOnRect(rx, ry, rw, rh, startD);
+
+        borderEffect.beginPath();
+        borderEffect.moveTo(pStart.x, pStart.y);
+        for (let j = 1; j <= N; j++) {
+          const d = startD + (j / N) * wormLength;
+          const p = getPointOnRect(rx, ry, rw, rh, d);
+          borderEffect.lineTo(p.x, p.y);
+        }
+
+        // Draw double stroke: semi-transparent thick outer glow, solid core
+        borderEffect.stroke({ width: 10, color: color, alpha: 0.25, cap: 'round', join: 'round' });
+        borderEffect.stroke({ width: 4, color: color, alpha: 1.0, cap: 'round', join: 'round' });
+      }
     };
 
     if (this.pixiApp && this.pixiApp.app) {
