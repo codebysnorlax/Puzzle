@@ -7,9 +7,11 @@ class SoundEffectsManager {
   constructor() {
     this.moveAudio = new Audio('./assets/audio/move.wav');
     this.winAudio = new Audio('./assets/audio/win.wav');
+    this.toastAudio = new Audio('./assets/audio/showTost.wav');
 
     this.moveAudio.preload = 'auto';
     this.winAudio.preload = 'auto';
+    this.toastAudio.preload = 'auto';
   }
 
   /**
@@ -54,16 +56,9 @@ class SoundEffectsManager {
     }
   }
 
-  /**
-   * Play showTost.wav sound effect on toast notification trigger
-   */
   playToastSound() {
     if (!this.isSoundEnabled()) return;
     try {
-      if (!this.toastAudio) {
-        this.toastAudio = new Audio('./assets/audio/showTost.wav');
-        this.toastAudio.preload = 'auto';
-      }
       const sound = this.toastAudio.cloneNode();
       sound.volume = 0.6;
       sound.play().catch((err) => {

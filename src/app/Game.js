@@ -44,10 +44,15 @@ export class Game {
     this.lastToastTime = 0;
     this.inactivityStreak = 0;
     this.inactivityInterval = null;
+    this.pendingToastTimeout = null;
     this.shownMessageHistory = [];
     this.resetActivityListener = () => {
       this.lastActivityTime = Date.now();
       this.inactivityStreak = 0;
+      if (this.pendingToastTimeout) {
+        clearTimeout(this.pendingToastTimeout);
+        this.pendingToastTimeout = null;
+      }
     };
   }
 
@@ -425,8 +430,12 @@ export class Game {
     if (settings.assistantToasts === false) return;
 
     const now = Date.now();
-    // 8-12 seconds cooldown (exactly 10s)
+    // 10s cooldown
     if (this.lastToastTime && (now - this.lastToastTime) < 10000) {
+      return;
+    }
+
+    if (this.pendingToastTimeout) {
       return;
     }
 
@@ -438,17 +447,29 @@ export class Game {
     ];
     const message = this._selectUniqueMessage(list);
 
-    this.lastToastTime = now;
-    this.lastActivityTime = now;
-    this.inactivityStreak = 0; // Reset streak since they interacted (even if a near miss)
+    // Shift lastActivityTime to prevent inactivity toast from firing during delay
+    this.lastActivityTime = now + 5000;
 
-    if (this.gameView && this.gameView.showToast) {
-      this.gameView.showToast({
-        title: "Roast",
-        description: `${message}\n(You can disable this in Settings)`,
-        type: "info"
-      });
-    }
+    const delayMs = 3000 + Math.random() * 1000;
+    this.pendingToastTimeout = setTimeout(() => {
+      this.pendingToastTimeout = null;
+
+      if (this.app.stateMachine.state !== GameStates.RUNNING) return;
+      const unsolvedCount = this.puzzle ? this.puzzle.pieces.filter(p => !p.locked).length : 0;
+      if (unsolvedCount === 0) return;
+
+      this.lastToastTime = Date.now();
+      this.lastActivityTime = Date.now();
+      this.inactivityStreak = 0;
+
+      if (this.gameView && this.gameView.showToast) {
+        this.gameView.showToast({
+          title: "Roast",
+          description: `${message}\n(You can disable this in Settings)`,
+          type: "info"
+        });
+      }
+    }, delayMs);
   }
 
   triggerInactivityToast() {
@@ -461,122 +482,137 @@ export class Game {
       return;
     }
 
+    if (this.pendingToastTimeout) {
+      return;
+    }
+
     const unsolvedCount = this.puzzle ? this.puzzle.pieces.filter(p => !p.locked).length : 0;
     if (unsolvedCount === 0) return;
 
-    this.inactivityStreak = (this.inactivityStreak || 0) + 1;
+    // Shift lastActivityTime to prevent double triggers during delay
+    this.lastActivityTime = now + 5000;
 
-    let message = "";
-    let toastTitle = "Assistant";
-    let toastType = "info";
+    const delayMs = 3000 + Math.random() * 1000;
+    this.pendingToastTimeout = setTimeout(() => {
+      this.pendingToastTimeout = null;
 
-    // 1. Close state (<= 3 pieces remaining)
-    if (unsolvedCount <= 3) {
-      toastTitle = "Hint";
-      toastType = "warning";
-      const isRoast = Math.random() < 0.4; // 40% soft roast, 60% warning
-      if (isRoast) {
-        const list = [
-          "Don’t choke now.",
-          "One more second and you would’ve got it.",
-          "You were so close it hurt."
-        ];
-        message = this._selectUniqueMessage(list);
-      } else {
-        const list = [
-          "You’re right on top of it.",
-          "Don’t look away now."
-        ];
-        message = this._selectUniqueMessage(list);
+      if (this.app.stateMachine.state !== GameStates.RUNNING) return;
+      const finalUnsolvedCount = this.puzzle ? this.puzzle.pieces.filter(p => !p.locked).length : 0;
+      if (finalUnsolvedCount === 0) return;
+
+      this.inactivityStreak = (this.inactivityStreak || 0) + 1;
+
+      let message = "";
+      let toastTitle = "Assistant";
+      let toastType = "info";
+
+      // 1. Close state (<= 3 pieces remaining)
+      if (finalUnsolvedCount <= 3) {
+        toastTitle = "Hint";
+        toastType = "warning";
+        const isRoast = Math.random() < 0.4; // 40% soft roast, 60% warning
+        if (isRoast) {
+          const list = [
+            "Don’t choke now.",
+            "One more second and you would’ve got it.",
+            "You were so close it hurt."
+          ];
+          message = this._selectUniqueMessage(list);
+        } else {
+          const list = [
+            "You’re right on top of it.",
+            "Don’t look away now."
+          ];
+          message = this._selectUniqueMessage(list);
+        }
       }
-    }
-    // 2. Stuck State Escalation (idle for consecutive checks)
-    else if (this.inactivityStreak >= 2) {
-      toastTitle = "Stuck?";
-      toastType = "warning";
-      if (this.inactivityStreak === 2) {
-        // Mild stuck messages
-        const list = [
-          "Still nothing?",
-          "Maybe step back for a second."
-        ];
-        message = this._selectUniqueMessage(list);
-      } else if (this.inactivityStreak === 3) {
-        // Medium stuck messages
-        const list = [
-          "You’ve been on this one too long.",
-          "The picture isn’t changing. You are."
-        ];
-        message = this._selectUniqueMessage(list);
-      } else {
-        // Third+ stuck message -> Supportive or deep stuck message
-        const list = [
-          "It’s not that deep… but also it is.",
-          "One more look. You’ve got this.",
-          "You’re doing better than you think.",
-          "It’s supposed to feel messy. You’re fine."
-        ];
-        message = this._selectUniqueMessage(list);
-        toastTitle = "Support";
-        toastType = "info";
+      // 2. Stuck State Escalation (idle for consecutive checks)
+      else if (this.inactivityStreak >= 2) {
+        toastTitle = "Stuck?";
+        toastType = "warning";
+        if (this.inactivityStreak === 2) {
+          // Mild stuck messages
+          const list = [
+            "Still nothing?",
+            "Maybe step back for a second."
+          ];
+          message = this._selectUniqueMessage(list);
+        } else if (this.inactivityStreak === 3) {
+          // Medium stuck messages
+          const list = [
+            "You’ve been on this one too long.",
+            "The picture isn’t changing. You are."
+          ];
+          message = this._selectUniqueMessage(list);
+        } else {
+          // Third+ stuck message -> Supportive or deep stuck message
+          const list = [
+            "It’s not that deep… but also it is.",
+            "One more look. You’ve got this.",
+            "You’re doing better than you think.",
+            "It’s supposed to feel messy. You’re fine."
+          ];
+          message = this._selectUniqueMessage(list);
+          toastTitle = "Support";
+          toastType = "info";
+        }
       }
-    }
-    // 3. General Inactivity (First idle warn)
-    else {
-      const isSupportive = Math.random() < 0.3; // 30% supportive, 70% teasing roasts
-      if (isSupportive) {
-        toastTitle = "Support";
-        toastType = "info";
-        const list = [
-          "You’re doing better than you think.",
-          "Keep going, you’re close.",
-          "Most people give up here.",
-          "You already found the hard ones.",
-          "One more look. You’ve got this.",
-          "It’s supposed to feel messy. You’re fine."
-        ];
-        message = this._selectUniqueMessage(list);
-      } else {
-        toastTitle = "Roast";
-        toastType = "info";
-        const list = [
-          "Bro you looked right at it.",
-          "It’s literally right there.",
-          "You’re gonna hate yourself when you see it.",
-          "I watched you skip over it three times.",
-          "That one is not even trying to hide.",
-          "You’re making this harder than it needs to be.",
-          "The thing is staring at you.",
-          "You almost had it and then just… left.",
-          "This is getting sad.",
-          "You’re circling the same empty spot again.",
-          "It’s not moving. You are.",
-          "Okay that one was kind of obvious.",
-          "You walked past the answer like it was invisible.",
-          "I need you to look harder.",
-          "That detail has been waiting for you."
-        ];
-        message = this._selectUniqueMessage(list);
+      // 3. General Inactivity (First idle warn)
+      else {
+        const isSupportive = Math.random() < 0.3; // 30% supportive, 70% teasing roasts
+        if (isSupportive) {
+          toastTitle = "Support";
+          toastType = "info";
+          const list = [
+            "You’re doing better than you think.",
+            "Keep going, you’re close.",
+            "Most people give up here.",
+            "You already found the hard ones.",
+            "One more look. You’ve got this.",
+            "It’s supposed to feel messy. You’re fine."
+          ];
+          message = this._selectUniqueMessage(list);
+        } else {
+          toastTitle = "Roast";
+          toastType = "info";
+          const list = [
+            "Bro you looked right at it.",
+            "It’s literally right there.",
+            "You’re gonna hate yourself when you see it.",
+            "I watched you skip over it three times.",
+            "That one is not even trying to hide.",
+            "You’re making this harder than it needs to be.",
+            "The thing is staring at you.",
+            "You almost had it and then just… left.",
+            "This is getting sad.",
+            "You’re circling the same empty spot again.",
+            "It’s not moving. You are.",
+            "Okay that one was kind of obvious.",
+            "You walked past the answer like it was invisible.",
+            "I need you to look harder.",
+            "That detail has been waiting for you."
+          ];
+          message = this._selectUniqueMessage(list);
+        }
       }
-    }
 
-    this.lastToastTime = now;
-    this.lastActivityTime = now; // Shift activity base to prevent immediate refiring
+      this.lastToastTime = Date.now();
+      this.lastActivityTime = Date.now();
 
-    if (this.gameView && this.gameView.showToast) {
-      this.gameView.showToast({
-        title: toastTitle,
-        description: `${message}\n(You can disable this in Settings)`,
-        type: toastType
-      });
-    }
+      if (this.gameView && this.gameView.showToast) {
+        this.gameView.showToast({
+          title: toastTitle,
+          description: `${message}\n(You can disable this in Settings)`,
+          type: toastType
+        });
+      }
+    }, delayMs);
   }
 
   _selectUniqueMessage(list) {
     if (!this.shownMessageHistory) {
       this.shownMessageHistory = [];
     }
-    // Try to filter out recently shown messages (history capacity: last 4 messages)
     let candidates = list.filter(msg => !this.shownMessageHistory.includes(msg));
     if (candidates.length === 0) {
       candidates = list;
@@ -593,6 +629,10 @@ export class Game {
     if (this.inactivityInterval) {
       clearInterval(this.inactivityInterval);
       this.inactivityInterval = null;
+    }
+    if (this.pendingToastTimeout) {
+      clearTimeout(this.pendingToastTimeout);
+      this.pendingToastTimeout = null;
     }
     window.removeEventListener('pointerdown', this.resetActivityListener);
     window.removeEventListener('pointermove', this.resetActivityListener);
