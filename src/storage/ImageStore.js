@@ -21,12 +21,19 @@ const BUILTIN_CATALOG = [
   }))
 ];
 
-/** On-Call Catalog — Extra 14 puzzles fetched ONLY on demand when user clicks "Call More Puzzles" */
 const ON_CALL_CATALOG = Array.from({ length: 14 }, (_, i) => ({
   id: `on_call_${i + 1}`,
   name: `On-Call Puzzle ${i + 1}`,
   url: `./assets/onCall/puzzle_on_call${i + 1}.webp`,
   isOnCall: true
+}));
+
+/** Chaos Catalog — Extra 19 puzzles loaded on demand in the Chaos Tab */
+const CHAOS_CATALOG = Array.from({ length: 19 }, (_, i) => ({
+  id: `chaos_${i + 1}`,
+  name: `Chaos Puzzle ${i + 1}`,
+  url: `./assets/chaos/call_chaos${i + 1}.webp`,
+  isChaos: true
 }));
 
 const LS_KEY = 'puzzles_cached';
@@ -78,6 +85,56 @@ export class ImageStore {
    */
   static getOnCallCatalog() {
     return ON_CALL_CATALOG;
+  }
+
+  /**
+   * Get Chaos catalog definition.
+   */
+  static getChaosCatalog() {
+    return CHAOS_CATALOG;
+  }
+
+  /**
+   * Get all Chaos puzzles that are ALREADY stored in IndexedDB.
+   */
+  static async getChaosPuzzlesFromDB() {
+    const results = [];
+    for (const item of CHAOS_CATALOG) {
+      const cached = await this.getImage(item.id);
+      if (cached && cached.blob && cached.blob.size > 0) {
+        results.push({ ...cached, isCustom: false, isChaos: true });
+      }
+    }
+    return results;
+  }
+
+  /**
+   * Fetch and cache a SINGLE Chaos puzzle item. DB-first.
+   */
+  static async fetchAndCacheSingleChaos(item) {
+    const existing = await this.getImage(item.id);
+    if (existing && existing.blob && existing.blob.size > 0) {
+      return { ...existing, isCustom: false, isChaos: true };
+    }
+
+    const res = await fetch(item.url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    let blob = await res.blob();
+
+    if (!blob.type || !blob.type.startsWith('image/')) {
+      blob = blob.slice(0, blob.size, 'image/webp');
+    }
+
+    const store = await dbManager.getStore('images', 'readwrite');
+    await new Promise((resolve, reject) => {
+      const req = store.put({ id: item.id, name: item.name, blob, createdAt: Date.now() });
+      req.onsuccess = () => resolve();
+      req.onerror = (e) => reject(e.target.error);
+    });
+
+    const cached = await this.getImage(item.id);
+    if (cached) return { ...cached, isCustom: false, isChaos: true };
+    return { id: item.id, name: item.name, url: item.url, blob, isCustom: false, isChaos: true };
   }
 
   /**
@@ -292,6 +349,10 @@ export class ImageStore {
     // Fallback: find from catalog and return raw URL
     const catalogItem = BUILTIN_CATALOG.find(c => c.id === id);
     if (catalogItem) return { id, name: catalogItem.name, url: catalogItem.url, blob: null };
+
+    const chaosItem = CHAOS_CATALOG.find(c => c.id === id);
+    if (chaosItem) return { id, name: chaosItem.name, url: chaosItem.url, blob: null };
+
     return null;
   }
 

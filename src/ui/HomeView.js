@@ -17,6 +17,8 @@ export class HomeView {
     this.builtinPuzzles = [];
     this.customImages = [];
     this.onCallPuzzles = [];
+    this.activeTab = "library";
+    this._chaosLoading = false;
     this.chunkSize = 12;
     this.displayedCount = 25;
     this.selectedImage = "./images/demo.webp";
@@ -165,6 +167,10 @@ export class HomeView {
       <main class="home-main-content">
         <section class="flat-section">
           <div class="gallery-header-row">
+            <div class="gallery-tabs">
+              <button class="gallery-tab-btn active" id="gallery-tab-library">Library</button>
+              <button class="gallery-tab-btn" id="gallery-tab-chaos">Chaos</button>
+            </div>
             <span id="gallery-count-badge" class="gallery-count-badge">
               23 Puzzles Available
             </span>
@@ -189,6 +195,76 @@ export class HomeView {
   updateGalleryGrid() {
     const grid = this.element.querySelector("#image-grid");
     if (!grid) return;
+
+    const countBadge = this.element.querySelector("#gallery-count-badge");
+    const callMoreBtn = this.element.querySelector("#btn-call-more-puzzles");
+
+    if (this.activeTab === "chaos") {
+      if (callMoreBtn) callMoreBtn.style.display = "none";
+
+      ImageStore.getChaosPuzzlesFromDB().then(async (cachedChaos) => {
+        const chaosCatalog = ImageStore.getChaosCatalog();
+        
+        if (countBadge) {
+          countBadge.textContent = `${chaosCatalog.length} Chaos Puzzles Available • ${cachedChaos.length} Stored in DB`;
+        }
+
+        grid.innerHTML = "";
+        
+        for (const item of chaosCatalog) {
+          const cached = cachedChaos.find(c => c.id === item.id);
+          const isCachedLocally = Boolean(cached);
+          const displaySrc = cached ? URL.createObjectURL(cached.blob) : item.url;
+          const escapedName = escapeHtml(item.name);
+          const escapedId = escapeHtml(item.id);
+          const status = PuzzleStatusStore.getStatus(item.id);
+
+          let statusClass = "";
+          if (status === "completed") statusClass = "status-completed";
+          else if (status === "started") statusClass = "status-started";
+          else if (status === "quit") statusClass = "status-quit";
+
+          const cardHtml = `
+            <div class="image-card ${statusClass} ${status === 'completed' ? 'card-revealed' : ''}" data-url="${displaySrc}" data-id="${escapedId}" data-name="${escapedName}">
+              <div class="image-card-skeleton ${isCachedLocally ? 'loaded' : ''}"></div>
+              <img src="${displaySrc}" alt="${escapedName}" class="${isCachedLocally ? 'is-loaded' : ''}" loading="lazy" onload="this.classList.add('is-loaded'); this.previousElementSibling?.classList.add('loaded');" onerror="this.previousElementSibling?.classList.add('loaded');" />
+              ${status !== 'completed' ? `<div class="image-card-noise-overlay"></div>` : ""}
+              ${isCachedLocally ? `<div class="image-card-cached-dot" title="Stored Locally in IndexedDB"></div>` : ""}
+
+              ${status ? `
+                <div class="image-card-status-badge" title="${status === 'completed' ? 'Finished' : status === 'started' ? 'In Progress' : 'Unfinished'}">
+                  <svg width="18" height="14" viewBox="0 0 22 14" fill="none">
+                    <path d="M1.5 7.5L5.5 11.5L13.5 2.5" stroke="${status === 'completed' || status === 'started' ? '#38bdf8' : '#94a3b8'}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M8.5 7.5L12.5 11.5L20.5 2.5" stroke="${status === 'completed' ? '#38bdf8' : '#94a3b8'}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </div>
+              ` : ""}
+
+              ${status !== 'completed' ? `
+                <div class="image-card-mystery-badge">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  Mystery
+                </div>
+              ` : ""}
+
+              <button class="image-card-start-btn" data-start-id="${escapedId}" title="Start Puzzle">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                <span>Start</span>
+              </button>
+            </div>
+          `;
+
+          const cardWrapper = document.createElement("div");
+          cardWrapper.innerHTML = cardHtml.trim();
+          const cardElement = cardWrapper.firstChild;
+          grid.appendChild(cardElement);
+        }
+
+        this.bindGalleryEvents();
+        this.progressiveCacheChaosPuzzles(cachedChaos);
+      });
+      return;
+    }
 
     // ── Deduplicate and Classify all items into 3 sections ──────────────────────
     const rawItems = [
@@ -225,7 +301,6 @@ export class HomeView {
     const totalInteracted = uploadedItems.length + historyItems.length;
     const totalAll = allItems.length;
 
-    const countBadge = this.element.querySelector("#gallery-count-badge");
     if (countBadge) {
       const storedCount = allItems.filter((i) => Boolean(i.blob)).length;
       countBadge.textContent = `${totalAll} Puzzles Available ${storedCount > 0 ? `• ${storedCount} Stored in DB` : ""}`;
@@ -235,7 +310,6 @@ export class HomeView {
     if (loadMoreBtn) loadMoreBtn.style.display = "none";
 
     // Hide call_more_image button if all on-call puzzles have been called / loaded
-    const callMoreBtn = this.element.querySelector("#btn-call-more-puzzles");
     if (callMoreBtn) {
       const onCallCatalog = ImageStore.getOnCallCatalog();
       const isCalled =
@@ -502,6 +576,16 @@ export class HomeView {
   }
 
   bindEvents() {
+    const libTab = this.element.querySelector("#gallery-tab-library");
+    const chaosTab = this.element.querySelector("#gallery-tab-chaos");
+
+    if (libTab) {
+      libTab.addEventListener("click", () => this.switchToTab("library"));
+    }
+    if (chaosTab) {
+      chaosTab.addEventListener("click", () => this.switchToTab("chaos"));
+    }
+
     const btnLoadMore = this.element.querySelector("#btn-load-more");
     if (btnLoadMore) {
       btnLoadMore.addEventListener("click", () => {
@@ -690,6 +774,68 @@ export class HomeView {
 
   hide() {
     this.element.classList.remove("active");
+  }
+
+  switchToTab(tabId) {
+    if (this.activeTab === tabId) return;
+    this.activeTab = tabId;
+
+    const libTab = this.element.querySelector("#gallery-tab-library");
+    const chaosTab = this.element.querySelector("#gallery-tab-chaos");
+    if (libTab) libTab.classList.toggle("active", tabId === "library");
+    if (chaosTab) chaosTab.classList.toggle("active", tabId === "chaos");
+
+    this.updateGalleryGrid();
+  }
+
+  async progressiveCacheChaosPuzzles(cachedChaos) {
+    if (this._chaosLoading) return;
+    this._chaosLoading = true;
+
+    try {
+      const chaosCatalog = ImageStore.getChaosCatalog();
+      const grid = this.element.querySelector("#image-grid");
+
+      for (const item of chaosCatalog) {
+        if (this.activeTab !== 'chaos') break;
+
+        const isAlreadyCached = cachedChaos.some(c => c.id === item.id);
+        if (isAlreadyCached) continue;
+
+        try {
+          const cachedItem = await ImageStore.fetchAndCacheSingleChaos(item);
+          if (cachedItem && grid) {
+            const cardEl = grid.querySelector(`[data-id="${item.id}"]`);
+            if (cardEl) {
+              const imgEl = cardEl.querySelector("img");
+              if (imgEl && cachedItem.blob) {
+                const url = URL.createObjectURL(cachedItem.blob);
+                imgEl.src = url;
+                cardEl.setAttribute("data-url", url);
+
+                const dotContainer = cardEl.querySelector(".image-card-cached-dot");
+                if (!dotContainer) {
+                  const dot = document.createElement("div");
+                  dot.className = "image-card-cached-dot";
+                  dot.title = "Stored Locally in IndexedDB";
+                  cardEl.appendChild(dot);
+                }
+              }
+            }
+          }
+        } catch (e) {
+          console.warn(`[HomeView] Failed to progressively cache chaos image ${item.id}:`, e);
+        }
+      }
+
+      const currentCached = await ImageStore.getChaosPuzzlesFromDB();
+      const countBadge = this.element.querySelector("#gallery-count-badge");
+      if (countBadge && this.activeTab === 'chaos') {
+        countBadge.textContent = `${chaosCatalog.length} Chaos Puzzles Available • ${currentCached.length} Stored in DB`;
+      }
+    } finally {
+      this._chaosLoading = false;
+    }
   }
 
   updateThemeButton(theme) {

@@ -95,7 +95,9 @@
   width: 100%;
   max-width: 100%;
   height: 52px;
-  background: var(--nav-bg);
+  background: rgba(var(--modal-bg-rgb), 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-bottom: 0.5px solid var(--nav-border-color);
   flex-shrink: 0;
   z-index: 100;
@@ -1639,4 +1641,46 @@
 
 [data-theme="dark"] .toast-action-btn.secondary:hover {
   background: rgba(255, 255, 255, 0.06);
+}
+
+/* Gallery Tabs System */
+.gallery-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.gallery-tabs {
+  display: inline-flex;
+  background: var(--bg-hover);
+  padding: 3px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  gap: 2px;
+}
+
+.gallery-tab-btn {
+  background: transparent;
+  border: none;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  padding: 5px 14px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  outline: none;
+}
+
+.gallery-tab-btn:hover {
+  color: var(--text-main);
+}
+
+.gallery-tab-btn.active {
+  background: var(--bg-surface);
+  color: var(--text-main);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
