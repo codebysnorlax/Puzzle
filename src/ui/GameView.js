@@ -109,16 +109,7 @@ export class GameView {
         <!-- Soft Moving Gradient Shimmer Skeleton for Canvas Area -->
         <div class="puzzle-area-skeleton" id="puzzle-area-skeleton"></div>
 
-        <!-- Non-Blocking Solved Action Bar -->
-        <div id="solved-floating-bar" class="solved-floating-bar">
-          <div class="solved-floating-content">
-            <span id="solved-floating-text" class="solved-floating-text">🎉 Solved! (95/100)</span>
-            <div class="solved-floating-actions">
-              <button class="btn btn-primary" id="solved-btn-restart">Play Again</button>
-              <button class="btn btn-secondary" id="solved-btn-home">Gallery</button>
-            </div>
-          </div>
-        </div>
+        <!-- Non-Blocking Solved Action Bar is now handled dynamically as a premium toast notification -->
       </div>
     `;
 
@@ -207,23 +198,6 @@ export class GameView {
         if (this.onOpenSettings) this.onOpenSettings();
       });
 
-    // Solved floating bar actions
-    const solvedRestart = this.element.querySelector("#solved-btn-restart");
-    const solvedHome = this.element.querySelector("#solved-btn-home");
-
-    if (solvedRestart) {
-      solvedRestart.addEventListener("click", () => {
-        this.hideCompletionState();
-        if (this.onRestartGame) this.onRestartGame();
-      });
-    }
-
-    if (solvedHome) {
-      solvedHome.addEventListener("click", () => {
-        this.hideCompletionState();
-        if (this.onBackToHome) this.onBackToHome();
-      });
-    }
   }
 
   updateHUD({ mode, difficulty, timeStr, moves, rating }) {
@@ -266,15 +240,35 @@ export class GameView {
       badge.style.color = "#ffffff";
     }
 
-    const floatingBar = this.element.querySelector("#solved-floating-bar");
-    const floatingText = this.element.querySelector("#solved-floating-text");
-    if (floatingBar && floatingText) {
-      floatingText.textContent = `🎉 Solved! (${rating}/100)`;
-      floatingBar.style.display = "block";
-      requestAnimationFrame(() => {
-        floatingBar.classList.add("visible");
-      });
+    if (this.solvedToast) {
+      this.dismissToast(this.solvedToast);
     }
+
+    // Victory toast notification replaces the old solved floating bar
+    this.solvedToast = this.showToast({
+      title: "Puzzle Solved!",
+      description: `Performance score: ${rating}/100. Great job completing the challenge!`,
+      type: "success",
+      autoDismiss: false,
+      actions: [
+        {
+          label: "Play Again",
+          id: "solved-btn-restart-toast",
+          primary: true,
+          onClick: () => {
+            if (this.onRestartGame) this.onRestartGame();
+          }
+        },
+        {
+          label: "Gallery",
+          id: "solved-btn-home-toast",
+          primary: false,
+          onClick: () => {
+            if (this.onBackToHome) this.onBackToHome();
+          }
+        }
+      ]
+    });
   }
 
   hideCompletionState() {
@@ -286,40 +280,163 @@ export class GameView {
       badge.style.color = "";
     }
 
-    const floatingBar = this.element.querySelector("#solved-floating-bar");
-    if (floatingBar) {
-      floatingBar.classList.remove("visible");
-      floatingBar.style.display = "none";
+    if (this.solvedToast) {
+      this.dismissToast(this.solvedToast);
+      this.solvedToast = null;
     }
   }
 
   /**
-   * Display a game assistant/rage-bait toast notification with sound
+   * Get or dynamically instantiate the toast container element in the DOM
    */
-  showToast(message) {
+  static getOrCreateContainer() {
+    let container = document.getElementById("toast-container");
+    if (!container) {
+      container = document.createElement("div");
+      container.id = "toast-container";
+      container.className = "toast-container";
+      document.body.appendChild(container);
+    }
+    return container;
+  }
+
+  /**
+   * Display a premium, high-end SaaS toast notification
+   */
+  showToast(messageOrObj) {
+    let title = "Assistant";
+    let description = "";
+    let type = "info";
+    let autoDismiss = true;
+    let actions = null;
+
+    if (typeof messageOrObj === "string") {
+      description = messageOrObj;
+      if (messageOrObj.includes("Only 2") || messageOrObj.includes("Just 2")) {
+        title = "Hint";
+        type = "warning";
+      } else if (messageOrObj.includes("grandma") || messageOrObj.includes("asleep") || messageOrObj.includes("stuck") || messageOrObj.includes("staring")) {
+        title = "Assistant";
+        type = "info";
+      }
+    } else if (messageOrObj && typeof messageOrObj === "object") {
+      title = messageOrObj.title || "Notification";
+      description = messageOrObj.description || messageOrObj.message || "";
+      type = messageOrObj.type || "info";
+      autoDismiss = messageOrObj.autoDismiss !== false;
+      actions = messageOrObj.actions || null;
+    }
+
+    // Play showTost.wav sound
     SoundEffects.playToastSound();
 
     const toast = document.createElement("div");
-    toast.className = "game-toast";
+    toast.className = `premium-toast toast-type-${type}`;
+    toast.setAttribute("role", "alert");
+
+    // Minimal outline SVG Icons based on type
+    let iconHtml = "";
+    if (type === "success") {
+      iconHtml = `<svg class="toast-type-icon stroke-success" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`;
+    } else if (type === "warning") {
+      iconHtml = `<svg class="toast-type-icon stroke-warning" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
+    } else if (type === "error") {
+      iconHtml = `<svg class="toast-type-icon stroke-danger" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;
+    } else {
+      // info
+      iconHtml = `<svg class="toast-type-icon stroke-info" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>`;
+    }
+
+    let actionsHtml = "";
+    if (actions && actions.length > 0) {
+      actionsHtml = `
+        <div class="toast-actions">
+          ${actions.map(act => `
+            <button class="toast-action-btn ${act.primary ? 'primary' : 'secondary'}" id="${act.id}">
+              ${act.label}
+            </button>
+          `).join('')}
+        </div>
+      `;
+    }
+
     toast.innerHTML = `
-      <div class="toast-content">
-        <span class="toast-icon">💡</span>
-        <span class="toast-text">${message}</span>
+      <div class="toast-layout-left">
+        ${iconHtml}
+      </div>
+      <div class="toast-layout-center">
+        <div class="toast-title">${title}</div>
+        ${description ? `<div class="toast-description">${description}</div>` : ""}
+        ${actionsHtml}
+      </div>
+      <div class="toast-layout-right">
+        <button class="toast-dismiss-btn" aria-label="Dismiss">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
       </div>
     `;
 
-    document.body.appendChild(toast);
+    // Append to container
+    const container = GameView.getOrCreateContainer();
+    container.appendChild(toast);
 
+    // Bind action callbacks
+    if (actions && actions.length > 0) {
+      actions.forEach(act => {
+        const btn = toast.querySelector(`#${act.id}`);
+        if (btn && act.onClick) {
+          btn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            act.onClick();
+            this.dismissToast(toast);
+          });
+        }
+      });
+    }
+
+    // Bind close button
+    const dismissBtn = toast.querySelector(".toast-dismiss-btn");
+    if (dismissBtn) {
+      dismissBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        this.dismissToast(toast);
+      });
+    }
+
+    // Trigger slide/fade-in
     requestAnimationFrame(() => {
       toast.classList.add("visible");
     });
 
-    setTimeout(() => {
-      toast.classList.remove("visible");
-      toast.addEventListener("transitionend", () => {
-        toast.remove();
-      });
-    }, 4000);
+    // Auto dismiss after 4 seconds
+    if (autoDismiss) {
+      setTimeout(() => {
+        this.dismissToast(toast);
+      }, 4000);
+    }
+
+    return toast;
+  }
+
+  /**
+   * Fade/slide out and remove a toast element smoothly
+   */
+  dismissToast(toastElement) {
+    if (!toastElement || !toastElement.parentNode) return;
+    toastElement.classList.remove("visible");
+
+    const removeTimeout = setTimeout(() => {
+      if (toastElement.parentNode) {
+        toastElement.remove();
+      }
+    }, 400);
+
+    toastElement.addEventListener("transitionend", () => {
+      clearTimeout(removeTimeout);
+      if (toastElement.parentNode) {
+        toastElement.remove();
+      }
+    }, { once: true });
   }
 
   showPuzzleSkeleton() {
