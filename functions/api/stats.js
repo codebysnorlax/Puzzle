@@ -38,145 +38,106 @@ export async function onRequest(context) {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const kv = env ? env.STATS_KV : null;
+  try {
+    const kv = env ? env.STATS_KV : null;
 
-  // Get real IP address from Cloudflare headers
-  const clientIP = request.headers.get('cf-connecting-ip') || 
-                   request.headers.get('x-forwarded-for')?.split(',')[0] || 
-                   'unknown';
+    // Get real IP address from Cloudflare headers
+    const clientIP = request.headers.get('cf-connecting-ip') || 
+                     request.headers.get('x-forwarded-for')?.split(',')[0] || 
+                     'unknown';
 
-  // Cloudflare Request Metadata Headers
-  const country = request.headers.get('cf-ipcountry') || 'Unknown';
-  const city = request.headers.get('cf-ipcity') || '';
-  const userAgent = request.headers.get('user-agent') || '';
+    // Cloudflare Request Metadata Headers
+    const country = request.headers.get('cf-ipcountry') || 'Unknown';
+    const city = request.headers.get('cf-ipcity') || '';
+    const userAgent = request.headers.get('user-agent') || '';
 
-  // Handle IP hash request
-  if (url.searchParams.get('action') === 'get_ip_hash') {
-    const visitorId = hashString(clientIP);
-    return new Response(JSON.stringify({ visitorId }), { headers: corsHeaders });
-  }
+    console.log(`[pages-stats] request=${request.method} path=${url.pathname}${url.search} ip=${clientIP} country=${country} ua="${userAgent}"`);
 
-  if (request.method === 'POST' || url.searchParams.get('action') === 'visit') {
-    let body = {};
-    try {
-      if (request.method === 'POST') {
-        body = await request.json();
-      }
-    } catch (e) {}
-
-    // Use IP-based hash as visitor ID for consistency
-    const ipBasedId = hashString(clientIP);
-    const visitorId = body.visitorId || ipBasedId;
-    const userKey = `user:${visitorId}`;
-
-    let totalVisits = 0;
-    let uniqueVisitors = 0;
-
-    if (kv) {
-      // Batch KV reads for better performance
-      const [totalStr, uniqueStr, existingUserData] = await Promise.all([
-        kv.get('stats:total_visits'),
-        kv.get('stats:unique_count'),
-        kv.get(userKey, { type: 'json' })
-      ]);
-
-      // 1. Always increment Total / Frequent visits counter
-      const currentTotal = parseInt(totalStr || '0', 10);
-      totalVisits = currentTotal + 1;
-
-      // 2. Handle user profile
-      let userData = null;
-
-      if (!existingUserData) {
-        // Brand new unique user
-        userData = {
-          visitorId,
-          country,
-          city,
-          userAgent,
-          language: body.language || 'en',
-          screen: body.screen || '',
-          timezone: body.timezone || '',
-          firstVisit: Date.now(),
-          lastVisit: Date.now(),
-          visitCount: 1
-        };
-
-        const currentUnique = parseInt(uniqueStr || '0', 10);
-        uniqueVisitors = currentUnique + 1;
-      } else {
-        // Returning user — update lastVisit & increment user visitCount
-        uniqueVisitors = parseInt(uniqueStr || '1', 10);
-        userData = {
-          ...existingUserData,
-          country: country !== 'Unknown' ? country : existingUserData.country,
-          city: city || existingUserData.city,
-          userAgent: userAgent || existingUserData.userAgent,
-          language: body.language || existingUserData.language,
-          screen: body.screen || existingUserData.screen,
-          timezone: body.timezone || existingUserData.timezone,
-          lastVisit: Date.now(),
-          visitCount: (existingUserData.visitCount || 1) + 1
-        };
-      }
-
-      // 3. Batch KV writes for better performance
-      const kvWrites = [
-        kv.put('stats:total_visits', totalVisits.toString()),
-        kv.put(userKey, JSON.stringify(userData), {
-          expirationTtl: 60 * 60 * 24 * 90 // Auto-cleanup after 90 days
-        })
-      ];
-
-      if (!existingUserData) {
-        kvWrites.push(kv.put('stats:unique_count', uniqueVisitors.toString()));
-      }
-
-      await Promise.all(kvWrites);
-    } else {
-      // Dev Server / Local memory fallback
-      totalVisits = parseInt(globalThis._totalVisits || '0', 10) + 1;
-      globalThis._totalVisits = totalVisits;
-
-      globalThis._usersMap = globalThis._usersMap || new Map();
-      if (!globalThis._usersMap.has(visitorId)) {
-        globalThis._usersMap.set(visitorId, {
-          visitorId, country, city, userAgent,
-          firstVisit: Date.now(), lastVisit: Date.now(), visitCount: 1
-        });
-      } else {
-        const u = globalThis._usersMap.get(visitorId);
-        u.lastVisit = Date.now();
-        u.visitCount += 1;
-      }
-      uniqueVisitors = globalThis._usersMap.size;
+    // Handle IP hash request
+    if (url.searchParams.get('action') === 'get_ip_hash') {
+      const visitorId = hashString(clientIP);
+      console.log(`[pages-stats] action=get_ip_hash visitorId=${visitorId}`);
+      return new Response(JSON.stringify({ visitorId }), { headers: corsHeaders });
     }
 
-    return new Response(JSON.stringify({
-      total: totalVisits,
-      unique: uniqueVisitors,
-      visitorId
-    }), { headers: corsHeaders });
+    if (request.method === 'POST' || url.searchParams.get('action') === 'visit') {
+      let body = {};
+      try {
+        if (request.method === 'POST') {
+          body = await request.json();
+        }
+      } catch (e) {
+        console.warn(`[pages-stats] invalid JSON body: ${e && e.message}`);
+      }
+
+      const ipBasedId = hashString(clientIP);
+      const visitorId = body.visitorId || ipBasedId;
+      const userKey = `user:${visitorId}`;
+
+      console.log(`[pages-stats] visit start visitorId=${visitorId} kv_present=${!!kv}`);
+
+      let totalVisits = 0;
+      let uniqueVisitors = 0;
+
+      if (kv) {
+        const [totalStr, uniqueStr, existingUserData] = await Promise.all([
+          kv.get('stats:total_visits'),
+          kv.get('stats:unique_count'),
+          kv.get(userKey, { type: 'json' })
+        ]);
+
+        const currentTotal = parseInt(totalStr || '0', 10);
+        totalVisits = currentTotal + 1;
+
+        let userData = null;
+
+        if (!existingUserData) {
+          userData = {
+            visitorId,
+            country,
+            city,
+            userAgent,
+            language: body.language || 'en',
+            screen: body.screen || '',
+            timezone: body.timezone || '',
+            firstVisit: Date.now(),
+            lastVisit: Date.now(),
+            visitCount: 1
+          };
+
+          await Promise.all([
+            kv.put(userKey, JSON.stringify(userData)),
+            kv.put('stats:unique_count', String((parseInt(uniqueStr || '0', 10) + 1)))
+          ]);
+
+          uniqueVisitors = parseInt(uniqueStr || '0', 10) + 1;
+          console.log(`[pages-stats] new_user persisted visitorId=${visitorId} uniqueVisitors=${uniqueVisitors}`);
+        } else {
+          userData = existingUserData;
+          userData.lastVisit = Date.now();
+          userData.visitCount = (userData.visitCount || 0) + 1;
+          await kv.put(userKey, JSON.stringify(userData));
+          uniqueVisitors = parseInt(uniqueStr || '0', 10);
+          console.log(`[pages-stats] existing_user updated visitorId=${visitorId} visitCount=${userData.visitCount}`);
+        }
+
+        await kv.put('stats:total_visits', String(totalVisits));
+        console.log(`[pages-stats] totals updated totalVisits=${totalVisits} uniqueVisitors=${uniqueVisitors}`);
+      } else {
+        totalVisits = 1;
+        uniqueVisitors = 0;
+        console.warn('[pages-stats] STATS_KV is not bound; skipping persistence');
+      }
+
+      const payload = { visitorId, totalVisits, uniqueVisitors };
+      console.log(`[pages-stats] response payload=${JSON.stringify(payload)}`);
+      return new Response(JSON.stringify(payload), { headers: corsHeaders });
+    }
+
+    console.log('[pages-stats] method not allowed', request.method);
+    return new Response(null, { status: 405, headers: corsHeaders });
+  } catch (err) {
+    console.error('[pages-stats] unhandled error:', err && (err.stack || err.message || err));
+    return new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
-
-  // GET request: Fetch current stats from KV
-  let totalVisits = 0;
-  let uniqueVisitors = 0;
-
-  if (kv) {
-    const [totalStr, uniqueStr] = await Promise.all([
-      kv.get('stats:total_visits'),
-      kv.get('stats:unique_count')
-    ]);
-    totalVisits = parseInt(totalStr || '0', 10);
-    uniqueVisitors = parseInt(uniqueStr || '0', 10);
-  } else {
-    totalVisits = parseInt(globalThis._totalVisits || '0', 10);
-    uniqueVisitors = globalThis._usersMap ? globalThis._usersMap.size : 0;
-  }
-
-  return new Response(JSON.stringify({
-    total: totalVisits,
-    unique: uniqueVisitors
-  }), { headers: corsHeaders });
 }
