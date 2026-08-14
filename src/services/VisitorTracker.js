@@ -78,14 +78,18 @@ export class VisitorTracker {
 
       if (response.ok) {
         const data = await response.json();
+        console.log('[VisitorTracker] API response:', data);
         const stats = {
           unique: data.unique || (isNewVisitor ? 1 : 0),
           total: data.total || 1,
           uniqueFormatted: this.formatCount(data.unique || (isNewVisitor ? 1 : 0)),
           totalFormatted: this.formatCount(data.total || 1)
         };
+        console.log('[VisitorTracker] Formatted stats:', stats);
         localStorage.setItem(LOCAL_STATS_KEY, JSON.stringify(stats));
         return stats;
+      } else {
+        console.error('[VisitorTracker] API returned error:', response.status, response.statusText);
       }
     } catch (err) {
       console.warn('[VisitorTracker] API fetch offline/dev mode, using local tracking:', err);

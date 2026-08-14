@@ -124,9 +124,9 @@ export async function onRequest(context) {
         await kv.put('stats:total_visits', String(totalVisits));
         console.log(`[pages-stats] totals updated totalVisits=${totalVisits} uniqueVisitors=${uniqueVisitors}`);
       } else {
+        console.error('[pages-stats] STATS_KV is not bound! KV namespace binding is missing in Cloudflare Pages settings.');
         totalVisits = 1;
-        uniqueVisitors = 0;
-        console.warn('[pages-stats] STATS_KV is not bound; skipping persistence');
+        uniqueVisitors = 1;
       }
 
       const payload = { visitorId, total: totalVisits, unique: uniqueVisitors };
