@@ -1,5 +1,6 @@
 import { SettingsStore } from "../storage/SettingsStore.js";
 import { SoundEffects } from "../game/SoundEffects.js";
+import { getDeterministic3DigitId } from "./HomeView.js";
 
 /**
  * GameView — Active gameplay container with Dynamic Adaptive HUD Docks
@@ -43,6 +44,16 @@ export class GameView {
           <!-- Peek Reference Hint -->
           <button class="hud-v-btn" id="hud-btn-hint" title="Peek Reference Hint">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+
+          <!-- Smart Hint Button -->
+          <button class="hud-v-btn" id="hud-btn-smart-hint" title="Find Incorrect Piece (5 left)" style="position: relative;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A5 5 0 0 0 8 8c0 1 .3 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/>
+              <line x1="9" y1="18" x2="15" y2="18"/>
+              <line x1="10" y1="22" x2="14" y2="22"/>
+            </svg>
+            <span id="hud-smart-hint-count" class="hint-count-badge">5</span>
           </button>
 
           <!-- Theme Toggle -->
@@ -108,6 +119,9 @@ export class GameView {
       <div id="puzzle-canvas-container" style="position: relative;">
         <!-- Soft Moving Gradient Shimmer Skeleton for Canvas Area -->
         <div class="puzzle-area-skeleton" id="puzzle-area-skeleton"></div>
+
+        <!-- Small puzzle ID badge on bottom right -->
+        <div id="puzzle-id-badge" style="position: absolute; bottom: 10px; right: 10px; font-size: 0.75rem; color: var(--text-muted); opacity: 0.8; z-index: 10; font-family: monospace; pointer-events: none; background: rgba(var(--modal-bg-rgb), 0.5); padding: 2px 6px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); display: none;"></div>
 
         <!-- Non-Blocking Solved Action Bar is now handled dynamically as a premium toast notification -->
       </div>
@@ -185,6 +199,13 @@ export class GameView {
       });
     }
 
+    const smartHintBtn = this.element.querySelector("#hud-btn-smart-hint");
+    if (smartHintBtn) {
+      smartHintBtn.addEventListener("click", () => {
+        if (this.onSmartHint) this.onSmartHint();
+      });
+    }
+
     this.element
       .querySelector("#hud-btn-restart")
       .addEventListener("click", () => {
@@ -200,13 +221,15 @@ export class GameView {
 
   }
 
-  updateHUD({ mode, difficulty, timeStr, moves, rating }) {
+  updateHUD({ mode, difficulty, timeStr, moves, rating, imageId }) {
     if (!this.element) return;
 
     if (mode && difficulty) {
       const badge = this.element.querySelector("#hud-mode-badge");
       if (badge) {
         badge.textContent = mode.toLowerCase();
+        badge.style.background = "";
+        badge.style.color = "";
       }
     }
     if (timeStr !== undefined) {
@@ -220,6 +243,17 @@ export class GameView {
     if (rating !== undefined) {
       const ratingEl = this.element.querySelector("#hud-rating");
       if (ratingEl) ratingEl.textContent = `${rating}`;
+    }
+    if (imageId !== undefined) {
+      const idBadge = this.element.querySelector("#puzzle-id-badge");
+      if (idBadge) {
+        if (imageId) {
+          idBadge.textContent = `ID: ${getDeterministic3DigitId(imageId)}`;
+          idBadge.style.display = "block";
+        } else {
+          idBadge.style.display = "none";
+        }
+      }
     }
   }
 
@@ -478,5 +512,72 @@ export class GameView {
         : `
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
     `;
+  }
+
+  updateSmartHintCount(count) {
+    const badge = this.element.querySelector("#hud-smart-hint-count");
+    if (badge) {
+      badge.textContent = count;
+    }
+    const btn = this.element.querySelector("#hud-btn-smart-hint");
+    if (btn) {
+      btn.setAttribute("title", `Find Incorrect Piece (${count} left)`);
+    }
+  }
+
+  showReferenceModal(imageCanvas) {
+    const existing = document.getElementById("reference-modal");
+    if (existing) {
+      existing.remove();
+      return;
+    }
+
+    const modal = document.createElement("div");
+    modal.id = "reference-modal";
+    modal.className = "modal-overlay";
+
+    modal.innerHTML = `
+      <div class="modal-content glass-card" style="max-width: 420px; padding: 1.25rem 0 0 0 !important; text-align: center; position: relative; transform: scale(0.9); opacity: 0; transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); background: rgba(var(--modal-bg-rgb), 0.45) !important; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--border-subtle); overflow: hidden;">
+        <button id="btn-close-ref-modal" style="position: absolute; top: 10px; right: 10px; background: transparent; border: none; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+        <div style="font-size: 0.68rem; font-weight: 700; color: var(--text-muted); margin: 0 1.25rem 12px 1.25rem; text-transform: uppercase; letter-spacing: 0.05em; text-align: left;">Reference Image</div>
+        <div style="line-height: 0; width: 100%; border-top: 1px solid var(--border-subtle); overflow: hidden;">
+          <img src="${imageCanvas.toDataURL()}" style="width: 100%; max-height: 60vh; object-fit: contain; display: block;" />
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    requestAnimationFrame(() => {
+      modal.classList.add("active");
+      const content = modal.querySelector(".modal-content");
+      if (content) {
+        content.style.transform = "scale(1)";
+        content.style.opacity = "1";
+      }
+    });
+
+    const closeModal = () => {
+      const content = modal.querySelector(".modal-content");
+      if (content) {
+        content.style.transform = "scale(0.9)";
+        content.style.opacity = "0";
+      }
+      modal.classList.remove("active");
+      setTimeout(() => {
+        if (modal.parentNode) modal.remove();
+      }, 250);
+    };
+
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) closeModal();
+    });
+
+    const closeBtn = modal.querySelector("#btn-close-ref-modal");
+    if (closeBtn) {
+      closeBtn.addEventListener("click", closeModal);
+    }
   }
 }

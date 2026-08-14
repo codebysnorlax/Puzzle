@@ -188,6 +188,7 @@ export class App {
         timeStr: "00:00",
         moves: 0,
         imageUrl: this.activeConfig.imageUrl,
+        imageId: this.activeConfig.imageId,
       });
 
       // View switch: Home -> Game

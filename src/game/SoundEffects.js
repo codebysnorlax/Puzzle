@@ -59,9 +59,9 @@ class SoundEffectsManager {
   playToastSound() {
     if (!this.isSoundEnabled()) return;
     try {
-      const sound = this.toastAudio.cloneNode();
-      sound.volume = 0.5;
-      sound.play().catch((err) => {
+      this.toastAudio.currentTime = 0;
+      this.toastAudio.volume = 0.5;
+      this.toastAudio.play().catch((err) => {
         console.warn('[SoundEffects] playToastSound failed:', err);
       });
     } catch (e) {

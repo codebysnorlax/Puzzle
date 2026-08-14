@@ -66,6 +66,15 @@ export class InputHandler {
   }
 
   onPointerDown(event, piece, spriteContainer) {
+    const stateMachine = this.renderer && this.renderer.pixiApp && this.renderer.pixiApp.app ? this.renderer.pixiApp.app.stateMachine : null;
+    if (stateMachine && stateMachine.state === 'SOLVED') {
+      return;
+    }
+
+    if (this.renderer && typeof this.renderer.stopCompletionAnimation === 'function') {
+      this.renderer.stopCompletionAnimation();
+    }
+
     this.isDragging = true;
     this.activePiece = piece;
     this.startGridPos = { x: piece.x, y: piece.y };
@@ -210,6 +219,23 @@ export class InputHandler {
       SoundEffects.playWinSound();
       if (this.onPuzzleComplete) {
         this.onPuzzleComplete();
+      }
+    } else {
+      const stateMachine = this.renderer && this.renderer.pixiApp && this.renderer.pixiApp.app ? this.renderer.pixiApp.app.stateMachine : null;
+      if (stateMachine && stateMachine.state === 'SOLVED') {
+        stateMachine.transitionTo('RUNNING');
+        if (this.timer) this.timer.start();
+        if (this.renderer && typeof this.renderer.stopCompletionAnimation === 'function') {
+          this.renderer.stopCompletionAnimation();
+        }
+        const gameView = this.renderer && this.renderer.pixiApp && this.renderer.pixiApp.app ? this.renderer.pixiApp.app.gameView : null;
+        const config = this.renderer && this.renderer.pixiApp && this.renderer.pixiApp.app && this.renderer.pixiApp.app.activeConfig;
+        if (gameView && config) {
+          gameView.updateHUD({
+            mode: config.mode,
+            difficulty: config.difficulty
+          });
+        }
       }
     }
   }

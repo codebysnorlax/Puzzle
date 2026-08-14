@@ -1,9 +1,9 @@
 /**
  * AppVersion — Centralized Versioning & App Metadata Configuration
  */
-export const APP_VERSION = '1.0.0';
+export const APP_VERSION = '1.58.0';
 export const APP_NAME = 'Puzzle';
-export const BUILD_DATE = '2026-08-09';
+export const BUILD_DATE = '2026-08-14';
 
 /**
  * Check if the application is currently running as an installed PWA (Standalone mode).

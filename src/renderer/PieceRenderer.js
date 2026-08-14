@@ -1,4 +1,5 @@
 import { Container, Sprite, Texture, Graphics, Rectangle } from 'pixi.js';
+import { SettingsStore } from '../storage/SettingsStore.js';
 
 /**
  * PieceRenderer — Visual rendering for Normal & Organic Jigsaw pieces using PixiJS Sprites & Unclipped Bezier Masks
@@ -33,7 +34,7 @@ export class PieceRenderer {
 
     // 0. Base dark slate background tile graphic ensuring piece tile is 100% visible
     const bgTile = new Graphics();
-    bgTile.roundRect(0, 0, piece.width, piece.height, 4);
+    bgTile.rect(0, 0, piece.width, piece.height);
     bgTile.fill({ color: 0x1e293b, alpha: 0.95 });
     container.addChild(bgTile);
 
@@ -54,10 +55,14 @@ export class PieceRenderer {
     sprite.alpha = 1;
     container.addChild(sprite);
 
+    const settings = SettingsStore.getSettings();
+    const chosenColor = settings.borderColor || '#64748b';
+
     const border = new Graphics();
-    border.roundRect(0, 0, piece.width, piece.height, 4);
-    border.stroke({ width: 1.5, color: 0x38bdf8, alpha: 0.6 });
+    border.rect(0, 0, piece.width, piece.height);
+    border.stroke({ width: 1.5, color: chosenColor, alpha: 0.6 });
     container.addChild(border);
+    container.borderGraphic = border;
 
     container.pieceData = piece;
     return container;

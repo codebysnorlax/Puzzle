@@ -62,17 +62,21 @@ export class SettingsView {
             <input type="checkbox" id="setting-assistant" ${settings.assistantToasts !== false ? "checked" : ""} style="width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer;" />
           </div>
 
-          <!-- Snap Sensitivity -->
-          <div class="settings-row">
-            <div class="settings-label">
-              <div>Snap Sensitivity</div>
-              <div>Distance threshold</div>
+          <!-- Snap Sensitivity & Piece Border Color in 1 Row -->
+          <div class="settings-row" style="display: flex; gap: 16px; align-items: center; justify-content: space-between;">
+            <div style="display: flex; flex: 1; flex-direction: column; gap: 4px;">
+              <div style="font-size: 0.78rem; font-weight: 600; color: var(--text-main); text-align: left;">Snap Sensitivity</div>
+              <select id="setting-snap" style="background: var(--bg-hover); color: var(--text-main); padding: 2px 6px; border-radius: var(--radius-sm); border: 1px dashed var(--border-subtle); font-size: 0.72rem; height: 24px; cursor: pointer; width: 100%;">
+                <option value="normal" ${settings.snapSensitivity === "normal" ? "selected" : ""}>Normal</option>
+                <option value="strict" ${settings.snapSensitivity === "strict" ? "selected" : ""}>Strict</option>
+                <option value="relaxed" ${settings.snapSensitivity === "relaxed" ? "selected" : ""}>Relaxed</option>
+              </select>
             </div>
-            <select id="setting-snap" style="background: var(--bg-hover); color: var(--text-main); padding: 2px 6px; border-radius: var(--radius-sm); border: 1px dashed var(--border-subtle); font-size: 0.72rem; height: 24px; cursor: pointer;">
-              <option value="normal" ${settings.snapSensitivity === "normal" ? "selected" : ""}>Normal</option>
-              <option value="strict" ${settings.snapSensitivity === "strict" ? "selected" : ""}>Strict</option>
-              <option value="relaxed" ${settings.snapSensitivity === "relaxed" ? "selected" : ""}>Relaxed</option>
-            </select>
+
+            <div style="display: flex; width: 90px; flex-direction: column; gap: 4px; align-items: flex-start;">
+              <div style="font-size: 0.78rem; font-weight: 600; color: var(--text-main); white-space: nowrap; text-align: left;">Border Color</div>
+              <input type="color" id="setting-border-color" value="${settings.borderColor || '#64748b'}" style="width: 100%; height: 24px; padding: 0 4px; border: 1px dashed var(--border-subtle); border-radius: var(--radius-sm); background: var(--bg-hover); cursor: pointer; box-sizing: border-box;" />
+            </div>
           </div>
 
           <!-- PWA Install -->
@@ -81,7 +85,13 @@ export class SettingsView {
               <div>Install App</div>
               <div>Offline play</div>
             </div>
-            <button class="btn btn-secondary" id="btn-pwa-install-settings" style="padding: 2px 8px; height: 24px; font-size: 0.72rem;">Install</button>
+            <button class="btn-circular-install" id="btn-pwa-install-settings" title="Install App">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+            </button>
           </div>
 
           <!-- Reset Database -->
@@ -180,12 +190,18 @@ export class SettingsView {
       const sound = this.element.querySelector("#setting-sound").checked;
       const snap = this.element.querySelector("#setting-snap").value;
       const assistantToasts = this.element.querySelector("#setting-assistant").checked;
+      const borderColor = this.element.querySelector("#setting-border-color").value;
 
       SettingsStore.saveSettings({
         sound,
         snapSensitivity: snap,
         assistantToasts,
+        borderColor,
       });
+
+      if (this.app && this.app.activeGame && this.app.activeGame.renderer) {
+        this.app.activeGame.renderer.updatePieceBorders();
+      }
 
       this.hide();
       if (this.onClose) this.onClose();

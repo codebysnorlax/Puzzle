@@ -411,6 +411,13 @@ export class ImageStore {
     const chaosItem = CHAOS_CATALOG.find(c => c.id === id);
     if (chaosItem) return { id, name: chaosItem.name, url: chaosItem.url, blob: null };
 
+    if (id && id.startsWith("cartoon_")) {
+      const index = parseInt(id.replace("cartoon_", ""), 10);
+      const paddedNum = String(index).padStart(2, '0');
+      const url = `https://cdn.jsdelivr.net/gh/codebysnorlax/assets@main/puzzle_img/cartoon_img/puzzle_cartoon_${paddedNum}.webp`;
+      return { id, name: `Cartoon Puzzle ${paddedNum}`, url, blob: null };
+    }
+
     return null;
   }
 
@@ -595,5 +602,110 @@ export class ImageStore {
     } catch (err) {
       console.error('[ImageStore] Error during clearAllDatabaseData:', err);
     }
+  }
+
+  static async discoverCartoonImages() {
+    const baseUrl = "https://cdn.jsdelivr.net/gh/codebysnorlax/assets@main/puzzle_img/cartoon_img/";
+    const apiUrl = "https://api.github.com/repos/codebysnorlax/assets/contents/puzzle_img/cartoon_img";
+    const discovered = [];
+    
+    try {
+      // Fetch file list from GitHub API
+      const response = await fetch(apiUrl, {
+        headers: {
+          'Accept': 'application/vnd.github.v3+json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`GitHub API returned ${response.status}: ${response.statusText}`);
+      }
+      
+      const files = await response.json();
+      
+      // Filter for .webp files and sort them
+      const webpFiles = files
+        .filter(file => file.type === 'file' && file.name.endsWith('.webp'))
+        .sort((a, b) => a.name.localeCompare(b.name));
+      
+      // Map GitHub API response to our catalog format
+      for (const file of webpFiles) {
+        // Extract number from filename like "puzzle_cartoon_01.webp"
+        const match = file.name.match(/puzzle_cartoon_(\d+)\.webp/);
+        if (match) {
+          const num = parseInt(match[1], 10);
+          const paddedNum = String(num).padStart(2, '0');
+          
+          discovered.push({
+            id: `cartoon_${num}`,
+            name: `Cartoon Puzzle ${paddedNum}`,
+            url: `${baseUrl}${file.name}`,
+            isCartoon: true
+          });
+        }
+      }
+      
+      console.log(`[ImageStore] Discovered ${discovered.length} cartoon puzzles from GitHub API`);
+      
+    } catch (error) {
+      console.error('[ImageStore] Failed to fetch from GitHub API, using fallback:', error);
+      
+      // Fallback: populate first 18 images statically
+      for (let j = 1; j <= 18; j++) {
+        const paddedNum = String(j).padStart(2, '0');
+        discovered.push({
+          id: `cartoon_${j}`,
+          name: `Cartoon Puzzle ${paddedNum}`,
+          url: `${baseUrl}puzzle_cartoon_${paddedNum}.webp`,
+          isCartoon: true
+        });
+      }
+    }
+
+    return discovered;
+  }
+
+  static async scanForMoreCartoonImages(discoveredList, baseUrl) {
+    // This method is now deprecated since we use GitHub API for discovery
+    // Keeping it for backwards compatibility but it won't be called
+    return;
+  }
+
+  static async getCartoonPuzzlesFromDB(catalog) {
+    if (!catalog || catalog.length === 0) return [];
+    const results = [];
+    for (const item of catalog) {
+      const cached = await this.getImage(item.id);
+      if (cached && cached.blob && cached.blob.size > 0) {
+        results.push({ ...cached, isCartoon: true });
+      }
+    }
+    return results;
+  }
+
+  static async fetchAndCacheSingleCartoon(item) {
+    const existing = await this.getImage(item.id);
+    if (existing && existing.blob && existing.blob.size > 0) {
+      return { ...existing, isCustom: false, isCartoon: true };
+    }
+
+    const res = await fetch(item.url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    let blob = await res.blob();
+
+    if (!blob.type || !blob.type.startsWith('image/')) {
+      blob = blob.slice(0, blob.size, 'image/webp');
+    }
+
+    const store = await dbManager.getStore('images', 'readwrite');
+    await new Promise((resolve, reject) => {
+      const req = store.put({ id: item.id, name: item.name, blob, createdAt: Date.now() });
+      req.onsuccess = () => resolve();
+      req.onerror = (e) => reject(e.target.error);
+    });
+
+    const cached = await this.getImage(item.id);
+    if (cached) return { ...cached, isCustom: false, isCartoon: true };
+    return { id: item.id, name: item.name, url: item.url, blob, isCustom: false, isCartoon: true };
   }
 }

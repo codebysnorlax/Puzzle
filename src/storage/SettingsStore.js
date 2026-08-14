@@ -8,7 +8,8 @@ const DEFAULT_SETTINGS = {
   sound: true,
   snapSensitivity: 'normal', // 'strict' (15px), 'normal' (25px), 'relaxed' (40px)
   lastDifficulty: 'normal',
-  lastMode: 'normal'
+  lastMode: 'normal',
+  borderColor: '#64748b'
 };
 
 export class SettingsStore {

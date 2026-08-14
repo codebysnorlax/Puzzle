@@ -11,7 +11,7 @@ import { VisitorTracker } from "../services/VisitorTracker.js";
  * @param {string} originalId
  * @returns {string}
  */
-function getDeterministic3DigitId(originalId) {
+export function getDeterministic3DigitId(originalId) {
   if (!originalId) return "123";
   let hash = 0;
   for (let i = 0; i < originalId.length; i++) {
@@ -199,10 +199,11 @@ export class HomeView {
       <main class="home-main-content">
         <section class="flat-section">
           <div class="gallery-header-row">
-            <div class="gallery-tabs">
-              <button class="gallery-tab-btn active" id="gallery-tab-library">Library</button>
-              <button class="gallery-tab-btn" id="gallery-tab-chaos">Chaos</button>
-              <button class="gallery-tab-btn" id="gallery-tab-calm">Calm</button>
+            <div class="gallery-tabs" data-active-tab="${this.activeTab}">
+              <div class="gallery-tab-btn active" id="gallery-tab-library">Library</div>
+              <div class="gallery-tab-btn" id="gallery-tab-chaos">Chaos</div>
+              <div class="gallery-tab-btn" id="gallery-tab-calm">Calm</div>
+              <div class="gallery-tab-btn" id="gallery-tab-more">+ More</div>
             </div>
             <span id="gallery-count-badge" class="gallery-count-badge">
               23 Puzzles Available
@@ -232,6 +233,12 @@ export class HomeView {
     const countBadge = this.element.querySelector("#gallery-count-badge");
     const callMoreBtn = this.element.querySelector("#btn-call-more-puzzles");
 
+    if (this.activeTab === "more") {
+      if (callMoreBtn) callMoreBtn.style.display = "none";
+      this.loadMoreTabPuzzles(grid, countBadge);
+      return;
+    }
+
     if (this.activeTab === "calm") {
       if (callMoreBtn) callMoreBtn.style.display = "none";
 
@@ -260,7 +267,7 @@ export class HomeView {
           const cardHtml = `
             <div class="image-card ${statusClass} ${status === 'completed' ? 'card-revealed' : ''}" data-url="${displaySrc}" data-id="${escapedId}" data-name="${escapedName}">
               <div class="image-card-skeleton ${isCachedLocally ? 'loaded' : ''}"></div>
-              <img src="${displaySrc}" alt="${escapedName}" class="${isCachedLocally ? 'is-loaded' : ''}" loading="lazy" onload="this.classList.add('is-loaded'); this.previousElementSibling?.classList.add('loaded');" onerror="this.previousElementSibling?.classList.add('loaded');" />
+              <img src="${displaySrc}" alt="${escapedName}" class="${isCachedLocally ? 'is-loaded' : ''}" loading="lazy" onload="this.classList.add('is-loaded'); this.previousElementSibling?.classList.add('loaded');" onerror="this.previousElementSibling?.classList.add('loaded');" crossorigin="anonymous" />
               <div class="image-card-id-badge">ID: ${getDeterministic3DigitId(item.id)}</div>
               ${status !== 'completed' ? `<div class="image-card-noise-overlay"></div>` : ""}
               ${isCachedLocally ? `<div class="image-card-cached-dot" title="Stored Locally in IndexedDB"></div>` : ""}
@@ -341,7 +348,7 @@ export class HomeView {
           const cardHtml = `
             <div class="image-card ${statusClass} ${status === 'completed' ? 'card-revealed' : ''}" data-url="${displaySrc}" data-id="${escapedId}" data-name="${escapedName}">
               <div class="image-card-skeleton ${isCachedLocally ? 'loaded' : ''}"></div>
-              <img src="${displaySrc}" alt="${escapedName}" class="${isCachedLocally ? 'is-loaded' : ''}" loading="lazy" onload="this.classList.add('is-loaded'); this.previousElementSibling?.classList.add('loaded');" onerror="this.previousElementSibling?.classList.add('loaded');" />
+              <img src="${displaySrc}" alt="${escapedName}" class="${isCachedLocally ? 'is-loaded' : ''}" loading="lazy" onload="this.classList.add('is-loaded'); this.previousElementSibling?.classList.add('loaded');" onerror="this.previousElementSibling?.classList.add('loaded');" crossorigin="anonymous" />
               <div class="image-card-id-badge">ID: ${getDeterministic3DigitId(item.id)}</div>
               ${status !== 'completed' ? `<div class="image-card-noise-overlay"></div>` : ""}
               ${isCachedLocally ? `<div class="image-card-cached-dot" title="Stored Locally in IndexedDB"></div>` : ""}
@@ -600,7 +607,9 @@ export class HomeView {
       }
     });
 
-    const cards = grid.querySelectorAll(".image-card:not(.image-card-upload)");
+    const cards = grid.querySelectorAll(
+      ".image-card:not(.image-card-upload):not(.more-coming-card)"
+    );
     cards.forEach((card) => {
       card.addEventListener("click", (e) => {
         if (e.target.closest(".image-card-delete")) return;
@@ -692,6 +701,12 @@ export class HomeView {
   }
 
   bindEvents() {
+    window.addEventListener("cartoon-puzzles-updated", () => {
+      if (this.activeTab === "more") {
+        this.updateGalleryGrid();
+      }
+    });
+
     const libTab = this.element.querySelector("#gallery-tab-library");
     const chaosTab = this.element.querySelector("#gallery-tab-chaos");
     const calmTab = this.element.querySelector("#gallery-tab-calm");
@@ -704,6 +719,10 @@ export class HomeView {
     }
     if (calmTab) {
       calmTab.addEventListener("click", () => this.switchToTab("calm"));
+    }
+    const moreTab = this.element.querySelector("#gallery-tab-more");
+    if (moreTab) {
+      moreTab.addEventListener("click", () => this.switchToTab("more"));
     }
 
     const btnLoadMore = this.element.querySelector("#btn-load-more");
@@ -775,7 +794,7 @@ export class HomeView {
               const cardHtml = `
                 <div class="image-card" data-url="${displaySrc}" data-id="${escapedId}" data-name="${escapedName}">
                   <div class="image-card-skeleton"></div>
-                  <img src="${displaySrc}" alt="${escapedName}" loading="lazy" onload="this.classList.add('is-loaded'); this.previousElementSibling?.classList.add('loaded');" onerror="this.previousElementSibling?.classList.add('loaded');" />
+                  <img src="${displaySrc}" alt="${escapedName}" loading="lazy" onload="this.classList.add('is-loaded'); this.previousElementSibling?.classList.add('loaded');" onerror="this.previousElementSibling?.classList.add('loaded');" crossorigin="anonymous" />
                   <div class="image-card-id-badge">ID: ${getDeterministic3DigitId(imgData.id)}</div>
                   <div class="image-card-noise-overlay"></div>
                   <div class="image-card-cached-dot" title="Stored Locally in IndexedDB"></div>
@@ -901,12 +920,19 @@ export class HomeView {
     if (this.activeTab === tabId) return;
     this.activeTab = tabId;
 
+    const tabsContainer = this.element.querySelector(".gallery-tabs");
+    if (tabsContainer) {
+      tabsContainer.setAttribute("data-active-tab", tabId);
+    }
+
     const libTab = this.element.querySelector("#gallery-tab-library");
     const chaosTab = this.element.querySelector("#gallery-tab-chaos");
     const calmTab = this.element.querySelector("#gallery-tab-calm");
+    const moreTab = this.element.querySelector("#gallery-tab-more");
     if (libTab) libTab.classList.toggle("active", tabId === "library");
     if (chaosTab) chaosTab.classList.toggle("active", tabId === "chaos");
     if (calmTab) calmTab.classList.toggle("active", tabId === "calm");
+    if (moreTab) moreTab.classList.toggle("active", tabId === "more");
 
     this.updateGalleryGrid();
   }
@@ -1008,6 +1034,156 @@ export class HomeView {
       }
     } finally {
       this._calmLoading = false;
+    }
+  }
+
+  loadMoreTabPuzzles(grid, countBadge) {
+    if (!this.cartoonCatalog) {
+      grid.innerHTML = Array.from({ length: 6 }, () => `
+        <div class="image-card">
+          <div class="image-card-skeleton"></div>
+        </div>
+      `).join('');
+
+      if (countBadge) {
+        countBadge.textContent = "Discovering puzzles from GitHub API...";
+      }
+
+      ImageStore.discoverCartoonImages().then((discovered) => {
+        this.cartoonCatalog = discovered;
+        this.loadMoreTabPuzzles(grid, countBadge);
+      }).catch(err => {
+        console.error("Failed to discover cartoon images:", err);
+        if (countBadge) {
+          countBadge.textContent = "Failed to load puzzles. Please refresh.";
+        }
+      });
+      return;
+    }
+
+    ImageStore.getCartoonPuzzlesFromDB(this.cartoonCatalog).then(async (cachedMore) => {
+      if (countBadge) {
+        countBadge.textContent = `${this.cartoonCatalog.length} Cartoon Puzzles Available • ${cachedMore.length} Stored in DB`;
+      }
+
+      grid.innerHTML = "";
+
+      for (const item of this.cartoonCatalog) {
+        const cached = cachedMore.find(c => c.id === item.id);
+        const isCachedLocally = Boolean(cached);
+        const displaySrc = cached ? URL.createObjectURL(cached.blob) : item.url;
+        const escapedName = escapeHtml(item.name);
+        const escapedId = escapeHtml(item.id);
+        const status = PuzzleStatusStore.getStatus(item.id);
+
+        let statusClass = "";
+        if (status === "completed") statusClass = "status-completed";
+        else if (status === "started") statusClass = "status-started";
+        else if (status === "quit") statusClass = "status-quit";
+
+        const cardHtml = `
+          <div class="image-card ${statusClass} ${status === 'completed' ? 'card-revealed' : ''}" data-url="${displaySrc}" data-id="${escapedId}" data-name="${escapedName}">
+            <div class="image-card-skeleton ${isCachedLocally ? 'loaded' : ''}"></div>
+            <img src="${displaySrc}" alt="${escapedName}" class="${isCachedLocally ? 'is-loaded' : ''}" loading="lazy" onload="this.classList.add('is-loaded'); this.previousElementSibling?.classList.add('loaded');" onerror="this.previousElementSibling?.classList.add('loaded');" crossorigin="anonymous" />
+            <div class="image-card-id-badge">ID: ${getDeterministic3DigitId(item.id)}</div>
+            ${status !== 'completed' ? `<div class="image-card-noise-overlay"></div>` : ""}
+            ${isCachedLocally ? `<div class="image-card-cached-dot" title="Stored Locally in IndexedDB"></div>` : ""}
+
+            ${status ? `
+              <div class="image-card-status-badge" title="${status === 'completed' ? 'Finished' : status === 'started' ? 'In Progress' : 'Unfinished'}">
+                <svg width="18" height="14" viewBox="0 0 22 14" fill="none">
+                  <path d="M1.5 7.5L5.5 11.5L13.5 2.5" stroke="${status === 'completed' || status === 'started' ? '#38bdf8' : '#94a3b8'}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M8.5 7.5L12.5 11.5L20.5 2.5" stroke="${status === 'completed' ? '#38bdf8' : '#94a3b8'}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+            ` : ""}
+
+            ${status !== 'completed' ? `
+              <div class="image-card-mystery-badge">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                Mystery
+              </div>
+            ` : ""}
+
+            <button class="image-card-start-btn" data-start-id="${escapedId}" title="Start Puzzle">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              <span>Start</span>
+            </button>
+          </div>
+        `;
+
+        const cardWrapper = document.createElement("div");
+        cardWrapper.innerHTML = cardHtml.trim();
+        grid.appendChild(cardWrapper.firstChild);
+      }
+
+      // Add "More Coming Soon" card at the end of the "+ More" grid
+      const moreComingCardHtml = `
+        <div class="image-card more-coming-card">
+          <div class="more-coming-content">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <span>More Coming Soon</span>
+          </div>
+        </div>
+      `;
+      const moreComingWrapper = document.createElement("div");
+      moreComingWrapper.innerHTML = moreComingCardHtml.trim();
+      grid.appendChild(moreComingWrapper.firstChild);
+
+      this.bindGalleryEvents();
+      this.progressiveCacheMorePuzzles(cachedMore);
+    }).catch(err => {
+      console.error('[HomeView] Error loading cartoon puzzles:', err);
+    });
+  }
+
+  async progressiveCacheMorePuzzles(cachedMore) {
+    if (this._moreLoading) return;
+    this._moreLoading = true;
+
+    try {
+      if (!this.cartoonCatalog) return;
+      const grid = this.element.querySelector("#image-grid");
+
+      for (const item of this.cartoonCatalog) {
+        if (this.activeTab !== 'more') break;
+
+        const isAlreadyCached = cachedMore.some(c => c.id === item.id);
+        if (isAlreadyCached) continue;
+
+        try {
+          const cachedItem = await ImageStore.fetchAndCacheSingleCartoon(item);
+          if (cachedItem && grid) {
+            const cardEl = grid.querySelector(`[data-id="${item.id}"]`);
+            if (cardEl) {
+              const imgEl = cardEl.querySelector("img");
+              if (imgEl && cachedItem.blob) {
+                const url = URL.createObjectURL(cachedItem.blob);
+                imgEl.src = url;
+                cardEl.setAttribute("data-url", url);
+
+                const dotContainer = cardEl.querySelector(".image-card-cached-dot");
+                if (!dotContainer) {
+                  const dot = document.createElement("div");
+                  dot.className = "image-card-cached-dot";
+                  dot.title = "Stored Locally in IndexedDB";
+                  cardEl.appendChild(dot);
+                }
+              }
+            }
+          }
+        } catch (e) {
+          console.warn(`[HomeView] Failed to cache cartoon image ${item.id}:`, e);
+        }
+      }
+
+      const currentCached = await ImageStore.getCartoonPuzzlesFromDB(this.cartoonCatalog);
+      const countBadge = this.element.querySelector("#gallery-count-badge");
+      if (countBadge && this.activeTab === 'more') {
+        countBadge.textContent = `${this.cartoonCatalog.length} Cartoon Puzzles Available • ${currentCached.length} Stored in DB`;
+      }
+    } finally {
+      this._moreLoading = false;
     }
   }
 

@@ -97,6 +97,7 @@ export class Game {
 
     this.undoStack = [];
     this.redoStack = [];
+    this.hintsRemaining = 5;
 
     // Automatically set adaptive HUD dock position (Top/Bottom if side margin < 65px | Left/Right if side margin >= 65px)
     this.updateDockOrientation();
@@ -104,6 +105,8 @@ export class Game {
     // Wire HUD navbar Peek Hint button handler
     if (this.gameView) {
       this.gameView.onPeekHint = () => this.handlePeekHint();
+      this.gameView.onSmartHint = () => this.handleSmartHint();
+      this.gameView.updateSmartHintCount(this.hintsRemaining);
       this.gameView.onUndo = () => this.undo();
       this.gameView.onRedo = () => this.redo();
       this.gameView.updateUndoRedo(false, false);
@@ -187,12 +190,97 @@ export class Game {
   }
 
   handlePeekHint() {
-    if (!this.renderer || !this.config || !this.config.processedImage || !this.puzzle) return;
-    this.renderer.showTemporaryHint(
-      this.config.processedImage.canvas,
-      this.puzzle.boardLayout,
-      2200
-    );
+    if (!this.config || !this.config.processedImage || !this.gameView) return;
+
+    // 1st Confirmation Toast
+    this.gameView.showToast({
+      title: "Peek Reference?",
+      description: "Do you want to peek at the reference image?",
+      type: "warning",
+      autoDismiss: false,
+      actions: [
+        {
+          id: "toast-btn-peek-cancel",
+          label: "Cancel",
+          primary: false,
+          onClick: () => {
+            // Dismissed
+          }
+        },
+        {
+          id: "toast-btn-peek-confirm",
+          label: "Confirm",
+          primary: true,
+          onClick: () => {
+            // 2nd Confirmation Toast
+            setTimeout(() => {
+              this.gameView.showToast({
+                title: "Cheater Alert! 🚨",
+                description: "Are you sure you want to check? (This is cheating!)",
+                type: "error",
+                autoDismiss: false,
+                actions: [
+                  {
+                    id: "toast-btn-cheat-no",
+                    label: "No",
+                    primary: false,
+                    onClick: () => {
+                      // Dismissed
+                    }
+                  },
+                  {
+                    id: "toast-btn-cheat-yes",
+                    label: "Yes, Cheat",
+                    primary: true,
+                    onClick: () => {
+                      // Confirmed cheat, reveal modal!
+                      this.gameView.showReferenceModal(this.config.processedImage.canvas);
+                    }
+                  }
+                ]
+              });
+            }, 100);
+          }
+        }
+      ]
+    });
+  }
+
+  handleSmartHint() {
+    if (!this.puzzle || !this.renderer || !this.app) return;
+
+    if (this.app.stateMachine.state === 'SOLVED') {
+      return;
+    }
+
+    if (this.hintsRemaining <= 0) {
+      if (this.gameView && this.gameView.showToast) {
+        this.gameView.showToast({
+          title: "Hint Limit",
+          description: "No hints remaining!",
+          type: "warning"
+        });
+      }
+      return;
+    }
+
+    const incorrectPieces = this.puzzle.pieces.filter(p => !PuzzleValidator.isPieceInCorrectSlot(p));
+    if (incorrectPieces.length === 0) {
+      if (this.gameView && this.gameView.showToast) {
+        this.gameView.showToast({
+          title: "Smart Hint",
+          description: "All pieces are in correct slots!",
+          type: "success"
+        });
+      }
+      return;
+    }
+
+    this.hintsRemaining--;
+    if (this.gameView) {
+      this.gameView.updateSmartHintCount(this.hintsRemaining);
+    }
+    this.renderer.highlightAllIncorrectPieces(incorrectPieces.map(p => p.id));
   }
 
   handleResize(width, height) {
@@ -306,6 +394,20 @@ export class Game {
       if (this.puzzle.checkCompletion()) {
         SoundEffects.playWinSound();
         this.handlePuzzleCompletion();
+      } else {
+        if (this.app && this.app.stateMachine && this.app.stateMachine.state === 'SOLVED') {
+          this.app.stateMachine.transitionTo('RUNNING');
+          if (this.timer) this.timer.start();
+          if (this.renderer && typeof this.renderer.stopCompletionAnimation === 'function') {
+            this.renderer.stopCompletionAnimation();
+          }
+          if (this.gameView) {
+            this.gameView.updateHUD({
+              mode: this.config.mode,
+              difficulty: this.config.difficulty
+            });
+          }
+        }
       }
     }
   }
@@ -356,20 +458,86 @@ export class Game {
       PuzzleStatusStore.markCompleted(this.config.imageId);
     }
 
-    // Play win sound effect
-    SoundEffects.playWinSound();
-
-    // 1. Play victory glowing animated border on Pixi canvas
+    // Play satisfying sequential snapping wave locking animation
     if (this.renderer) {
-      this.renderer.playCompletionAnimation(this.puzzle.boardLayout);
+      this.renderer.playWaveLockingAnimation(() => {
+        // After wave snaps propagate and lock:
+        SoundEffects.playWinSound();
+
+        // 1. Play victory glowing animated border on Pixi canvas
+        this.renderer.playCompletionAnimation(this.puzzle.boardLayout);
+
+        // 2. Show non-blocking status feedback in HUD
+        if (this.gameView) {
+          this.gameView.showCompletionState({ rating: finalRating });
+
+          // 3. Show congrats toast notification with action buttons to choose image or play again
+          this.gameView.showToast({
+            title: "🎉 Puzzle Solved!",
+            description: `Great job! Time: ${finalTimeStr} | Moves: ${finalMoves}m | Distance: ${finalDistance}px`,
+            type: "success",
+            autoDismiss: false,
+            actions: [
+              {
+                id: "toast-btn-home",
+                label: "Choose Image",
+                primary: false,
+                onClick: () => {
+                  if (this.resultView && this.resultView.onChooseImage) {
+                    this.resultView.onChooseImage();
+                  }
+                }
+              },
+              {
+                id: "toast-btn-again",
+                label: "Play Again",
+                primary: true,
+                onClick: () => {
+                  if (this.resultView && this.resultView.onPlayAgain) {
+                    this.resultView.onPlayAgain();
+                  }
+                }
+              }
+            ]
+          });
+        }
+      });
+    } else {
+      SoundEffects.playWinSound();
+      if (this.gameView) {
+        this.gameView.showCompletionState({ rating: finalRating });
+        this.gameView.showToast({
+          title: "🎉 Puzzle Solved!",
+          description: `Great job! Time: ${finalTimeStr} | Moves: ${finalMoves}m | Distance: ${finalDistance}px`,
+          type: "success",
+          autoDismiss: false,
+          actions: [
+            {
+              id: "toast-btn-home",
+              label: "Choose Image",
+              primary: false,
+              onClick: () => {
+                if (this.resultView && this.resultView.onChooseImage) {
+                  this.resultView.onChooseImage();
+                }
+              }
+            },
+            {
+              id: "toast-btn-again",
+              label: "Play Again",
+              primary: true,
+              onClick: () => {
+                if (this.resultView && this.resultView.onPlayAgain) {
+                  this.resultView.onPlayAgain();
+                }
+              }
+            }
+          ]
+        });
+      }
     }
 
-    // 2. Show non-blocking status feedback in HUD and floating bar
-    if (this.gameView) {
-      this.gameView.showCompletionState({ rating: finalRating });
-    }
-
-    // 3. Save match result into IndexedDB
+    // Save match result into IndexedDB
     try {
       await GameHistory.saveMatch({
         imageName: 'Puzzle Image',
