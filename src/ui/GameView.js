@@ -412,6 +412,15 @@ export class GameView {
 
     // Append to container
     const container = GameView.getOrCreateContainer();
+    
+    // Limit to maximum 3 toasts on screen at once
+    const MAX_TOASTS = 3;
+    const existingToasts = container.querySelectorAll('.premium-toast');
+    if (existingToasts.length >= MAX_TOASTS) {
+      // Remove the oldest toast (first one)
+      this.dismissToast(existingToasts[0]);
+    }
+    
     container.appendChild(toast);
 
     // Bind action callbacks

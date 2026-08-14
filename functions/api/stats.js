@@ -129,7 +129,7 @@ export async function onRequest(context) {
         console.warn('[pages-stats] STATS_KV is not bound; skipping persistence');
       }
 
-      const payload = { visitorId, totalVisits, uniqueVisitors };
+      const payload = { visitorId, total: totalVisits, unique: uniqueVisitors };
       console.log(`[pages-stats] response payload=${JSON.stringify(payload)}`);
       return new Response(JSON.stringify(payload), { headers: corsHeaders });
     }
