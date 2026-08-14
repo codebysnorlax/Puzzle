@@ -79,11 +79,16 @@ export class VisitorTracker {
       if (response.ok) {
         const data = await response.json();
         console.log('[VisitorTracker] API response:', data);
+        
+        // Handle both old format (totalVisits/uniqueVisitors) and new format (total/unique)
+        const uniqueCount = data.unique ?? data.uniqueVisitors ?? (isNewVisitor ? 1 : 0);
+        const totalCount = data.total ?? data.totalVisits ?? 1;
+        
         const stats = {
-          unique: data.unique || (isNewVisitor ? 1 : 0),
-          total: data.total || 1,
-          uniqueFormatted: this.formatCount(data.unique || (isNewVisitor ? 1 : 0)),
-          totalFormatted: this.formatCount(data.total || 1)
+          unique: uniqueCount,
+          total: totalCount,
+          uniqueFormatted: this.formatCount(uniqueCount),
+          totalFormatted: this.formatCount(totalCount)
         };
         console.log('[VisitorTracker] Formatted stats:', stats);
         localStorage.setItem(LOCAL_STATS_KEY, JSON.stringify(stats));
