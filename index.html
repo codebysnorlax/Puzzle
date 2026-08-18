@@ -1,33 +1,113 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="theme-color" content="#0f172a" />
-    <meta name="description" content="Local-first Progressive Web App Image Puzzle Game." />
+    <meta name="theme-color" content="#f8fafc" media="(prefers-color-scheme: light)" />
+    <meta name="color-scheme" content="dark light" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    
+    <meta name="apple-mobile-web-app-title" content="Puzzle" />
+
+    <!-- Primary SEO Meta Tags -->
+    <title>Puzzle — Free Online Jigsaw Puzzle Game | Play Instantly</title>
+    <meta name="description" content="Play beautiful jigsaw puzzles right in your browser — no downloads, no ads. An offline-first PWA puzzle game with smart scoring, dark mode, and instant loading. Works on mobile & desktop." />
+    <meta name="keywords" content="jigsaw puzzle, online puzzle game, free puzzle, browser game, PWA game, offline puzzle, image puzzle, drag and drop puzzle, mobile puzzle game, no download game" />
+    <meta name="author" content="snorlax" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <link rel="canonical" href="https://puzzle.snorlax.online/" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://puzzle.snorlax.online/" />
+    <meta property="og:title" content="Puzzle — Free Online Jigsaw Puzzle Game" />
+    <meta property="og:description" content="Play beautiful jigsaw puzzles right in your browser. No downloads, no ads. Offline-first with smart scoring, dark mode, and instant loading." />
+    <meta property="og:image" content="https://puzzle.snorlax.online/assets/icons/icon-512.png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta property="og:image:alt" content="Puzzle game icon" />
+    <meta property="og:site_name" content="Puzzle by snorlax" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://puzzle.snorlax.online/" />
+    <meta name="twitter:title" content="Puzzle — Free Online Jigsaw Puzzle Game" />
+    <meta name="twitter:description" content="Play beautiful jigsaw puzzles in your browser. No downloads, no ads. Offline-first PWA with smart scoring and dark mode." />
+    <meta name="twitter:image" content="https://puzzle.snorlax.online/assets/icons/icon-512.png" />
+    <meta name="twitter:image:alt" content="Puzzle game icon" />
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Puzzle",
+      "url": "https://puzzle.snorlax.online/",
+      "description": "A free, offline-first jigsaw puzzle game built as a Progressive Web App. Play beautiful image puzzles directly in your browser with smart scoring, dark mode, and instant loading.",
+      "applicationCategory": "GameApplication",
+      "applicationSubCategory": "Puzzle Game",
+      "operatingSystem": "Web Browser",
+      "browserRequirements": "Requires a modern browser with JavaScript and IndexedDB support",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "author": {
+        "@type": "Person",
+        "name": "snorlax",
+        "url": "https://github.com/codebysnorlax"
+      },
+      "image": "https://puzzle.snorlax.online/assets/icons/icon-512.png",
+      "screenshot": "https://puzzle.snorlax.online/images/demo.webp",
+      "softwareVersion": "1.58.0",
+      "genre": ["Puzzle", "Jigsaw", "Casual"],
+      "gamePlatform": ["Web Browser", "Mobile Browser"],
+      "inLanguage": "en",
+      "isAccessibleForFree": true,
+      "featureList": [
+        "Offline-first gameplay",
+        "Smart performance scoring",
+        "Dark mode support",
+        "Progressive Web App",
+        "No downloads required",
+        "Mobile & desktop support"
+      ]
+    }
+    </script>
+
     <!-- Hardened Content Security Policy (CSP) -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://avatars.githubusercontent.com https://github.com https://cdn.jsdelivr.net https://raw.githubusercontent.com; connect-src 'self' blob: data: https://api.github.com https://cdn.jsdelivr.net https://raw.githubusercontent.com; object-src 'none'; base-uri 'self';" />
-    
-    <title>Puzzle</title>
+
+    <!-- Manifest & Icons -->
     <link rel="manifest" href="./manifest.webmanifest" />
-
-    <!-- Favicon & Icons -->
     <link rel="icon" type="image/x-icon" href="./favicon.ico" />
-    <link rel="icon" type="image/png" href="./assets/icons/icon-192.png" />
-    <link rel="apple-touch-icon" href="./assets/icons/icon-192.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="./assets/icons/icon-192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="./assets/icons/icon-512.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="./assets/icons/icon-192.png" />
 
-    <!-- Google Fonts & Preconnect Hints -->
+    <!-- Preconnect & Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preconnect" href="https://github.com" crossorigin="anonymous" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet" />
+
+    <!-- DNS Prefetch for external resources -->
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
+    <link rel="dns-prefetch" href="https://api.github.com" />
   </head>
   <body>
     <div id="app"></div>
+    <noscript>
+      <div style="text-align:center;padding:2rem;font-family:sans-serif;">
+        <h1>Puzzle — Online Jigsaw Puzzle Game</h1>
+        <p>This app requires JavaScript to run. Please enable JavaScript in your browser settings to play.</p>
+      </div>
+    </noscript>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

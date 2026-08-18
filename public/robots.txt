@@ -1,0 +1,12 @@
+# Robots.txt for puzzle.snorlax.online
+# Allow all search engines to crawl the site
+
+User-agent: *
+Allow: /
+Disallow: /api/
+
+# Sitemap location
+Sitemap: https://puzzle.snorlax.online/sitemap.xml
+
+# Crawl delay (optional, be kind to the server)
+Crawl-delay: 10

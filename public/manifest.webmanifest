@@ -1,11 +1,19 @@
 {
-  "name": "Puzzle",
+  "name": "Puzzle — Free Online Jigsaw Puzzle Game",
   "short_name": "Puzzle",
-  "description": "Local-first Progressive Web App Image Puzzle Game",
+  "description": "Play beautiful jigsaw puzzles right in your browser. No downloads, no ads. An offline-first PWA with smart scoring, dark mode, and instant loading.",
   "start_url": "./",
+  "scope": "./",
+  "id": "/",
   "display": "standalone",
+  "orientation": "any",
   "background_color": "#0f172a",
   "theme_color": "#0f172a",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["games", "entertainment", "education"],
+  "iarc_rating_id": "",
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "./assets/icons/icon-192.png",
@@ -30,6 +38,22 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "./images/demo.webp",
+      "sizes": "1280x720",
+      "type": "image/webp",
+      "form_factor": "wide",
+      "label": "Puzzle game home screen showing available puzzles"
+    },
+    {
+      "src": "./images/demo2.webp",
+      "sizes": "1280x720",
+      "type": "image/webp",
+      "form_factor": "wide",
+      "label": "Active puzzle gameplay with drag and drop pieces"
     }
   ]
 }
