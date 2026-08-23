@@ -1,6 +1,7 @@
 import { PuzzleValidator } from '../puzzle/PuzzleValidator.js';
 import { PieceAnimations } from '../animation/PieceAnimations.js';
 import { SoundEffects } from '../game/SoundEffects.js';
+import { SettingsStore } from '../storage/SettingsStore.js';
 
 /**
  * InputHandler — Unified Pointer Handler with Local Container Coordinate Transformation & Safe Animation Scoping
@@ -111,7 +112,7 @@ export class InputHandler {
     this.renderer.updatePiecePositions([this.activePiece]);
 
     // Check hovered target cell
-    const cell = this.getGridCellAtPointer(localPos.x, localPos.y);
+    const cell = this.getGridCellAtPointer(localPos.x, localPos.y, this.activePiece);
 
     // Near miss detection: check if they hovered the piece over its correct slot
     if (cell && cell.row === this.activePiece.row && cell.col === this.activePiece.col) {
@@ -158,7 +159,14 @@ export class InputHandler {
     const activeSprite = this.renderer.getSpriteForPiece(draggedPiece);
     if (activeSprite) activeSprite.zIndex = 1;
 
-    const cell = this.getGridCellAtPointer(localPos.x, localPos.y);
+    // Apply the final pointer position before evaluating the snap candidate.
+    draggedPiece.setPosition(
+      localPos.x - this.dragOffset.x,
+      localPos.y - this.dragOffset.y,
+    );
+    this.renderer.updatePiecePositions([draggedPiece]);
+
+    const cell = this.getGridCellAtPointer(localPos.x, localPos.y, draggedPiece);
 
     if (cell && cell.targetPiece && cell.targetPiece !== draggedPiece) {
       const targetPiece = cell.targetPiece;
@@ -245,7 +253,7 @@ export class InputHandler {
     }
   }
 
-  getGridCellAtPointer(px, py) {
+  getGridCellAtPointer(px, py, draggedPiece = null) {
     if (!this.puzzle || !this.puzzle.boardLayout || !this.puzzle.grid) return null;
 
     const board = this.puzzle.boardLayout;
@@ -254,17 +262,37 @@ export class InputHandler {
     const pieceH = board.height / rows;
 
     const margin = 40;
-    if (
+    if (!draggedPiece && (
       px < board.x - margin ||
       px > board.x + board.width + margin ||
       py < board.y - margin ||
       py > board.y + board.height + margin
-    ) {
+    )) {
       return null;
     }
 
     let col = Math.floor((px - board.x) / pieceW);
     let row = Math.floor((py - board.y) / pieceH);
+
+    if (draggedPiece) {
+      // The setting controls how close the moving PixiJS piece must be to a
+      // slot before that slot accepts the drop. This makes sensitivity affect
+      // actual gameplay rather than merely the edge of the puzzle board.
+      const snapTolerance = SettingsStore.getSnapThreshold();
+      col = Math.round((draggedPiece.x - board.x) / pieceW);
+      row = Math.round((draggedPiece.y - board.y) / pieceH);
+
+      if (col < 0 || col >= cols || row < 0 || row >= rows) return null;
+
+      const candidateX = Math.round(board.x + col * pieceW);
+      const candidateY = Math.round(board.y + row * pieceH);
+      if (
+        Math.abs(draggedPiece.x - candidateX) > snapTolerance ||
+        Math.abs(draggedPiece.y - candidateY) > snapTolerance
+      ) {
+        return null;
+      }
+    }
 
     col = Math.max(0, Math.min(cols - 1, col));
     row = Math.max(0, Math.min(rows - 1, row));

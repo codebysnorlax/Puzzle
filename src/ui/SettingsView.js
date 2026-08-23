@@ -35,83 +35,83 @@ export class SettingsView {
 
     this.element.innerHTML = `
       <div class="modal-content surface-card settings-modal">
-        <!-- Header -->
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px dashed var(--border-subtle);">
-          <h2 style="font-size: 0.95rem; font-weight: 700; color: var(--text-main); margin: 0;">Settings</h2>
-          <button class="settings-close-btn" id="btn-close-settings" title="Close Settings" style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; background: transparent; border: none; cursor: pointer; color: var(--text-muted);">
+        <div class="settings-sheet-handle" aria-hidden="true"></div>
+        <div class="settings-header">
+          <div>
+            <h2 class="settings-title">Settings</h2>
+            <p class="settings-subtitle">Tune your puzzle experience</p>
+          </div>
+          <button class="settings-close-btn" id="btn-close-settings" type="button" aria-label="Close settings" title="Close Settings">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
 
-        <div style="display: flex; flex-direction: column; gap: 8px;">
-          <!-- Sound Preference -->
+        <div class="settings-body">
           <div class="settings-row">
-            <div class="settings-label">
+            <label class="settings-label" for="setting-sound">
               <div>Sound Effects</div>
               <div>Tile snap & completion audio</div>
-            </div>
-            <input type="checkbox" id="setting-sound" ${settings.sound ? "checked" : ""} style="width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer;" />
+            </label>
+            <input class="settings-checkbox" type="checkbox" id="setting-sound" ${settings.sound ? "checked" : ""} />
           </div>
 
-          <!-- Game Assistant Toasts -->
           <div class="settings-row">
-            <div class="settings-label">
+            <label class="settings-label" for="setting-assistant">
               <div>Game Assistant</div>
               <div>Roasts, tips & idle warnings</div>
-            </div>
-            <input type="checkbox" id="setting-assistant" ${settings.assistantToasts !== false ? "checked" : ""} style="width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer;" />
+            </label>
+            <input class="settings-checkbox" type="checkbox" id="setting-assistant" ${settings.assistantToasts !== false ? "checked" : ""} />
           </div>
 
-          <!-- Snap Sensitivity & Piece Border Color in 1 Row -->
-          <div class="settings-row settings-row-split">
-            <div style="display: flex; flex: 1; flex-direction: column; gap: 4px;">
-              <div style="font-size: 0.78rem; font-weight: 600; color: var(--text-main); text-align: left;">Snap Sensitivity</div>
-              <select id="setting-snap" style="background: var(--bg-hover); color: var(--text-main); padding: 2px 6px; border-radius: var(--radius-sm); border: 1px dashed var(--border-subtle); font-size: 0.72rem; height: 24px; cursor: pointer; width: 100%;">
-                <option value="normal" ${settings.snapSensitivity === "normal" ? "selected" : ""}>Normal</option>
+          <div class="settings-control-grid">
+            <label class="settings-field" for="setting-snap">
+              <span>Snap Sensitivity</span>
+              <select id="setting-snap">
+                <option value="very-strict" ${settings.snapSensitivity === "very-strict" ? "selected" : ""}>Very Strict</option>
                 <option value="strict" ${settings.snapSensitivity === "strict" ? "selected" : ""}>Strict</option>
+                <option value="normal" ${settings.snapSensitivity === "normal" ? "selected" : ""}>Normal</option>
                 <option value="relaxed" ${settings.snapSensitivity === "relaxed" ? "selected" : ""}>Relaxed</option>
+                <option value="very-relaxed" ${settings.snapSensitivity === "very-relaxed" ? "selected" : ""}>Very Relaxed</option>
               </select>
-            </div>
+            </label>
 
-            <div style="display: flex; flex: 1; flex-direction: column; gap: 4px; align-items: flex-start;">
-              <div style="font-size: 0.78rem; font-weight: 600; color: var(--text-main); white-space: nowrap; text-align: left;">Border Color</div>
-              <div style="display: flex; gap: 6px; align-items: center; width: 100%;">
-                <input type="color" id="setting-border-color" value="${settings.borderColor && settings.borderColor !== 'transparent' ? settings.borderColor : '#64748b'}" ${settings.borderTransparent ? 'disabled' : ''} style="width: 50px; height: 24px; padding: 0 2px; border: 1px dashed var(--border-subtle); border-radius: var(--radius-sm); background: var(--bg-hover); cursor: pointer; box-sizing: border-box;" />
-                <label style="display: flex; align-items: center; gap: 3px; font-size: 0.72rem; color: var(--text-main); cursor: pointer; white-space: nowrap;">
-                  <input type="checkbox" id="setting-border-transparent" ${settings.borderTransparent ? "checked" : ""} style="width: 12px; height: 12px; margin: 0; cursor: pointer;" />
+            <div class="settings-field">
+              <span>Border Color</span>
+              <div class="settings-color-control">
+                <input type="color" id="setting-border-color" aria-label="Piece border color" value="${settings.borderColor && settings.borderColor !== 'transparent' ? settings.borderColor : '#64748b'}" />
+                <label class="settings-inline-check" for="setting-border-transparent">
+                  <input type="checkbox" id="setting-border-transparent" ${settings.borderTransparent ? "checked" : ""} />
                   Transparent
                 </label>
               </div>
             </div>
           </div>
 
-          <!-- Hint Cooldown & Smart Hint Tokens -->
-          <div class="settings-row settings-row-split">
-            <div style="display: flex; flex: 1; flex-direction: column; gap: 4px;">
-              <div style="font-size: 0.78rem; font-weight: 600; color: var(--text-main); text-align: left;">Hint Cooldown Delay</div>
-              <select id="setting-hint-cooldown" style="background: var(--bg-hover); color: var(--text-main); padding: 2px 6px; border-radius: var(--radius-sm); border: 1px dashed var(--border-subtle); font-size: 0.72rem; height: 24px; cursor: pointer; width: 100%;">
+          <div class="settings-control-grid settings-control-grid-last">
+            <label class="settings-field" for="setting-hint-cooldown">
+              <span>Hint Cooldown</span>
+              <select id="setting-hint-cooldown">
                 ${Array.from({ length: 19 }, (_, i) => i + 2).map(sec => `
                   <option value="${sec}" ${settings.hintCooldown === sec || (!settings.hintCooldown && sec === 4) ? "selected" : ""}>${sec} Seconds</option>
                 `).join('')}
               </select>
-            </div>
+            </label>
 
-            <div style="display: flex; flex: 1; flex-direction: column; gap: 4px; align-items: flex-start;">
-              <div style="font-size: 0.78rem; font-weight: 600; color: var(--text-main); white-space: nowrap; text-align: left;">Smart Hint Tokens</div>
-              <button class="btn btn-secondary" id="btn-add-tokens" style="width: 100%; height: 24px; font-size: 0.7rem; padding: 0 8px; border-radius: var(--radius-sm); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
+            <div class="settings-field settings-token-field">
+              <span>Smart Hint Tokens</span>
+              <button class="btn btn-secondary settings-token-button" id="btn-add-tokens" type="button">
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 Add 10 Tokens
               </button>
             </div>
           </div>
 
-          <!-- PWA Install -->
           <div id="settings-pwa-install-section" class="settings-row" style="display: ${canInstall ? "flex" : "none"};">
             <div class="settings-label">
               <div>Install App</div>
               <div>Offline play</div>
             </div>
-            <button class="btn-circular-install" id="btn-pwa-install-settings" title="Install App">
+            <button class="btn-circular-install" id="btn-pwa-install-settings" type="button" aria-label="Install app" title="Install App">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                 <polyline points="7 10 12 15 17 10"/>
@@ -120,52 +120,48 @@ export class SettingsView {
             </button>
           </div>
 
-          <!-- Reset Database -->
-          <div class="settings-row">
+          <div class="settings-row settings-row-danger">
             <div class="settings-label">
               <div style="color: #ef4444 !important;">Reset Database</div>
               <div>Erase all data</div>
             </div>
-            <button class="btn btn-sm btn-danger" id="btn-reset-db-settings" style="background: transparent; color: #ef4444; border: none; padding: 0;">Reset</button>
+            <button class="btn btn-sm btn-danger settings-reset-button" id="btn-reset-db-settings" type="button">Reset</button>
           </div>
 
-          <!-- Merged Visitor Analytics & App Version Info Card -->
-          <div class="settings-info-card" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.65rem; padding: 8px !important;">
-            <!-- Column 1: Analytics -->
-            <div style="display: flex; flex-direction: column; gap: 3px;">
-              <div style="font-weight: 700; font-size: 0.7rem; color: var(--text-main); display: flex; align-items: center; gap: 3px; border-bottom: 1px dashed var(--border-subtle); padding-bottom: 2px; margin-bottom: 2px;">
+          <div class="settings-info-card">
+            <div class="settings-info-section">
+              <div class="settings-info-heading">
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
                 Analytics
               </div>
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="color: var(--text-muted);">Unique:</span>
-                <span id="settings-unique-count" class="count-animated" style="font-weight: 700; color: var(--primary);">...</span>
+              <div class="settings-info-line">
+                <span>Unique:</span>
+                <strong id="settings-unique-count" class="count-animated">...</strong>
               </div>
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="color: var(--text-muted);">Visits:</span>
-                <span id="settings-total-count" class="count-animated" style="font-weight: 700; color: var(--text-main);">...</span>
+              <div class="settings-info-line">
+                <span>Visits:</span>
+                <strong id="settings-total-count" class="count-animated">...</strong>
               </div>
             </div>
             
-            <!-- Column 2: System Info -->
-            <div style="display: flex; flex-direction: column; gap: 3px; border-left: 1px dashed var(--border-subtle); padding-left: 8px;">
-              <div style="font-weight: 700; font-size: 0.7rem; color: var(--text-main); display: flex; align-items: center; gap: 3px; border-bottom: 1px dashed var(--border-subtle); padding-bottom: 2px; margin-bottom: 2px;">
+            <div class="settings-info-section settings-info-system">
+              <div class="settings-info-heading">
                 System
               </div>
-              <div style="display: flex; justify-content: space-between;">
-                <span style="color: var(--text-muted);">Version:</span>
-                <span style="font-weight: 600; color: var(--primary);">v${APP_VERSION}</span>
+              <div class="settings-info-line">
+                <span>Version:</span>
+                <strong>v${APP_VERSION}</strong>
               </div>
-              <div style="display: flex; justify-content: space-between;">
-                <span style="color: var(--text-muted);">Storage:</span>
-                <span id="settings-db-usage" style="font-weight: 500; color: var(--text-main);">Calculating...</span>
+              <div class="settings-info-line">
+                <span>Storage:</span>
+                <strong id="settings-db-usage">Calculating...</strong>
               </div>
             </div>
           </div>
         </div>
 
-        <div style="margin-top: 12px; display: flex; justify-content: flex-end; gap: var(--space-2);">
-          <button class="btn btn-primary" id="btn-save-settings" style="padding: 4px 12px; height: 28px; font-size: 0.75rem;">Save & Close</button>
+        <div class="settings-footer">
+          <button class="btn btn-primary settings-save-button" id="btn-save-settings" type="button">Save changes</button>
         </div>
       </div>
     `;
@@ -208,8 +204,9 @@ export class SettingsView {
     const borderTransparentCheckbox = this.element.querySelector("#setting-border-transparent");
     const borderColorInput = this.element.querySelector("#setting-border-color");
     if (borderTransparentCheckbox && borderColorInput) {
-      borderTransparentCheckbox.addEventListener("change", () => {
-        borderColorInput.disabled = borderTransparentCheckbox.checked;
+      borderColorInput.addEventListener("input", () => {
+        // Choosing a color means the user wants a visible border again.
+        borderTransparentCheckbox.checked = false;
       });
     }
 
@@ -286,22 +283,27 @@ export class SettingsView {
     const borderColorEl = this.element.querySelector("#setting-border-color");
     if (borderColorEl) {
       borderColorEl.value = settings.borderColor && settings.borderColor !== 'transparent' ? settings.borderColor : '#64748b';
-      borderColorEl.disabled = settings.borderTransparent === true;
+      borderColorEl.disabled = false;
     }
     
     const cooldownEl = this.element.querySelector("#setting-hint-cooldown");
     if (cooldownEl) cooldownEl.value = settings.hintCooldown || 4;
 
-    VisitorTracker.recordAndGetStats()
-      .then((stats) => {
-        const uEl = this.element.querySelector("#settings-unique-count");
-        const tEl = this.element.querySelector("#settings-total-count");
-        if (uEl)
-          VisitorTracker.updateElementWithAnimation(uEl, stats.uniqueFormatted);
-        if (tEl)
-          VisitorTracker.updateElementWithAnimation(tEl, stats.totalFormatted);
-      })
-      .catch(() => {});
+    const visitorStats = VisitorTracker.getCachedStats();
+    const uniqueEl = this.element.querySelector("#settings-unique-count");
+    const totalEl = this.element.querySelector("#settings-total-count");
+    if (uniqueEl) {
+      VisitorTracker.updateElementWithAnimation(
+        uniqueEl,
+        visitorStats.uniqueFormatted,
+      );
+    }
+    if (totalEl) {
+      VisitorTracker.updateElementWithAnimation(
+        totalEl,
+        visitorStats.totalFormatted,
+      );
+    }
 
     this.updateDbUsage();
   }

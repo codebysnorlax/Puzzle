@@ -24,6 +24,31 @@ export class VisitorTracker {
   }
 
   /**
+   * Return the most recently recorded statistics without recording another visit.
+   * Settings uses this so opening and closing the dialog never affects analytics.
+   */
+  static getCachedStats() {
+    try {
+      const stored = JSON.parse(localStorage.getItem(LOCAL_STATS_KEY) || '{}');
+      const unique = Number(stored.unique) || 0;
+      const total = Number(stored.total) || 0;
+      return {
+        unique,
+        total,
+        uniqueFormatted: stored.uniqueFormatted || this.formatCount(unique),
+        totalFormatted: stored.totalFormatted || this.formatCount(total),
+      };
+    } catch (e) {
+      return {
+        unique: 0,
+        total: 0,
+        uniqueFormatted: '0',
+        totalFormatted: '0',
+      };
+    }
+  }
+
+  /**
    * Record visit and fetch real Unique & Total visitor statistics along with device metadata
    * Uses IP-based hash from server to create consistent visitor ID
    * @returns {Promise<{ unique: number, total: number, uniqueFormatted: string, totalFormatted: string }>}

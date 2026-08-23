@@ -6,7 +6,7 @@ const SETTINGS_KEY = 'pixelcraft_pwa_settings';
 const DEFAULT_SETTINGS = {
   theme: 'light', // 'light' | 'dark'
   sound: true,
-  snapSensitivity: 'normal', // 'strict' (15px), 'normal' (25px), 'relaxed' (40px)
+  snapSensitivity: 'normal', // 'very-strict' (8px) through 'very-relaxed' (56px)
   lastDifficulty: 'normal',
   lastMode: 'normal',
   borderColor: '#64748b',
@@ -60,8 +60,10 @@ export class SettingsStore {
   static getSnapThreshold() {
     const settings = this.getSettings();
     switch (settings.snapSensitivity) {
-      case 'strict': return 15;
+      case 'very-strict': return 8;
+      case 'strict': return 16;
       case 'relaxed': return 40;
+      case 'very-relaxed': return 56;
       case 'normal':
       default: return 25;
     }
