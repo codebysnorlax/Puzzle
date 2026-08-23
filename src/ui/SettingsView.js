@@ -63,7 +63,7 @@ export class SettingsView {
           </div>
 
           <!-- Snap Sensitivity & Piece Border Color in 1 Row -->
-          <div class="settings-row" style="display: flex; gap: 16px; align-items: center; justify-content: space-between;">
+          <div class="settings-row settings-row-split">
             <div style="display: flex; flex: 1; flex-direction: column; gap: 4px;">
               <div style="font-size: 0.78rem; font-weight: 600; color: var(--text-main); text-align: left;">Snap Sensitivity</div>
               <select id="setting-snap" style="background: var(--bg-hover); color: var(--text-main); padding: 2px 6px; border-radius: var(--radius-sm); border: 1px dashed var(--border-subtle); font-size: 0.72rem; height: 24px; cursor: pointer; width: 100%;">
@@ -73,9 +73,35 @@ export class SettingsView {
               </select>
             </div>
 
-            <div style="display: flex; width: 90px; flex-direction: column; gap: 4px; align-items: flex-start;">
+            <div style="display: flex; flex: 1; flex-direction: column; gap: 4px; align-items: flex-start;">
               <div style="font-size: 0.78rem; font-weight: 600; color: var(--text-main); white-space: nowrap; text-align: left;">Border Color</div>
-              <input type="color" id="setting-border-color" value="${settings.borderColor || '#64748b'}" style="width: 100%; height: 24px; padding: 0 4px; border: 1px dashed var(--border-subtle); border-radius: var(--radius-sm); background: var(--bg-hover); cursor: pointer; box-sizing: border-box;" />
+              <div style="display: flex; gap: 6px; align-items: center; width: 100%;">
+                <input type="color" id="setting-border-color" value="${settings.borderColor && settings.borderColor !== 'transparent' ? settings.borderColor : '#64748b'}" ${settings.borderTransparent ? 'disabled' : ''} style="width: 50px; height: 24px; padding: 0 2px; border: 1px dashed var(--border-subtle); border-radius: var(--radius-sm); background: var(--bg-hover); cursor: pointer; box-sizing: border-box;" />
+                <label style="display: flex; align-items: center; gap: 3px; font-size: 0.72rem; color: var(--text-main); cursor: pointer; white-space: nowrap;">
+                  <input type="checkbox" id="setting-border-transparent" ${settings.borderTransparent ? "checked" : ""} style="width: 12px; height: 12px; margin: 0; cursor: pointer;" />
+                  Transparent
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Hint Cooldown & Smart Hint Tokens -->
+          <div class="settings-row settings-row-split">
+            <div style="display: flex; flex: 1; flex-direction: column; gap: 4px;">
+              <div style="font-size: 0.78rem; font-weight: 600; color: var(--text-main); text-align: left;">Hint Cooldown Delay</div>
+              <select id="setting-hint-cooldown" style="background: var(--bg-hover); color: var(--text-main); padding: 2px 6px; border-radius: var(--radius-sm); border: 1px dashed var(--border-subtle); font-size: 0.72rem; height: 24px; cursor: pointer; width: 100%;">
+                ${Array.from({ length: 19 }, (_, i) => i + 2).map(sec => `
+                  <option value="${sec}" ${settings.hintCooldown === sec || (!settings.hintCooldown && sec === 4) ? "selected" : ""}>${sec} Seconds</option>
+                `).join('')}
+              </select>
+            </div>
+
+            <div style="display: flex; flex: 1; flex-direction: column; gap: 4px; align-items: flex-start;">
+              <div style="font-size: 0.78rem; font-weight: 600; color: var(--text-main); white-space: nowrap; text-align: left;">Smart Hint Tokens</div>
+              <button class="btn btn-secondary" id="btn-add-tokens" style="width: 100%; height: 24px; font-size: 0.7rem; padding: 0 8px; border-radius: var(--radius-sm); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Add 10 Tokens
+              </button>
             </div>
           </div>
 
@@ -103,44 +129,37 @@ export class SettingsView {
             <button class="btn btn-sm btn-danger" id="btn-reset-db-settings" style="background: transparent; color: #ef4444; border: none; padding: 0;">Reset</button>
           </div>
 
-          <!-- Visitor Analytics & App Version in Compact Dashed Boxes -->
-          <div class="settings-info-card">
-            <div style="font-weight: 700; font-size: 0.75rem; margin-bottom: 6px; color: var(--text-main); display: flex; align-items: center; gap: 4px;">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-              Visitor Analytics
+          <!-- Merged Visitor Analytics & App Version Info Card -->
+          <div class="settings-info-card" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.65rem; padding: 8px !important;">
+            <!-- Column 1: Analytics -->
+            <div style="display: flex; flex-direction: column; gap: 3px;">
+              <div style="font-weight: 700; font-size: 0.7rem; color: var(--text-main); display: flex; align-items: center; gap: 3px; border-bottom: 1px dashed var(--border-subtle); padding-bottom: 2px; margin-bottom: 2px;">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                Analytics
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: var(--text-muted);">Unique:</span>
+                <span id="settings-unique-count" class="count-animated" style="font-weight: 700; color: var(--primary);">...</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: var(--text-muted);">Visits:</span>
+                <span id="settings-total-count" class="count-animated" style="font-weight: 700; color: var(--text-main);">...</span>
+              </div>
             </div>
-            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; margin-bottom: 4px;">
-              <span style="color: var(--text-muted); display: inline-flex; align-items: center; gap: 4px;">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                Unique:
-              </span>
-              <span id="settings-unique-count" class="count-animated" style="font-weight: 700; color: var(--primary);">...</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem;">
-              <span style="color: var(--text-muted); display: inline-flex; align-items: center; gap: 4px;">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-                Total Visits:
-              </span>
-              <span id="settings-total-count" class="count-animated" style="font-weight: 700; color: var(--text-main);">...</span>
-            </div>
-          </div>
-
-          <div class="settings-info-card">
-            <div style="display: flex; justify-content: space-between; font-size: 0.72rem; margin-bottom: 4px;">
-              <span style="color: var(--text-muted);">Version:</span>
-              <span style="font-weight: 600; color: var(--primary);">v${APP_VERSION}</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; font-size: 0.72rem; margin-bottom: 4px;">
-              <span style="color: var(--text-muted);">Display:</span>
-              <span style="font-weight: 500; color: var(--text-main);">${isPwaStandalone ? "PWA" : "Browser"}</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; font-size: 0.72rem; margin-bottom: 4px;">
-              <span style="color: var(--text-muted);">Storage:</span>
-              <span style="font-weight: 500; color: var(--text-main);">IndexedDB</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; font-size: 0.72rem;">
-              <span style="color: var(--text-muted);">DB usage:</span>
-              <span id="settings-db-usage" style="font-weight: 500; color: var(--text-main);">Calculating...</span>
+            
+            <!-- Column 2: System Info -->
+            <div style="display: flex; flex-direction: column; gap: 3px; border-left: 1px dashed var(--border-subtle); padding-left: 8px;">
+              <div style="font-weight: 700; font-size: 0.7rem; color: var(--text-main); display: flex; align-items: center; gap: 3px; border-bottom: 1px dashed var(--border-subtle); padding-bottom: 2px; margin-bottom: 2px;">
+                System
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: var(--text-muted);">Version:</span>
+                <span style="font-weight: 600; color: var(--primary);">v${APP_VERSION}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: var(--text-muted);">Storage:</span>
+                <span id="settings-db-usage" style="font-weight: 500; color: var(--text-main);">Calculating...</span>
+              </div>
             </div>
           </div>
         </div>
@@ -186,17 +205,41 @@ export class SettingsView {
       });
     }
 
+    const borderTransparentCheckbox = this.element.querySelector("#setting-border-transparent");
+    const borderColorInput = this.element.querySelector("#setting-border-color");
+    if (borderTransparentCheckbox && borderColorInput) {
+      borderTransparentCheckbox.addEventListener("change", () => {
+        borderColorInput.disabled = borderTransparentCheckbox.checked;
+      });
+    }
+
+    const addTokensBtn = this.element.querySelector("#btn-add-tokens");
+    if (addTokensBtn) {
+      addTokensBtn.addEventListener("click", () => {
+        if (this.app && this.app.activeGame) {
+          this.app.activeGame.addHintTokens(10);
+          alert("Added 10 Smart Hint tokens to current game!");
+        } else {
+          alert("Start a puzzle game first to add hint tokens!");
+        }
+      });
+    }
+
     const close = () => {
       const sound = this.element.querySelector("#setting-sound").checked;
       const snap = this.element.querySelector("#setting-snap").value;
       const assistantToasts = this.element.querySelector("#setting-assistant").checked;
       const borderColor = this.element.querySelector("#setting-border-color").value;
+      const borderTransparent = this.element.querySelector("#setting-border-transparent").checked;
+      const hintCooldown = parseInt(this.element.querySelector("#setting-hint-cooldown").value, 10);
 
       SettingsStore.saveSettings({
         sound,
         snapSensitivity: snap,
         assistantToasts,
         borderColor,
+        borderTransparent,
+        hintCooldown
       });
 
       if (this.app && this.app.activeGame && this.app.activeGame.renderer) {
@@ -206,6 +249,13 @@ export class SettingsView {
       this.hide();
       if (this.onClose) this.onClose();
     };
+
+    // Close modal if clicking outside on the overlay backdrop
+    this.element.addEventListener("click", (e) => {
+      if (e.target === this.element) {
+        close();
+      }
+    });
 
     this.element
       .querySelector("#btn-close-settings")
@@ -217,6 +267,31 @@ export class SettingsView {
 
   show() {
     this.element.classList.add("active");
+
+    // Sync input fields with latest settings to prevent reverting to defaults
+    const settings = SettingsStore.getSettings();
+    
+    const soundEl = this.element.querySelector("#setting-sound");
+    if (soundEl) soundEl.checked = settings.sound !== false;
+    
+    const assistantEl = this.element.querySelector("#setting-assistant");
+    if (assistantEl) assistantEl.checked = settings.assistantToasts !== false;
+    
+    const snapEl = this.element.querySelector("#setting-snap");
+    if (snapEl) snapEl.value = settings.snapSensitivity || "normal";
+    
+    const borderTransEl = this.element.querySelector("#setting-border-transparent");
+    if (borderTransEl) borderTransEl.checked = settings.borderTransparent === true;
+    
+    const borderColorEl = this.element.querySelector("#setting-border-color");
+    if (borderColorEl) {
+      borderColorEl.value = settings.borderColor && settings.borderColor !== 'transparent' ? settings.borderColor : '#64748b';
+      borderColorEl.disabled = settings.borderTransparent === true;
+    }
+    
+    const cooldownEl = this.element.querySelector("#setting-hint-cooldown");
+    if (cooldownEl) cooldownEl.value = settings.hintCooldown || 4;
+
     VisitorTracker.recordAndGetStats()
       .then((stats) => {
         const uEl = this.element.querySelector("#settings-unique-count");

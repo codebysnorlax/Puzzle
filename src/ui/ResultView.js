@@ -15,7 +15,7 @@ export class ResultView {
     this.element.className = 'modal-overlay';
 
     this.element.innerHTML = `
-      <div class="modal-content glass-card" style="text-align: center; padding: 2rem;">
+      <div class="modal-content glass-card rainbow" style="text-align: center; padding: 2rem;">
         <div style="font-size: 3rem; margin-bottom: 0.5rem;">🎉</div>
         <h2 style="font-family: var(--font-heading); font-size: 1.8rem; font-weight: 800; margin-bottom: 0.5rem; background: var(--gradient-primary); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Puzzle Solved!</h2>
         <p style="color: var(--color-text-muted); margin-bottom: 1.5rem;">Great job completing the puzzle!</p>

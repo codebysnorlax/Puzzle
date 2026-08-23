@@ -45,8 +45,10 @@ export class MovementTracker {
     return dist;
   }
 
-  recordDragEnd() {
-    this.moveCount += 1;
+  recordDragEnd(positionChanged = true) {
+    if (positionChanged) {
+      this.moveCount += 1;
+    }
     this.lastX = undefined;
     this.lastY = undefined;
 

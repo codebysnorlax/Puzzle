@@ -144,7 +144,6 @@ export class InputHandler {
 
     this.isDragging = false;
     const localPos = this.getLocalPointerPos(event);
-    this.movementTracker.recordDragEnd();
 
     if (this.hoveredPiece) {
       const sprite = this.renderer.getSpriteForPiece(this.hoveredPiece);
@@ -208,9 +207,15 @@ export class InputHandler {
       
       // Play sound ONLY when successfully swapped
       SoundEffects.playMoveSound();
+
+      // Successfully swapped / position changed!
+      this.movementTracker.recordDragEnd(true);
     } else {
       draggedPiece.setPosition(this.startGridPos.x, this.startGridPos.y);
       PieceAnimations.animateSnap(activeSprite, this.startGridPos.x, this.startGridPos.y);
+
+      // Dropped back onto original slot / position unchanged!
+      this.movementTracker.recordDragEnd(false);
     }
 
     this.activePiece = null;

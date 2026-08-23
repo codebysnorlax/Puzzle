@@ -59,10 +59,10 @@
       "author": {
         "@type": "Person",
         "name": "snorlax",
-        "url": "https://github.com/codebysnorlax"
+        "url": "https://snorlax.online"
       },
       "image": "https://puzzle.snorlax.online/assets/icons/icon-512.png",
-      "screenshot": "https://puzzle.snorlax.online/images/demo.webp",
+      "screenshot": "https://puzzle.snorlax.online/assets/puzzle/puzzle_1.webp",
       "softwareVersion": "1.58.0",
       "genre": ["Puzzle", "Jigsaw", "Casual"],
       "gamePlatform": ["Web Browser", "Mobile Browser"],
@@ -80,7 +80,7 @@
     </script>
 
     <!-- Hardened Content Security Policy (CSP) -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://avatars.githubusercontent.com https://github.com https://cdn.jsdelivr.net https://raw.githubusercontent.com; connect-src 'self' blob: data: https://api.github.com https://cdn.jsdelivr.net https://raw.githubusercontent.com; object-src 'none'; base-uri 'self';" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' blob: data:; object-src 'none'; base-uri 'self';" />
 
     <!-- Manifest & Icons -->
     <link rel="manifest" href="./manifest.webmanifest" />
@@ -92,13 +92,11 @@
     <!-- Preconnect & Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="preconnect" href="https://github.com" crossorigin="anonymous" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet" />
 
     <!-- DNS Prefetch for external resources -->
     <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
     <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
-    <link rel="dns-prefetch" href="https://api.github.com" />
   </head>
   <body>
     <div id="app"></div>

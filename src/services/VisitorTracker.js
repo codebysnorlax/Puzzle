@@ -77,6 +77,10 @@ export class VisitorTracker {
       });
 
       if (response.ok) {
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          throw new SyntaxError('Response is not JSON (SPA dev server fallback)');
+        }
         const data = await response.json();
         console.log('[VisitorTracker] API response:', data);
         

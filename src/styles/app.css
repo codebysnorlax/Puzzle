@@ -869,6 +869,80 @@
   );
 }
 
+/* Rotating animation for reload button */
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.rotating {
+  animation: rotate 1s linear infinite;
+}
+
+/* Rainbow border animation for puzzle completion */
+@keyframes rotateRainbow {
+  100% {
+    transform: rotate(1turn);
+  }
+}
+
+@keyframes opacityChange {
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.5;
+  }
+}
+
+.rainbow {
+  position: relative;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.rainbow::before {
+  content: '';
+  position: absolute;
+  z-index: -2;
+  left: -50%;
+  top: -50%;
+  width: 200%;
+  height: 200%;
+  background-color: #399953;
+  background-repeat: no-repeat;
+  background-size: 50% 50%, 50% 50%;
+  background-position: 0 0, 100% 0, 100% 100%, 0 100%;
+  background-image: linear-gradient(#399953, #399953), 
+                    linear-gradient(#fbb300, #fbb300), 
+                    linear-gradient(#d53e33, #d53e33), 
+                    linear-gradient(#377af5, #377af5);
+  animation: rotateRainbow 4s linear infinite;
+}
+
+.rainbow::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  left: 6px;
+  top: 6px;
+  width: calc(100% - 12px);
+  height: calc(100% - 12px);
+  background: var(--bg-surface);
+  border-radius: 5px;
+  animation: opacityChange 3s infinite alternate;
+}
+
+/* Ensure content is above the pseudo-elements */
+.rainbow > * {
+  position: relative;
+  z-index: 1;
+}
+
 .image-card-skeleton.loaded {
   opacity: 0;
   visibility: hidden;
@@ -994,10 +1068,9 @@
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  background: rgba(15, 23, 42, 0.75);
-  padding: 2px 6px;
-  border-radius: var(--radius-pill);
+  background: transparent;
   color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.95);
   font-weight: 600;
   font-size: 0.65rem;
   pointer-events: none;
@@ -1069,6 +1142,12 @@
   border: 1px dashed var(--border-strong);
   color: var(--text-muted);
   background: var(--bg-surface);
+  transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+}
+.image-card-upload.drag-over {
+  border-color: #38bdf8;
+  background: rgba(56, 189, 248, 0.08);
+  color: #38bdf8;
 }
 
 /* Card Start Button — Transparent, Small, Centered */
@@ -1101,6 +1180,7 @@
   z-index: 10;
   white-space: nowrap;
 }
+
 
 .image-card.selected .image-card-start-btn {
   opacity: 1;
@@ -1174,12 +1254,12 @@
 .settings-modal {
   position: relative;
   animation: modalSlideIn 0.3s ease-out;
-  padding: 16px !important;
-  max-width: 360px !important;
+  padding: 12px 14px !important;
+  max-width: 330px !important;
   width: 90% !important;
-  max-height: 90vh !important;
+  max-height: 95vh !important;
   border: 1.5px dashed var(--border-subtle) !important;
-  border-radius: var(--radius-lg) !important;
+  border-radius: var(--radius-md) !important;
   background: rgba(15, 23, 42, 0.95);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4) !important;
   box-sizing: border-box;
@@ -1188,6 +1268,8 @@
 [data-theme="light"] .settings-modal {
   background: rgba(255, 255, 255, 0.95) !important;
 }
+
+
 
 @keyframes modalSlideIn {
   from {
@@ -1720,7 +1802,7 @@
 .gallery-tabs[data-active-tab="calm"]::before {
   transform: translateX(200%);
 }
-.gallery-tabs[data-active-tab="more"]::before {
+.gallery-tabs[data-active-tab="upload"]::before {
   transform: translateX(300%);
 }
 
@@ -1761,33 +1843,7 @@
   color: #0f172a !important;
 }
 
-.image-card.more-coming-card {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(var(--modal-bg-rgb), 0.1) !important;
-  border: 1px dashed var(--border-strong) !important;
-  cursor: default;
-  box-shadow: none !important;
-}
 
-.more-coming-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  color: var(--text-muted);
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  pointer-events: none;
-}
-
-.more-coming-content svg {
-  color: var(--text-muted);
-  opacity: 0.75;
-}
 
 /* ── Custom Circular PWA Install Button ── */
 .btn-circular-install {
@@ -1886,4 +1942,83 @@
 @keyframes floatIn {
   from { opacity: 0; transform: scale(0.85) translateY(12px); }
   to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* ── More Coming Soon Card centering flexbox styles ── */
+.image-card.more-coming-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(var(--modal-bg-rgb), 0.1) !important;
+  border: 1px dashed var(--border-strong) !important;
+  cursor: default;
+  box-shadow: none !important;
+}
+
+.more-coming-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  pointer-events: none;
+}
+
+.more-coming-content svg {
+  color: var(--text-muted);
+  opacity: 0.75;
+}
+
+.settings-row-split {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@media (max-width: 480px) {
+  .settings-row-split {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-2);
+  }
+}
+
+/* Mobile Bottom Sheet Modal styles for Settings Modal */
+@media (max-width: 768px) {
+  .modal-overlay {
+    align-items: flex-end !important;
+    justify-content: center !important;
+  }
+  
+  .settings-modal {
+    width: 100% !important;
+    max-width: 100% !important;
+    border-radius: 20px 20px 0 0 !important;
+    border-bottom: none !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-top: 1.5px dashed var(--border-subtle) !important;
+    margin: 0 !important;
+    padding: 20px 20px 32px 20px !important;
+    transform: translateY(100%);
+    box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.3) !important;
+  }
+
+  .modal-overlay.active .settings-modal {
+    animation: settingsSlideUp 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  
+  @keyframes settingsSlideUp {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
 }

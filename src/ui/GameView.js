@@ -531,7 +531,41 @@ export class GameView {
     const btn = this.element.querySelector("#hud-btn-smart-hint");
     if (btn) {
       btn.setAttribute("title", `Find Incorrect Piece (${count} left)`);
+      if (count <= 0) {
+        btn.classList.add("disabled");
+      } else {
+        if (!btn.disabled) {
+          btn.classList.remove("disabled");
+        }
+      }
     }
+  }
+
+  startSmartHintCooldown(durationSeconds) {
+    const btn = this.element.querySelector("#hud-btn-smart-hint");
+    const badge = this.element.querySelector("#hud-smart-hint-count");
+    if (!btn) return;
+
+    btn.disabled = true;
+    btn.classList.add("disabled");
+    btn.classList.add("hint-cooldown");
+    
+    if (btn._cooldownTimeout) {
+      clearTimeout(btn._cooldownTimeout);
+    }
+
+    btn._cooldownTimeout = setTimeout(() => {
+      btn.disabled = false;
+      btn.classList.remove("hint-cooldown");
+      
+      const currentCount = parseInt(badge ? badge.textContent : "0", 10);
+      if (currentCount <= 0) {
+        btn.classList.add("disabled");
+      } else {
+        btn.classList.remove("disabled");
+      }
+      btn._cooldownTimeout = null;
+    }, durationSeconds * 1000);
   }
 
   showReferenceModal(imageCanvas) {

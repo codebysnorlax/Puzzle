@@ -9,7 +9,9 @@ const DEFAULT_SETTINGS = {
   snapSensitivity: 'normal', // 'strict' (15px), 'normal' (25px), 'relaxed' (40px)
   lastDifficulty: 'normal',
   lastMode: 'normal',
-  borderColor: '#64748b'
+  borderColor: '#64748b',
+  borderTransparent: false,
+  hintCooldown: 4
 };
 
 export class SettingsStore {

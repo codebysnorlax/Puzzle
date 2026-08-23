@@ -2,6 +2,7 @@ import { Container, Graphics, Texture, Sprite } from 'pixi.js';
 import { SettingsStore } from '../storage/SettingsStore.js';
 import { PieceRenderer } from './PieceRenderer.js';
 import { SoundEffects } from '../game/SoundEffects.js';
+import { PuzzleValidator } from '../puzzle/PuzzleValidator.js';
 
 /**
  * PuzzleRenderer — PixiJS stage manager for puzzle board target slots, piece containers, and active rendering
@@ -85,7 +86,10 @@ export class PuzzleRenderer {
 
   updatePieceBorders() {
     const settings = SettingsStore.getSettings();
+    const isTransparent = settings.borderTransparent === true;
     const chosenColor = settings.borderColor || '#64748b';
+    const strokeAlpha = isTransparent ? 0 : 0.6;
+    const strokeWidth = isTransparent ? 0 : 1.5;
 
     this.pieceSpritesMap.forEach((spriteContainer) => {
       const border = spriteContainer.borderGraphic;
@@ -93,7 +97,7 @@ export class PuzzleRenderer {
       if (border && piece) {
         border.clear();
         border.rect(0, 0, piece.width, piece.height);
-        border.stroke({ width: 1.5, color: chosenColor, alpha: 0.6 });
+        border.stroke({ width: strokeWidth, color: chosenColor, alpha: strokeAlpha });
       }
     });
 
@@ -117,7 +121,7 @@ export class PuzzleRenderer {
     if (targets.length === 0) return;
 
     let startTime = null;
-    const duration = 3500; // 3.5s total animation duration
+    const duration = (settings.hintCooldown || 4) * 1000;
 
     const animate = (timestamp) => {
       if (!startTime) startTime = timestamp;
@@ -134,11 +138,20 @@ export class PuzzleRenderer {
         const border = container.borderGraphic;
         const piece = container.pieceData;
         if (border && !border.destroyed && piece) {
-          border.clear();
-          border.rect(0, 0, piece.width, piece.height);
-          
-          // Pure red border blinking clearly
-          border.stroke({ width: 3.0, color: 0xef4444, alpha: redAlpha });
+          // If piece was snapped/moved to correct slot during animation, remove red highlight
+          if (PuzzleValidator.isPieceInCorrectSlot(piece)) {
+            const isTransparent = settings.borderTransparent === true;
+            const strokeAlpha = isTransparent ? 0 : 0.6;
+            const strokeWidth = isTransparent ? 0 : 1.5;
+            border.clear();
+            border.rect(0, 0, piece.width, piece.height);
+            border.stroke({ width: strokeWidth, color: chosenColor, alpha: strokeAlpha });
+          } else {
+            border.clear();
+            border.rect(0, 0, piece.width, piece.height);
+            // Pure red border blinking clearly
+            border.stroke({ width: 3.0, color: 0xef4444, alpha: redAlpha });
+          }
         }
       });
 
@@ -150,6 +163,10 @@ export class PuzzleRenderer {
         requestAnimationFrame(animate);
       } else {
         // Revert all pieces back to normal state
+        const isTransparent = settings.borderTransparent === true;
+        const strokeAlpha = isTransparent ? 0 : 0.6;
+        const strokeWidth = isTransparent ? 0 : 1.5;
+
         targets.forEach(container => {
           if (container.destroyed) return;
           const border = container.borderGraphic;
@@ -157,7 +174,7 @@ export class PuzzleRenderer {
           if (border && !border.destroyed && piece) {
             border.clear();
             border.rect(0, 0, piece.width, piece.height);
-            border.stroke({ width: 1.5, color: chosenColor, alpha: 0.6 });
+            border.stroke({ width: strokeWidth, color: chosenColor, alpha: strokeAlpha });
           }
         });
         if (this.pixiApp && this.pixiApp.app && this.pixiApp.app.renderer) {
@@ -221,9 +238,12 @@ export class PuzzleRenderer {
           } else {
             spriteContainer.scale.set(1.0);
             if (border && !border.destroyed) {
+              const isTransparent = settings.borderTransparent === true;
+              const strokeAlpha = isTransparent ? 0 : 0.6;
+              const strokeWidth = isTransparent ? 0 : 1.5;
               border.clear();
               border.rect(0, 0, piece.width, piece.height);
-              border.stroke({ width: 1.5, color: chosenColor, alpha: 0.6 });
+              border.stroke({ width: strokeWidth, color: chosenColor, alpha: strokeAlpha });
             }
           }
         };

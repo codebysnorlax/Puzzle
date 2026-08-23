@@ -167,7 +167,7 @@ export class App {
 
     try {
       let processed;
-      const targetImg = this.activeConfig.imageUrl || "./images/demo.webp";
+      const targetImg = this.activeConfig.imageUrl || "./assets/puzzle/puzzle_1.webp";
 
       try {
         processed = await ImageProcessor.processImage(targetImg);
@@ -176,7 +176,7 @@ export class App {
           "[App] Primary ImageProcessor failed, attempting fallback to demo image:",
           imgErr,
         );
-        processed = await ImageProcessor.processImage("./images/demo.webp");
+        processed = await ImageProcessor.processImage("./assets/puzzle/puzzle_1.webp");
       }
 
       this.activeConfig.processedImage = processed;

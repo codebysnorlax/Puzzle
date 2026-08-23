@@ -246,12 +246,23 @@ export class Game {
     });
   }
 
+  addHintTokens(count) {
+    this.hintsRemaining += count;
+    if (this.gameView) {
+      this.gameView.updateSmartHintCount(this.hintsRemaining);
+    }
+  }
+
   handleSmartHint() {
     if (!this.puzzle || !this.renderer || !this.app) return;
 
     if (this.app.stateMachine.state === 'SOLVED') {
       return;
     }
+
+    // Cooldown check: if button is disabled/cooldown active, skip click
+    const btn = this.gameView ? this.gameView.element.querySelector("#hud-btn-smart-hint") : null;
+    if (btn && btn.disabled) return;
 
     if (this.hintsRemaining <= 0) {
       if (this.gameView && this.gameView.showToast) {
@@ -279,6 +290,10 @@ export class Game {
     this.hintsRemaining--;
     if (this.gameView) {
       this.gameView.updateSmartHintCount(this.hintsRemaining);
+      
+      const settings = SettingsStore.getSettings();
+      const delay = settings.hintCooldown || 4;
+      this.gameView.startSmartHintCooldown(delay);
     }
     this.renderer.highlightAllIncorrectPieces(incorrectPieces.map(p => p.id));
   }
