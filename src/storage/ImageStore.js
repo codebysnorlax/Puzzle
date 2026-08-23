@@ -9,24 +9,13 @@ import { validateImageFile, sanitizeFilename } from '../utils/security.js';
  */
 
 /** Full catalog of built-in puzzle images (WebP) */
-const BUILTIN_CATALOG = [
-  { id: 'demo1', name: 'Mountain Landscape', url: './images/demo.webp' },
-  { id: 'demo2', name: 'Scenic Sunset', url: './images/demo2.webp' },
-  { id: 'snorlax', name: 'Snorlax', url: './images/snorlax.webp' },
-  { id: 'test', name: 'Vibrant Artwork', url: './images/test.webp' },
-  ...Array.from({ length: 19 }, (_, i) => ({
-    id: `call_puzzle_${i + 1}`,
-    name: `Puzzle ${i + 1}`,
-    url: `./images/puzzle${i + 1}.webp`
-  }))
-];
-
-const ON_CALL_CATALOG = Array.from({ length: 14 }, (_, i) => ({
-  id: `on_call_${i + 1}`,
-  name: `On-Call Puzzle ${i + 1}`,
-  url: `./assets/onCall/puzzle_on_call${i + 1}.webp`,
-  isOnCall: true
+const BUILTIN_CATALOG = Array.from({ length: 37 }, (_, i) => ({
+  id: `puzzle_${i + 1}`,
+  name: `Puzzle ${i + 1}`,
+  url: `./assets/puzzle/puzzle_${i + 1}.webp`
 }));
+
+
 
 /** Chaos Catalog — Extra 19 puzzles loaded on demand in the Chaos Tab */
 const CHAOS_CATALOG = Array.from({ length: 19 }, (_, i) => ({
@@ -36,11 +25,11 @@ const CHAOS_CATALOG = Array.from({ length: 19 }, (_, i) => ({
   isChaos: true
 }));
 
-/** Calm Catalog — Extra 17 puzzles loaded on demand in the Calm Tab */
-const CALM_CATALOG = Array.from({ length: 17 }, (_, i) => ({
+// Calm Catalog — Extra 8 puzzles loaded on demand in the Calm Tab
+const CALM_CATALOG = Array.from({ length: 8 }, (_, i) => ({
   id: `calm_${i + 1}`,
   name: `Calm Puzzle ${i + 1}`,
-  url: `./assets/calm/calm${i + 1}.webp`,
+  url: `/assets/calm/calm_${i + 1}.webp`,
   isCalm: true
 }));
 
@@ -91,9 +80,7 @@ export class ImageStore {
   /**
    * Get On-Call catalog definition.
    */
-  static getOnCallCatalog() {
-    return ON_CALL_CATALOG;
-  }
+
 
   /**
    * Get Chaos catalog definition.
@@ -130,7 +117,7 @@ export class ImageStore {
     let blob = await res.blob();
 
     if (!blob.type || !blob.type.startsWith('image/')) {
-      blob = blob.slice(0, blob.size, 'image/webp');
+      throw new Error(`Fetched resource is not a valid image (${blob.type || 'unknown type'})`);
     }
 
     const store = await dbManager.getStore('images', 'readwrite');
@@ -180,7 +167,7 @@ export class ImageStore {
     let blob = await res.blob();
 
     if (!blob.type || !blob.type.startsWith('image/')) {
-      blob = blob.slice(0, blob.size, 'image/webp');
+      throw new Error(`Fetched resource is not a valid image (${blob.type || 'unknown type'})`);
     }
 
     const store = await dbManager.getStore('images', 'readwrite');
@@ -195,110 +182,7 @@ export class ImageStore {
     return { id: item.id, name: item.name, url: item.url, blob, isCustom: false, isCalm: true };
   }
 
-  /**
-   * Fetch and cache On-Call puzzles on-demand when user clicks "Call More Puzzles".
-   * STRICT DB-FIRST POLICY:
-   * 1. Check IndexedDB first. If exists in DB, load directly from DB (0 network requests).
-   * 2. If NOT in DB, fetch from CDN (./assets/onCall/puzzle_on_callX.webp) and store in IndexedDB.
-   */
-  static async fetchAndCacheOnCallPuzzles(onProgress = null) {
-    const results = [];
-    const total = ON_CALL_CATALOG.length;
 
-    for (let i = 0; i < total; i++) {
-      const item = ON_CALL_CATALOG[i];
-      try {
-        // 1. ALWAYS check IndexedDB FIRST
-        const existing = await this.getImage(item.id);
-        if (existing && existing.blob && existing.blob.size > 0) {
-          results.push({ ...existing, isCustom: false, isOnCall: true });
-          if (onProgress) onProgress(i + 1, total);
-          continue;
-        }
-
-        // 2. If DB has no record, fetch from CDN URL
-        const res = await fetch(item.url);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        let blob = await res.blob();
-
-        if (!blob.type || !blob.type.startsWith('image/')) {
-          blob = blob.slice(0, blob.size, 'image/webp');
-        }
-
-        // 3. Store in IndexedDB
-        const store = await dbManager.getStore('images', 'readwrite');
-        await new Promise((resolve, reject) => {
-          const req = store.put({ id: item.id, name: item.name, blob, createdAt: Date.now() });
-          req.onsuccess = () => resolve();
-          req.onerror = (e) => reject(e.target.error);
-        });
-
-        const cached = await this.getImage(item.id);
-        if (cached) {
-          results.push({ ...cached, isCustom: false, isOnCall: true });
-        } else {
-          results.push({ id: item.id, name: item.name, url: item.url, blob, isCustom: false, isOnCall: true });
-        }
-      } catch (err) {
-        console.warn(`[ImageStore] Failed to fetch/cache on-call puzzle ${item.id}:`, err);
-        results.push({ id: item.id, name: item.name, url: item.url, blob: null, isCustom: false, isOnCall: true });
-      }
-
-      if (onProgress) onProgress(i + 1, total);
-    }
-
-    localStorage.setItem('on_call_puzzles_called', 'true');
-    return results;
-  }
-
-  /**
-   * Get all On-Call puzzles that are ALREADY stored in IndexedDB.
-   */
-  static async getOnCallPuzzlesFromDB() {
-    const results = [];
-    for (const item of ON_CALL_CATALOG) {
-      const cached = await this.getImage(item.id);
-      if (cached && cached.blob && cached.blob.size > 0) {
-        results.push({ ...cached, isCustom: false, isOnCall: true });
-      }
-    }
-    return results;
-  }
-
-  /**
-   * Fetch and cache a SINGLE on-call puzzle item. DB-first.
-   * Used for one-by-one progressive loading with skeleton shimmer.
-   * @param {{ id: string, name: string, url: string }} item
-   * @returns {Promise<object|null>}
-   */
-  static async fetchAndCacheSingleOnCall(item) {
-    // 1. Check IndexedDB first
-    const existing = await this.getImage(item.id);
-    if (existing && existing.blob && existing.blob.size > 0) {
-      return { ...existing, isCustom: false, isOnCall: true };
-    }
-
-    // 2. Fetch from CDN
-    const res = await fetch(item.url);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    let blob = await res.blob();
-
-    if (!blob.type || !blob.type.startsWith('image/')) {
-      blob = blob.slice(0, blob.size, 'image/webp');
-    }
-
-    // 3. Store in IndexedDB
-    const store = await dbManager.getStore('images', 'readwrite');
-    await new Promise((resolve, reject) => {
-      const req = store.put({ id: item.id, name: item.name, blob, createdAt: Date.now() });
-      req.onsuccess = () => resolve();
-      req.onerror = (e) => reject(e.target.error);
-    });
-
-    const cached = await this.getImage(item.id);
-    if (cached) return { ...cached, isCustom: false, isOnCall: true };
-    return { id: item.id, name: item.name, url: item.url, blob, isCustom: false, isOnCall: true };
-  }
 
   /**
    * Ensure all built-in puzzles are cached in IndexedDB.
@@ -337,7 +221,7 @@ export class ImageStore {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         let blob = await res.blob();
         if (!blob.type || !blob.type.startsWith('image/')) {
-          blob = blob.slice(0, blob.size, 'image/webp');
+          throw new Error('Not a valid image');
         }
         return { item, blob };
       } catch (err) {
@@ -411,13 +295,6 @@ export class ImageStore {
     const chaosItem = CHAOS_CATALOG.find(c => c.id === id);
     if (chaosItem) return { id, name: chaosItem.name, url: chaosItem.url, blob: null };
 
-    if (id && id.startsWith("cartoon_")) {
-      const index = parseInt(id.replace("cartoon_", ""), 10);
-      const paddedNum = String(index).padStart(2, '0');
-      const url = `https://cdn.jsdelivr.net/gh/codebysnorlax/assets@main/puzzle_img/cartoon_img/puzzle_cartoon_${paddedNum}.webp`;
-      return { id, name: `Cartoon Puzzle ${paddedNum}`, url, blob: null };
-    }
-
     return null;
   }
 
@@ -430,9 +307,9 @@ export class ImageStore {
     for (const item of BUILTIN_CATALOG) {
       const cached = await this.getImage(item.id);
       if (cached) {
-        results.push({ ...cached, isCustom: false, isCallPuzzle: item.id.startsWith('call_puzzle_') });
+        results.push({ ...cached, isCustom: false, isCallPuzzle: item.id.startsWith('puzzle_') });
       } else {
-        results.push({ id: item.id, name: item.name, url: item.url, blob: null, isCustom: false, isCallPuzzle: item.id.startsWith('call_puzzle_') });
+        results.push({ id: item.id, name: item.name, url: item.url, blob: null, isCustom: false, isCallPuzzle: item.id.startsWith('puzzle_') });
       }
     }
     return results;
@@ -497,8 +374,15 @@ export class ImageStore {
           name: sanitizeFilename(rec.name),
           blob: rec.blob,
           url: this.createTrackedUrl(rec.blob),
-          isCustom: true
-        }));
+          isCustom: true,
+          createdAt: rec.createdAt || 0
+        }))
+        .sort((a, b) => {
+          if (b.createdAt !== a.createdAt) {
+            return b.createdAt - a.createdAt;
+          }
+          return b.id.localeCompare(a.id);
+        });
     } catch (err) {
       return [];
     }
@@ -602,110 +486,5 @@ export class ImageStore {
     } catch (err) {
       console.error('[ImageStore] Error during clearAllDatabaseData:', err);
     }
-  }
-
-  static async discoverCartoonImages() {
-    const baseUrl = "https://cdn.jsdelivr.net/gh/codebysnorlax/assets@main/puzzle_img/cartoon_img/";
-    const apiUrl = "https://api.github.com/repos/codebysnorlax/assets/contents/puzzle_img/cartoon_img";
-    const discovered = [];
-    
-    try {
-      // Fetch file list from GitHub API
-      const response = await fetch(apiUrl, {
-        headers: {
-          'Accept': 'application/vnd.github.v3+json'
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error(`GitHub API returned ${response.status}: ${response.statusText}`);
-      }
-      
-      const files = await response.json();
-      
-      // Filter for .webp files and sort them
-      const webpFiles = files
-        .filter(file => file.type === 'file' && file.name.endsWith('.webp'))
-        .sort((a, b) => a.name.localeCompare(b.name));
-      
-      // Map GitHub API response to our catalog format
-      for (const file of webpFiles) {
-        // Extract number from filename like "puzzle_cartoon_01.webp"
-        const match = file.name.match(/puzzle_cartoon_(\d+)\.webp/);
-        if (match) {
-          const num = parseInt(match[1], 10);
-          const paddedNum = String(num).padStart(2, '0');
-          
-          discovered.push({
-            id: `cartoon_${num}`,
-            name: `Cartoon Puzzle ${paddedNum}`,
-            url: `${baseUrl}${file.name}`,
-            isCartoon: true
-          });
-        }
-      }
-      
-      console.log(`[ImageStore] Discovered ${discovered.length} cartoon puzzles from GitHub API`);
-      
-    } catch (error) {
-      console.error('[ImageStore] Failed to fetch from GitHub API, using fallback:', error);
-      
-      // Fallback: populate first 18 images statically
-      for (let j = 1; j <= 18; j++) {
-        const paddedNum = String(j).padStart(2, '0');
-        discovered.push({
-          id: `cartoon_${j}`,
-          name: `Cartoon Puzzle ${paddedNum}`,
-          url: `${baseUrl}puzzle_cartoon_${paddedNum}.webp`,
-          isCartoon: true
-        });
-      }
-    }
-
-    return discovered;
-  }
-
-  static async scanForMoreCartoonImages(discoveredList, baseUrl) {
-    // This method is now deprecated since we use GitHub API for discovery
-    // Keeping it for backwards compatibility but it won't be called
-    return;
-  }
-
-  static async getCartoonPuzzlesFromDB(catalog) {
-    if (!catalog || catalog.length === 0) return [];
-    const results = [];
-    for (const item of catalog) {
-      const cached = await this.getImage(item.id);
-      if (cached && cached.blob && cached.blob.size > 0) {
-        results.push({ ...cached, isCartoon: true });
-      }
-    }
-    return results;
-  }
-
-  static async fetchAndCacheSingleCartoon(item) {
-    const existing = await this.getImage(item.id);
-    if (existing && existing.blob && existing.blob.size > 0) {
-      return { ...existing, isCustom: false, isCartoon: true };
-    }
-
-    const res = await fetch(item.url);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    let blob = await res.blob();
-
-    if (!blob.type || !blob.type.startsWith('image/')) {
-      blob = blob.slice(0, blob.size, 'image/webp');
-    }
-
-    const store = await dbManager.getStore('images', 'readwrite');
-    await new Promise((resolve, reject) => {
-      const req = store.put({ id: item.id, name: item.name, blob, createdAt: Date.now() });
-      req.onsuccess = () => resolve();
-      req.onerror = (e) => reject(e.target.error);
-    });
-
-    const cached = await this.getImage(item.id);
-    if (cached) return { ...cached, isCustom: false, isCartoon: true };
-    return { id: item.id, name: item.name, url: item.url, blob, isCustom: false, isCartoon: true };
   }
 }
